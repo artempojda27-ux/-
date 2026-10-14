@@ -52,6 +52,11 @@ const CONFIG = {
 // ───────────────────────────── ПЕРСОНАЖИ ─────────────────────────────
 
 const { CAST, relationsFor } = require('./characters');
+
+// Род берём из голоса персонажа: «женский, …» → женский род в текстах.
+const female = (p) => /^женск/.test(p?.voice || '');
+const g = (p, m, f) => (female(p) ? f : m);
+const byName = (name) => CAST.find((c) => c.name === name);
 const { recordParty, historyFor, statsFor, rotationScore, partyNumber } = require('./history');
 const { rollEvent, clearEvent } = require('./events');
 const { tierByKind } = require('./gifts');
@@ -257,7 +262,7 @@ function buildAgentSystem(player, state) {
   const ev = state.event;
   let evBlock = '';
   if (ev?.id === 'note') evBlock = `\nСЕГОДНЯ: найдена записка про ${ev.target}. Автор неизвестен — возможно, это подстава.\n`;
-  if (ev?.id === 'return') evBlock = `\nСЕГОДНЯ: ${ev.target} вернулся в дом. Он выбыл ночью, значит точно верный.\n`;
+  if (ev?.id === 'return') evBlock = `\nСЕГОДНЯ: ${ev.target} ${g(byName(ev.target), 'вернулся', 'вернулась')} в дом. ${g(byName(ev.target), 'Он выбыл', 'Она выбыла')} ночью, значит точно ${g(byName(ev.target), 'верный', 'верная')}.\n`;
   if (state.doubleBanish) evBlock += `\nСЕГОДНЯ ИЗГОНЯЮТ ДВОИХ. Ставки выше обычного.\n`;
   if (state.openVote) evBlock += `\nТЫ ОБЯЗАН назвать одно конкретное имя прямо в реплике. Уклониться нельзя.\n`;
 
@@ -492,7 +497,7 @@ ${publicLog(state)}`;
     .filter((n) => state.players.find((p) => p.name === n && p.alive));
   for (const w of witnesses) {
     state.knowledge[w].push(
-      `Ты был там же, где ночью убрали ${victim.name}. Говорить об этом или молчать — решай сам.`
+      `Ты ${g(byName(w), 'был', 'была')} там же, где ночью убрали ${victim.name}. Говорить об этом или молчать — решай сам.`
     );
   }
 
@@ -538,7 +543,7 @@ ${publicLog(state)}`,
   const verdict = target.role === 'traitor' ? 'МАФИЯ' : 'не мафия';
   state.checked[target.name] = verdict;
   state.knowledge[sheriff.name] = state.knowledge[sheriff.name] || [];
-  state.knowledge[sheriff.name].push(`Ты проверил ${target.name}: ${verdict}.`);
+  state.knowledge[sheriff.name].push(`Ты ${g(sheriff, 'проверил', 'проверила')} ${target.name}: ${verdict}.`);
   // Имя проверенного в эфир НЕ уходит: это знание шерифа, а не зрителей.
   // Показываем только сам факт, что проверка была — этого хватает для нерва.
   broadcast({ type: 'sheriff' });
@@ -785,8 +790,8 @@ async function runGame() {
           text: narrate.place(state.round, night.where),
         });
         await sleep(CONFIG.beat * 1.5);
-        say(`  ${C.bold(night.victim.name)} — ${night.where}. ${C.green(night.victim.role === 'sheriff' ? 'Он был ШЕРИФОМ.' : 'Мирный житель.')}`,
-            `**${night.victim.name}** не пережил ночь. ${night.where}. _(${night.reason})_`);
+        say(`  ${C.bold(night.victim.name)} — ${night.where}. ${C.green(night.victim.role === 'sheriff' ? g(night.victim, 'Он был ШЕРИФОМ.', 'Она была ШЕРИФОМ.') : g(night.victim, 'Мирный житель.', 'Мирная жительница.'))}`,
+            `**${night.victim.name}** ${g(night.victim, 'не пережил', 'не пережила')} ночь. ${night.where}. _(${night.reason})_`);
         if (night.witnesses.length) {
           say(C.dim(`  там же были: ${night.witnesses.join(', ')}`), null);
         }
@@ -838,12 +843,13 @@ async function runGame() {
       b.alive = false;
       b.outBy = 'vote';
       const wasTraitor = b.role === 'traitor';
-      const roleWord = wasTraitor ? 'МАФИЕЙ' : b.role === 'sheriff' ? 'ШЕРИФОМ' : 'мирным';
-      state.log.push(`[Изгнан ${b.name}. Он был ${roleWord}]`);
+      const roleWord = wasTraitor ? 'МАФИЕЙ' : b.role === 'sheriff' ? 'ШЕРИФОМ' : g(b, 'мирным', 'мирной');
+      const was = g(b, 'Он был', 'Она была');
+      state.log.push(`[${g(b, 'Изгнан', 'Изгнана')} ${b.name}. ${was} ${roleWord}]`);
       broadcast({ type: 'out', name: b.name, role: b.role, by: 'vote' });
-      say(`  Изгнан: ${C.bold(b.name)}`, `**Изгнан: ${b.name}**`);
-      say(wasTraitor ? C.red('  ЭТО БЫЛА МАФИЯ.') : C.green(`  Он был ${roleWord}.`),
-          wasTraitor ? '> ЭТО БЫЛА МАФИЯ.' : `> Он был ${roleWord}.`);
+      say(`  ${g(b, 'Изгнан', 'Изгнана')}: ${C.bold(b.name)}`, `**${g(b, 'Изгнан', 'Изгнана')}: ${b.name}**`);
+      say(wasTraitor ? C.red('  ЭТО БЫЛА МАФИЯ.') : C.green(`  ${was} ${roleWord}.`),
+          wasTraitor ? '> ЭТО БЫЛА МАФИЯ.' : `> ${was} ${roleWord}.`);
       if (CONFIG.pause) await sleep(CONFIG.pause);
     }
 

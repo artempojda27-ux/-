@@ -76,8 +76,9 @@ def strip_background(img, tol=TOLERANCE):
     w, h = img.size
     px = img.load()
 
-    # опорный цвет — усреднённый по углам
-    corners = [px[0, 0], px[w - 1, 0], px[0, h - 1], px[w - 1, h - 1]]
+    # опорный цвет — по верхним углам: нижние у поясного портрета заняты
+    # плечами, и с ними «фон» выходит цветом одежды — тогда не режется ничего
+    corners = [px[0, 0], px[w - 1, 0], px[2, 2], px[w - 3, 2]]
     ref = tuple(sum(c[i] for c in corners) // 4 for i in range(3))
 
     seen = bytearray(w * h)

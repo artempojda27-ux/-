@@ -22,6 +22,16 @@
 const SQUARE = { id: 'square', name: 'городская площадь', note: 'где город собирается днём',
   look: 'центральная площадь, фонтан, лавки, фасады старых домов' };
 
+/** Общий план города — для открывающей перебивки, до того как зритель увидит людей. */
+const CITY = { id: 'city', name: 'портовый город', note: 'общий план',
+  look: 'панорама старого портового города, крыши, краны в порту, залив, огни' };
+
+/**
+ * Весь город — 16 мест. В одной партии открыто 8 (см. cityTonight):
+ * если раскидать восьмерых по шестнадцати местам, каждый ночью окажется
+ * один — исчезнут свидетели и алиби, а на них держится всё обсуждение.
+ * Так город от эфира к эфиру разный, а плотность встреч та же.
+ */
 const LOCATIONS = [
   { id: 'bar',      name: 'бар «Полночь»',   note: 'шумно, людно, алиби сомнительное',
     look: 'барная вывеска, неоновый свет, запотевшие окна, силуэты у стойки' },
@@ -39,6 +49,22 @@ const LOCATIONS = [
     look: 'жилая пятиэтажка ночью, часть окон светится, двор с качелями' },
   { id: 'diner',    name: 'закусочная у трассы', note: 'дальнобойщики и кофе',
     look: 'придорожная закусочная, вывеска у шоссе, фуры на обочине' },
+  { id: 'church',   name: 'старая церковь',  note: 'двери не запирают, внутри полумрак',
+    look: 'каменная церковь, витражи, свечи, тяжёлые двери' },
+  { id: 'roof',     name: 'крыша высотки',   note: 'видно весь город, тебя не видит никто',
+    look: 'плоская крыша многоэтажки, антенны, огни города внизу' },
+  { id: 'laundry',  name: 'прачечная',       note: 'круглосуточная, гудят машины',
+    look: 'круглосуточная прачечная, ряды стиральных машин, лампы дневного света' },
+  { id: 'garages',  name: 'гаражи',          note: 'лабиринт, ворота, собаки',
+    look: 'ряды гаражей с ржавыми воротами, лужи, единственная лампа' },
+  { id: 'club',     name: 'подпольный клуб', note: 'громко, темно, никто ничего не помнит',
+    look: 'подвальный клуб, красный свет, дым, бетонная лестница вниз' },
+  { id: 'pier',     name: 'пирс',            note: 'вода, ветер, рыбаки до рассвета',
+    look: 'деревянный пирс, фонари над водой, лодки у причала' },
+  { id: 'bridge',   name: 'железнодорожный мост', note: 'ходят товарняки, под мостом пусто',
+    look: 'стальной мост над рекой, рельсы, прожектор товарного поезда' },
+  { id: 'hotel',    name: 'отель «Империал»', note: 'портье помнит всех, кто проходил',
+    look: 'старый отель, вращающаяся дверь, латунная вывеска, ковровая лестница' },
 ];
 
 /**
@@ -67,11 +93,26 @@ const HAUNTS = {
 const byId = (id) => LOCATIONS.find((l) => l.id === id) || LOCATIONS[0];
 
 /**
+ * Какие места открыты в эту партию. Сначала привычные места состава —
+ * иначе персонажу некуда пойти «к себе», — потом случайные до count.
+ * «Дома» открыты всегда: это место, где алиби нет по определению.
+ */
+function cityTonight(players, rand, count = 8) {
+  const ids = new Set(['home']);
+  for (const p of players) ids.add(HAUNTS[p.slug] || 'home');
+  const rest = LOCATIONS.map((l) => l.id).filter((id) => !ids.has(id));
+  while (ids.size < count && rest.length) {
+    ids.add(rest.splice(Math.floor(rand() * rest.length), 1)[0]);
+  }
+  return [...ids];
+}
+
+/**
  * Ночное расселение.
  * Обычно персонаж идёт к себе, иногда — куда-то ещё. Мафия чаще уходит
  * из привычного места: ей нужно оказаться там, где будет жертва.
  */
-function placeEveryone(players, rand) {
+function placeEveryone(players, rand, open = LOCATIONS.map((l) => l.id)) {
   const placement = {};
   for (const p of players) {
     if (!p.alive) continue;
@@ -79,7 +120,7 @@ function placeEveryone(players, rand) {
     const wander = p.role === 'traitor' ? 0.75 : 0.32;
     placement[p.name] =
       rand() < wander
-        ? LOCATIONS[Math.floor(rand() * LOCATIONS.length)].id
+        ? open[Math.floor(rand() * open.length)]
         : usual;
   }
   return placement;
@@ -109,4 +150,4 @@ function nightKnowledge(placement) {
   return out;
 }
 
-module.exports = { LOCATIONS, SQUARE, HAUNTS, byId, placeEveryone, whoWasAt, nightKnowledge };
+module.exports = { LOCATIONS, SQUARE, CITY, cityTonight, HAUNTS, byId, placeEveryone, whoWasAt, nightKnowledge };

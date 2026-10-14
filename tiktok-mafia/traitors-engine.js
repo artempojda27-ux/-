@@ -60,7 +60,7 @@ const byName = (name) => CAST.find((c) => c.name === name);
 const { recordParty, historyFor, statsFor, rotationScore, partyNumber } = require('./history');
 const { rollEvent, clearEvent } = require('./events');
 const { tierByKind } = require('./gifts');
-const { LOCATIONS, byId, placeEveryone, whoWasAt, nightKnowledge } = require('./city');
+const { CITY, cityTonight, byId, placeEveryone, whoWasAt, nightKnowledge } = require('./city');
 const { narrate } = require('./narrator');
 
 const RULES = `Игра «Город засыпает». В городе восемь человек. Двое из них — МАФИЯ, один — ШЕРИФ, остальные — мирные жители.
@@ -448,7 +448,7 @@ async function nightPhase(state) {
   if (!traitors.length) return null;
 
   // город засыпает: все расходятся по местам
-  const placement = placeEveryone(state.players, rand);
+  const placement = placeEveryone(state.players, rand, state.city);
   state.placement = placement;
 
   // мафия выбирает жертву. Убрать можно только того, до кого дошли:
@@ -680,6 +680,7 @@ async function runGame() {
     applied: [],       // что сработало
     dropped: [],       // что отклонили и почему
     players: roster.map((c, i) => ({ ...c, role: roles[i], alive: true })),
+    city: cityTonight(roster, rand),   // какие места города открыты в эту партию
   };
 
   say(C.mag('\n╔══════════════════════════════════════╗'));
@@ -708,7 +709,10 @@ async function runGame() {
     type: 'montage',
     clock: narrate.clock(1),
     hold: 2400,
-    places: shuffle(LOCATIONS).slice(0, 4).map((l) => ({ id: l.id, name: l.name, figures: 1 })),
+    places: [
+      { id: CITY.id, name: CITY.name, figures: 0 },
+      ...shuffle(state.city).slice(0, 3).map((id) => ({ id, name: byId(id).name, figures: 1 })),
+    ],
   });
   await sleep(2400 * 4 + 600);
 

@@ -22,7 +22,7 @@ const EVENTS = [
         id: 'note',
         target: target.name,
         truthful,
-        publicText: `Под дверью нашли записку: "Ночью я видел, как ${target.name} выходил из комнаты". Кто написал — неизвестно.`,
+        publicText: `Под дверью нашли записку: "Ночью я видел, как ${target.name} ${/^женск/.test(target.voice || '') ? 'выходила' : 'выходил'} из комнаты". Кто написал — неизвестно.`,
       };
       return state.event.publicText;
     },

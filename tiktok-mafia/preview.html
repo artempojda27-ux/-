@@ -43,7 +43,8 @@ body.night #root{background:var(--night)}
   animation:drift 44s ease-in-out infinite alternate}
 #room{opacity:1}
 #room2{opacity:0}
-body.night .bgl{filter:saturate(.5) brightness(.62)}
+/* ночные кадры мест уже сделаны ночными; второе затемнение превращало их в муть */
+body.night .bgl{filter:saturate(.85) brightness(.92)}
 @keyframes drift{from{transform:scale(1.06) translate(-14px,-8px)}
                  to{transform:scale(1.12) translate(14px,8px)}}
 
@@ -116,6 +117,7 @@ header{position:relative;display:flex;align-items:baseline;justify-content:space
   border-radius:50% 50% 0 0 / 90px 90px 0 0;
   box-shadow:0 -20px 50px rgba(0,0,0,.6);opacity:.92;transition:filter 1.6s}
 body.night #table{filter:brightness(.5) saturate(.5)}
+body.montage #table{opacity:0}
 
 /* ── субтитр ── */
 #speech{position:absolute;left:70px;right:70px;top:1060px;min-height:180px;
@@ -148,6 +150,8 @@ body.night #table{filter:brightness(.5) saturate(.5)}
   color:var(--ink);border-radius:4px;padding:14px 22px;display:flex;gap:14px;
   align-items:baseline;transform:translateY(200%);transition:transform .45s;z-index:8}
 #toast.on{transform:translateY(0)}
+/* в перебивке по городу подарок не перекрывает кадр: всплывёт после */
+body.montage #toast{opacity:0}
 #toast .who2{font-size:27px;font-weight:600}
 #toast .what{font-family:Georgia,serif;font-size:32px}
 
@@ -178,7 +182,7 @@ body.night #table{filter:brightness(.5) saturate(.5)}
   animation:sway 9s ease-in-out infinite alternate}
 @keyframes sway{from{transform:translateX(-6px)}to{transform:translateX(6px)}}
 
-#placeName{position:absolute;left:0;right:0;bottom:560px;text-align:center;z-index:8;
+#placeName{position:absolute;left:0;right:0;bottom:820px;text-align:center;z-index:8;
   opacity:0;transition:opacity .5s}
 #placeName.on{opacity:1}
 #placeName .pn{font-family:Georgia,serif;font-size:62px;color:var(--bone);
@@ -792,6 +796,9 @@ function handle(e) {
       const list = e.places || [];
       const hold = e.hold || 2600;
 
+      // перебивка — чистый кадр: интерфейс подарков уходит, как в кино
+      $('#ladder').classList.add('hidden');
+      document.body.classList.add('montage');
       list.forEach((p, i) => {
         setTimeout(() => {
           setBackground(p.id, e.day);
@@ -805,6 +812,8 @@ function handle(e) {
       setTimeout(() => {
         label.classList.remove('on');
         shades.classList.remove('on');
+        document.body.classList.remove('montage');
+        $('#ladder').classList.remove('hidden');
       }, list.length * hold + 200);
       break;
     }

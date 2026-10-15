@@ -153,8 +153,11 @@ body.night #table{filter:brightness(.5) saturate(.5)}
 
 /* ── событие ── */
 #event{position:absolute;left:0;right:0;top:300px;background:var(--brass);color:var(--ink);
-  padding:20px 48px;transform:translateY(-170%);transition:transform .5s;z-index:7}
-#event.on{transform:translateY(0)}
+  padding:20px 48px;transform:translateY(-40px);opacity:0;visibility:hidden;
+  transition:transform .5s,opacity .5s,visibility 0s .5s;z-index:7}
+/* прятали сдвигом на 170% своей высоты — пустая плашка невысокая и оставалась
+   в кадре жёлтой полосой. Теперь прячется целиком */
+#event.on{transform:translateY(0);opacity:1;visibility:visible;transition:transform .5s,opacity .5s}
 #event h2{font-family:Georgia,serif;font-size:36px;letter-spacing:.1em;margin-bottom:4px}
 #event p{font-size:27px}
 
@@ -518,7 +521,9 @@ function focusOn(name) {
     if (!name) { el.style.transform = `scale(${el.dataset.base})`; continue; }
     if (n === name) {
       el.classList.add('speaking');
-      el.style.transform = '';          // масштаб берёт .speaking
+      // шаг вперёд от своего масштаба: задний ряд с 0.74 сразу до 1.16
+      // выпрыгивал на титр, а это уже не шаг, а телепорт
+      el.style.transform = `scale(${el.dataset.base * 1.16}) translateY(-16px)`;
     } else {
       el.classList.add('dim');
       el.style.transform = `scale(${el.dataset.base})`;

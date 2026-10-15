@@ -103,8 +103,20 @@ function recordParty(state, winner) {
   const survivors = state.players.filter((p) => p.alive && p.role === 'faithful').map((p) => p.name);
   for (const a of survivors) for (const b of survivors) if (a !== b) bump(h, a, b, 'survivedTogether');
 
+  // прошлая серия целиком — для «Ранее в Городе»
+  h.last = {
+    no: h.partyNo,
+    winner,
+    verdicts: state.verdicts || [],
+    epilogue: state.epilogue || '',
+  };
+
   save(h);
   return h.partyNo;
+}
+
+function lastParty() {
+  return load().last || null;
 }
 
 /**
@@ -166,4 +178,4 @@ function partyNumber() {
   return load().partyNo;
 }
 
-module.exports = { recordParty, historyFor, statsFor, rotationScore, partyNumber };
+module.exports = { recordParty, historyFor, statsFor, rotationScore, partyNumber, lastParty };

@@ -57,7 +57,7 @@ const { CAST, relationsFor } = require('./characters');
 const female = (p) => /^женск/.test(p?.voice || '');
 const g = (p, m, f) => (female(p) ? f : m);
 const byName = (name) => CAST.find((c) => c.name === name);
-const { recordParty, historyFor, statsFor, rotationScore, partyNumber } = require('./history');
+const { recordParty, historyFor, statsFor, rotationScore, partyNumber, lastParty } = require('./history');
 const { rollEvent, clearEvent } = require('./events');
 const { tierByKind } = require('./gifts');
 const { CITY, cityTonight, byId, placeEveryone, whoWasAt, nightKnowledge } = require('./city');
@@ -681,6 +681,7 @@ async function runGame() {
     dropped: [],       // что отклонили и почему
     players: roster.map((c, i) => ({ ...c, role: roles[i], alive: true })),
     city: cityTonight(roster, rand),   // какие места города открыты в эту партию
+    verdicts: [],      // решения зала по порядку — из них пишется финал
   };
 
   say(C.mag('\n╔══════════════════════════════════════╗'));
@@ -702,6 +703,16 @@ async function runGame() {
     players: state.players.map((p) => ({ name: p.name, slug: p.slug, bio: p.bio, voice: p.voice })),
   });
   await sleep(CONFIG.beat * 2.5);   // открывающие титры отыгрывают
+
+  // «Ранее в Городе»: чем кончилась прошлая серия и что решил тогда зал
+  const recap = narrate.previously(lastParty());
+  if (recap) {
+    broadcast({ type: 'chapter', title: 'РАНЕЕ', sub: `серия ${partyNumber()}` });
+    await sleep(CONFIG.beat);
+    broadcast({ type: 'narrate', text: recap });
+    say(C.dim(recap), `_${recap}_`);
+    await sleep(CONFIG.beat * 2.5);
+  }
 
   // Устанавливающая сцена: что это вообще за город. Без неё зритель первую
   // минуту видит только восемь голов и не понимает, где он находится.
@@ -846,6 +857,9 @@ async function runGame() {
     for (const b of banished) {
       b.alive = false;
       b.outBy = 'vote';
+      const bw = weights.find((x) => x.p === b);
+      state.verdicts.push({ round: state.round, name: b.name, role: b.role, female: female(b),
+        pct: bw ? Math.round((bw.w / total) * 100) : 0 });
       const wasTraitor = b.role === 'traitor';
       const roleWord = wasTraitor ? 'МАФИЕЙ' : b.role === 'sheriff' ? 'ШЕРИФОМ' : g(b, 'мирным', 'мирной');
       const was = g(b, 'Он был', 'Она была');
@@ -896,7 +910,10 @@ async function runGame() {
 
   broadcast({ type: 'chapter', title: winner === 'faithful' ? 'ГОРОД ВЫСТОЯЛ' : 'МАФИЯ ПОБЕДИЛА', sub: '' });
   await sleep(CONFIG.beat);
-  broadcast({ type: 'narrate', text: narrate.ending(winner) });
+  // финал называет решения зала, а не просто победителя
+  state.epilogue = narrate.epilogue(winner, state.players, state.verdicts);
+  say(`\n${state.epilogue}`, `\n_${state.epilogue}_`);
+  broadcast({ type: 'narrate', text: state.epilogue });
   await sleep(CONFIG.beat * 2);
 
   broadcast({

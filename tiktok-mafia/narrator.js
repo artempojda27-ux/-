@@ -69,6 +69,64 @@ function fill(tpl, vars) {
   return tpl.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '');
 }
 
+const ROMAN = ['', 'первый', 'второй', 'третий', 'четвёртый', 'пятый', 'шестой', 'седьмой'];
+const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+const fem = (p) => /^женск/.test(p?.voice || '');
+const list = (ps) => ps.map((p) => p.name).join(', ').replace(/, ([^,]*)$/, ' и $1');
+
+/**
+ * Эпилог. Не «город победил», а чем именно зал это сделал: финал называет
+ * решение зрителей, которое всё определило. Зритель должен уйти из эфира
+ * с мыслью «это мы выгнали шерифа во второй день», а не «ну, мафия выиграла».
+ *
+ * verdicts — изгнания голосованием по порядку: { round, name, role, pct }.
+ */
+function epilogue(winner, players, verdicts) {
+  const by = (n) => players.find((p) => p.name === n);
+  const innocents = verdicts.filter((v) => v.role !== 'traitor').map((v) => by(v.name));
+  const caught = verdicts.filter((v) => v.role === 'traitor').map((v) => by(v.name));
+  const sheriffOut = verdicts.find((v) => v.role === 'sheriff');
+  const traitorsLeft = players.filter((p) => p.role === 'traitor' && p.alive);
+  // решающее голосование — самое единодушное изгнание мафии или самая дорогая ошибка
+  const key = winner === 'faithful'
+    ? verdicts.filter((v) => v.role === 'traitor').sort((a, b) => b.pct - a.pct)[0]
+    : sheriffOut || verdicts[verdicts.length - 1];
+
+  const out = [];
+  if (winner === 'faithful') {
+    out.push(innocents.length
+      ? `Город выстоял. Но за воротами остались невиновные: ${list(innocents)}.`
+      : 'Город выстоял. Вы ни разу не ошиблись: ни одного невиновного за воротами.');
+    if (key) out.push(`${key.name}: ${ROMAN[key.round] || key.round} день, ${key.pct}% зала — и маска упала.`);
+  } else {
+    if (sheriffOut) {
+      // имена не склоняем: «выгнали Костя» — поломка, поэтому имя отдельно
+      out.push(`${cap(ROMAN[sheriffOut.round] || String(sheriffOut.round))} день. Зал выгоняет шерифа. ${fem(by(sheriffOut.name)) ? 'Это была' : 'Это был'} ${sheriffOut.name} — и с этого всё рухнуло.`);
+    } else if (caught.length) {
+      out.push(`${list(caught)} — ${caught.length > 1 ? 'их' : fem(caught[0]) ? 'её' : 'его'} вы вычислили. Но этого не хватило.`);
+    } else {
+      out.push('Вы ни разу не попали в мафию.');
+    }
+    if (traitorsLeft.length) {
+      out.push(`${list(traitorsLeft)} ${traitorsLeft.length > 1 ? 'сидели' : fem(traitorsLeft[0]) ? 'сидела' : 'сидел'} за общим столом до самого конца.`);
+    }
+  }
+  return out.join(' ');
+}
+
+/**
+ * «Ранее в Городе». Партии — серии одного сериала: зритель, зашедший
+ * сегодня, слышит, чем кончилось вчера, и понимает, что исход тут делают люди.
+ */
+function previously(last) {
+  if (!last) return null;
+  const v = (last.verdicts || [])[0];
+  const head = v
+    ? `Ранее в Городе. ${v.name} — первое решение зала. ${v.role === 'traitor' ? 'Мафия.' : v.role === 'sheriff' ? 'Шериф.' : v.female ? 'Невиновна.' : 'Невиновен.'}`
+    : 'Ранее в Городе.';
+  return `${head} ${last.epilogue || ''}`.trim();
+}
+
 const narrate = {
   nightOpen: (round) => pickLine(NIGHT_OPEN, round * 7 + 3),
   // род подставляем, иначе рассказчик выдаёт «Рита не вернулся домой»
@@ -79,6 +137,8 @@ const narrate = {
   vote: (round) => pickLine(VOTE, round),
   ending: (winner) => pickLine(ENDING[winner] || ENDING.traitor, Date.now() / 1000 | 0),
   clock: clockFor,
+  epilogue,
+  previously,
 };
 
 module.exports = { narrate };

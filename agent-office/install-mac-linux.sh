@@ -1,21 +1,23 @@
 #!/usr/bin/env bash
 # Установка «офиса ИИ-агентов» на Mac / Linux одной командой:
-#   curl -fsSL https://raw.githubusercontent.com/artempojda27-ux/-/main/office/install-mac-linux.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/artempojda27-ux/-/main/agent-office/install-mac-linux.sh | bash
 # С AI Town:
-#   curl -fsSL https://raw.githubusercontent.com/artempojda27-ux/-/main/office/install-mac-linux.sh | AI_TOWN=1 bash
+#   curl -fsSL https://raw.githubusercontent.com/artempojda27-ux/-/main/agent-office/install-mac-linux.sh | AI_TOWN=1 bash
 set -e
-DIR="$HOME/leads-office"
+DIR="$HOME/agent-office"
 ZIP="https://github.com/artempojda27-ux/-/archive/refs/heads/main.zip"
 
 echo "== 1/4 Скачиваю офис в $DIR =="
-if [ -d "$DIR/.claude/agents" ]; then
-  echo "Уже скачан, обновляю агентов"
-fi
 TMP="$(mktemp -d)"
 curl -fsSL "$ZIP" -o "$TMP/office.zip"
 unzip -q "$TMP/office.zip" -d "$TMP"
+SRC="$(echo "$TMP"/*-main/agent-office)"
+if [ -d "$DIR/data" ]; then
+  echo "Офис уже есть: обновляю агентов, твои данные в data/ не трогаю"
+  rm -rf "$SRC/data"
+fi
 mkdir -p "$DIR"
-cp -R "$TMP"/*-main/. "$DIR"/
+cp -R "$SRC"/. "$DIR"/
 rm -rf "$TMP"
 
 echo "== 2/4 Claude Code =="
@@ -48,4 +50,4 @@ echo "== 4/4 Открываю офис =="
 if [ -n "$CODE" ]; then "$CODE" "$DIR"; fi
 echo
 echo "Готово. В VS Code внизу открой вкладку Pixel Agents → + Agent."
-echo "В первый раз Claude попросит войти в аккаунт. Потом напиши: «секретарь, дай план на день»."
+echo "В первый раз Claude попросит войти в аккаунт. Потом напиши:  /hunt кофейни Краков 10"

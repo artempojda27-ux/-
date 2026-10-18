@@ -27,7 +27,8 @@ def packed(path, size, quality=None, fmt='PNG', alpha=False):
     else:
         # палитра вместо truecolor: файл втрое легче.
         # FASTOCTREE — единственный метод, который умеет сохранять прозрачность
-        im = im.quantize(colors=64, method=Image.FASTOCTREE) if alpha else im.quantize(colors=64)
+        # портреты идут во весь кадр на крупном плане: 64 цвета давали лесенку на коже
+        im = im.quantize(colors=256, method=Image.FASTOCTREE, dither=Image.Dither.FLOYDSTEINBERG) if alpha else im.quantize(colors=256)
         im.save(buf, 'PNG', optimize=True)
         mime = 'image/png'
     return f"data:{mime};base64," + base64.b64encode(buf.getvalue()).decode()
@@ -35,10 +36,10 @@ def packed(path, size, quality=None, fmt='PNG', alpha=False):
 
 images = {}
 for slug in DEMO:
-    for suffix in ('', '-talk', '-angry'):
+    for suffix in ('', '-talk', '-angry', '-blink'):
         p = f'assets/chars/{slug}{suffix}-cut.png'
         if os.path.exists(p):
-            images[slug + suffix + '-cut'] = packed(p, (300, 400), alpha=True)
+            images[slug + suffix + '-cut'] = packed(p, (420, 560), alpha=True)
 
 places = {}
 pdir = os.path.join(HERE, 'assets', 'places') if 'HERE' in dir() else 'assets/places'
@@ -47,6 +48,14 @@ for f in sorted(os.listdir(pdir)):
         places[f[:-len('-night.jpg')]] = packed(os.path.join(pdir, f), (420, 746), 58, 'JPEG')
     elif f.endswith('.jpg'):
         places[f[:-len('.jpg')] + '-day'] = packed(os.path.join(pdir, f), (420, 746), 58, 'JPEG')
+
+# карты глубины для камеры с параллаксом: маленькие, глубине детали не нужны
+depth = {}
+for f in sorted(os.listdir(pdir)):
+    if f.endswith('-night-depth.png'):
+        depth[f[:-len('-night-depth.png')]] = packed(os.path.join(pdir, f), (180, 320), 70, 'JPEG')
+    elif f.endswith('-depth.png'):
+        depth[f[:-len('-depth.png')] + '-day'] = packed(os.path.join(pdir, f), (180, 320), 70, 'JPEG')
 
 bg_day = packed('assets/bg-day.jpg', (540, 960), 62, 'JPEG')
 bg_night = packed('assets/bg-night.jpg', (540, 960), 62, 'JPEG')
@@ -58,7 +67,7 @@ s = s.replace("#room.day{background-image:url('assets/bg-day.jpg')}",
 s = s.replace("#room.night{background-image:url('assets/bg-night.jpg');",
               f"#room.night{{background-image:url('{bg_night}');")
 
-inject = "<script>\nwindow.FORCE_DEMO = true;\nwindow.EMBEDDED_PLACES = " + json.dumps(places, ensure_ascii=False) + ";\nwindow.EMBEDDED_IMAGES = {\n"
+inject = "<script>\nwindow.FORCE_DEMO = true;\nwindow.EMBEDDED_PLACES = " + json.dumps(places, ensure_ascii=False) + ";\nwindow.EMBEDDED_DEPTH = " + json.dumps(depth) + ";\nwindow.EMBEDDED_IMAGES = {\n"
 inject += ",\n".join(f'  "{k}": "{v}"' for k, v in images.items())
 inject += "\n};\n</script>\n"
 s = s.replace('<body>\n', '<body>\n' + inject, 1)

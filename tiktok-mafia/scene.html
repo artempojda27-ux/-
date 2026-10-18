@@ -48,6 +48,14 @@ body.night .bgl{filter:saturate(.85) brightness(.92)}
 @keyframes drift{from{transform:scale(1.06) translate(-14px,-8px)}
                  to{transform:scale(1.12) translate(14px,8px)}}
 
+
+/* камера с глубиной (WebGL): каждый пиксель места сдвигается по своей
+   глубине, передний план плывёт быстрее дальнего — плоская картинка
+   становится пространством. Нет карты глубины — канвас прозрачен,
+   работают обычные слои фона. */
+#depthcam{position:absolute;inset:0;width:100%;height:100%;opacity:0;transition:opacity 1.1s ease}
+#depthcam.on{opacity:1}
+body.night #depthcam{filter:saturate(.85) brightness(.92)}
 /* свет и грейд поверх комнаты: без этого фон и персонажи не склеиваются */
 #grade{position:absolute;inset:0;pointer-events:none;
   background:
@@ -325,6 +333,7 @@ body.rain #weather{background-image:repeating-linear-gradient(104deg,
 <div id="root">
   <div id="room" class="bgl"></div>
   <div id="room2" class="bgl"></div>
+  <canvas id="depthcam" width="540" height="960"></canvas>
   <div id="grade"></div>
   <div id="weather"></div>
 
@@ -457,6 +466,15 @@ function setBackground(id, day) {
   show.style.opacity = '1';
   hide.style.opacity = '0';
   bgFront = !bgFront;
+  // поверх — то же место с глубиной, если карта есть
+  DC.show(placeBg(id, day).slice(5, -2), placeDepth(id, day));
+}
+
+function placeDepth(id, day) {
+  const key = day ? id + '-day' : id;
+  const packed = window.EMBEDDED_DEPTH && window.EMBEDDED_DEPTH[key];
+  if (packed) return packed;
+  return `assets/places/${id}${day ? '' : '-night'}-depth.png`;
 }
 
 function placeBg(id, day) {
@@ -472,6 +490,72 @@ function setFace(container, name, state) {
   container.appendChild(faceEl(name, state));
 }
 
+
+
+/* ─────────────────────── камера с глубиной ─────────────────────── */
+const DC = (() => {
+  const cv = document.getElementById('depthcam');
+  const gl = cv && (cv.getContext('webgl', { premultipliedAlpha: false }) || cv.getContext('experimental-webgl'));
+  if (!gl) return { show() { return false; }, hide() {} };
+  const vs = `attribute vec2 p; varying vec2 uv; void main(){ uv = vec2(p.x*.5+.5, .5-p.y*.5); gl_Position = vec4(p,0.,1.); }`;
+  const fs = `precision mediump float; varying vec2 uv;
+    uniform sampler2D A, AD, B, BD; uniform float mixv, zoom; uniform vec2 off;
+    vec4 look(sampler2D img, sampler2D dep, vec2 q){
+      float d = texture2D(dep, q).r;
+      // ближнее (светлое) смещается сильнее: это и есть параллакс
+      return texture2D(img, q + off * (d - .35));
+    }
+    void main(){
+      vec2 q = (uv - .5) / zoom + .5;
+      gl_FragColor = mix(look(A, AD, q), look(B, BD, q), mixv);
+    }`;
+  const sh = (t, src) => { const o = gl.createShader(t); gl.shaderSource(o, src); gl.compileShader(o); return o; };
+  const pr = gl.createProgram();
+  gl.attachShader(pr, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(pr); gl.useProgram(pr);
+  const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(pr, 'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  const U = (n) => gl.getUniformLocation(pr, n);
+  const tex = () => { const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR); return t; };
+  // два слота: A и B. mixv плывёт к 0 (показан A) или к 1 (показан B)
+  const slots = [{ img: tex(), dep: tex() }, { img: tex(), dep: tex() }];
+  let front = 0, mixv = 0, live = false, token = 0;
+  const load = (src) => new Promise((ok, no) => { const im = new Image(); im.onload = () => ok(im); im.onerror = no; im.src = src; });
+  const put = (t, im) => { gl.bindTexture(gl.TEXTURE_2D, t); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, im); };
+  [[slots[0].img, 0, 'A'], [slots[0].dep, 1, 'AD'], [slots[1].img, 2, 'B'], [slots[1].dep, 3, 'BD']].forEach(([t, i, n]) => {
+    gl.activeTexture(gl.TEXTURE0 + i); gl.bindTexture(gl.TEXTURE_2D, t); gl.uniform1i(U(n), i); });
+  function frame(ts) {
+    const tt = ts / 1000;
+    mixv += (front - mixv) * 0.05;
+    // медленный проход камеры: дрейф по кругу и лёгкий зум, как с операторской тележки
+    gl.uniform2f(U('off'), Math.sin(tt * 0.11) * 0.022, Math.cos(tt * 0.07) * 0.012);
+    gl.uniform1f(U('zoom'), 1.08 + Math.sin(tt * 0.045) * 0.025);
+    gl.uniform1f(U('mixv'), mixv);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    if (live) requestAnimationFrame(frame);
+  }
+  return {
+    async show(imgSrc, depSrc) {
+      const my = ++token;
+      try {
+        const [im, dp] = await Promise.all([load(imgSrc), load(depSrc)]);
+        if (my !== token) return;
+        const next = 1 - front;
+        put(slots[next].img, im); put(slots[next].dep, dp);
+        if (!cv.classList.contains('on')) mixv = next;   // первый показ — без наплыва из пустоты
+        front = next;
+        cv.classList.add('on');
+        if (!live) { live = true; requestAnimationFrame(frame); }
+      } catch (_) {
+        if (my === token) this.hide();
+      }
+    },
+    hide() { token++; cv.classList.remove('on'); },
+  };
+})();
 
 /* ─────────────────────── режиссёр ───────────────────────
    Крупный план говорящего, склейка на реакцию, общий план. */
@@ -515,6 +599,33 @@ function shotFace(name, state) {
   const fig = document.getElementById(shotFront).querySelector('.sfig');
   fig.innerHTML = ''; fig.appendChild(faceEl(name, state));
 }
+/* Моргание. Живое лицо моргает раз в 3–6 секунд; без этого крупный план
+   через пару секунд читается как фотография. Кадр -blink есть не у всех —
+   проверяем заранее, иначе подмена на запасной кадр даёт мигание. */
+const hasState = {};
+function checkState(slug, state) {
+  const key = slug + state;
+  if (key in hasState) return hasState[key];
+  if (window.EMBEDDED_IMAGES) return (hasState[key] = !!window.EMBEDDED_IMAGES[`${slug}${state}-cut`]);
+  hasState[key] = false;
+  const im = new Image();
+  im.onload = () => { hasState[key] = true; };
+  im.src = `assets/chars/${slug}${state}-cut.png`;
+  return false;
+}
+let talking = null;
+(function blinkLoop() {
+  setTimeout(() => {
+    const name = shotOn;
+    if (name && talking !== name && checkState(slugs[name], '-blink')) {
+      const react = document.getElementById(shotFront).classList.contains('react');
+      shotFace(name, '-blink');
+      setTimeout(() => { if (shotOn === name && talking !== name) shotFace(name, react ? '-angry' : ''); }, 150);
+    }
+    blinkLoop();
+  }, 2600 + Math.random() * 3200);
+})();
+
 /* реакция: через секунду после того, как реплика договорена, короткий
    план того, на кого показали, со злым лицом */
 function reactionShot(name) {
@@ -529,6 +640,7 @@ function reactionShot(name) {
 let talkTimer = null;
 function startTalking(name) {
   stopTalking();
+  talking = name;
   let open = false;
   talkTimer = setInterval(() => {
     open = !open;
@@ -537,6 +649,7 @@ function startTalking(name) {
   }, 190);
 }
 function stopTalking(name) {
+  talking = null;
   if (talkTimer) clearInterval(talkTimer);
   talkTimer = null;
   if (name) { setFace(cards[name] && cards[name].querySelector('.figure'), name, ''); shotFace(name, ''); }

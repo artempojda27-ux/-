@@ -43,7 +43,7 @@ FIGURE_H = 0.94           # какую долю кадра занимает фи
 BACKDROP = (46, 20, 28)   # тот же тёмно-бордовый, что в сцене
 TOLERANCE = 42            # насколько цвет может отличаться и всё ещё считаться фоном
 
-STATES = ['', '-talk', '-angry']
+STATES = ['', '-talk', '-angry', '-blink']   # -blink — глаза закрыты, для моргания на крупном плане
 
 
 def load_slugs():
@@ -199,7 +199,7 @@ def main():
     if missing:
         print(f'\nне хватает {len(missing)}:')
         # состояния важнее: без спокойного кадра персонаж вообще не появится
-        base = [m for m in missing if not m.endswith(('-talk', '-angry'))]
+        base = [m for m in missing if not m.endswith(('-talk', '-angry', '-blink'))]
         rest = [m for m in missing if m not in base]
         if base:
             print('  обязательные: ' + ', '.join(base))

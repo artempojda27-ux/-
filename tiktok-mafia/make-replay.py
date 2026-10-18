@@ -63,6 +63,15 @@ for f in sorted(os.listdir(pdir)):
     elif f.endswith('.jpg'):
         places[f[:-len('.jpg')] + '-day'] = packed(os.path.join(pdir, f), (420, 746), 58, 'JPEG')
 
+# живые петли персонажей (если сделаны): WebM VP9 с альфой, base64 в файле
+videos = {}
+adir = os.path.join(HERE, 'assets', 'alive') if 'HERE' in dir() else 'assets/alive'
+if os.path.isdir(adir):
+    for f in sorted(os.listdir(adir)):
+        slug_kind = f[:-len('.webm')] if f.endswith('.webm') else None
+        if slug_kind and slug_kind.split('-')[0] in slugs:
+            videos[slug_kind] = 'data:video/webm;base64,' + base64.b64encode(open(os.path.join(adir, f), 'rb').read()).decode()
+
 # карты глубины для камеры с параллаксом: маленькие, глубине детали не нужны
 depth = {}
 for f in sorted(os.listdir(pdir)):
@@ -81,7 +90,7 @@ s = s.replace("#room.day{background-image:url('assets/bg-day.jpg')}",
 s = s.replace("#room.night{background-image:url('assets/bg-night.jpg');",
               f"#room.night{{background-image:url('{bg_night}');")
 
-inject = "<script>\nwindow.EMBEDDED_PLACES = " + json.dumps(places, ensure_ascii=False) + ";\nwindow.EMBEDDED_DEPTH = " + json.dumps(depth) + ";\nwindow.EMBEDDED_IMAGES = {\n"
+inject = "<script>\nwindow.EMBEDDED_PLACES = " + json.dumps(places, ensure_ascii=False) + ";\nwindow.EMBEDDED_DEPTH = " + json.dumps(depth) + ";\nwindow.EMBEDDED_VIDEOS = " + json.dumps(videos) + ";\nwindow.EMBEDDED_IMAGES = {\n"
 inject += ",\n".join(f'  "{k}": "{v}"' for k, v in images.items())
 inject += "\n};\nwindow.REPLAY = " + json.dumps(run, ensure_ascii=False) + ";\n</script>\n"
 s = s.replace('<body>\n', '<body>\n' + inject, 1)

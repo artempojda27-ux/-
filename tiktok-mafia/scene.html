@@ -146,7 +146,7 @@ body.montage #table{opacity:0}
   display:flex;align-items:flex-end;justify-content:center;
   transform:translateX(var(--off,0)) scale(1);transition:transform 12s cubic-bezier(.2,.6,.2,1)}
 .shot.on .sfig{transform:translateX(var(--off,0)) scale(1.06)}
-.shot .sfig img{height:100%;width:auto;max-width:none;display:block;
+.shot .sfig img,.shot .sfig video{height:100%;width:auto;max-width:none;display:block;
   filter:drop-shadow(0 30px 40px rgba(0,0,0,.75)) brightness(1.04);
   transform-origin:50% 90%;animation:breathe2 6.5s ease-in-out infinite, sway 11s ease-in-out infinite alternate}
 .shot .sfig .mono{width:600px;height:800px;border-radius:8px;background:var(--bone);color:var(--ink);
@@ -577,7 +577,10 @@ function closeUp(name, opts = {}) {
   el.style.setProperty('--lightdir', shotSide > 0 ? '260deg' : '100deg');
   const fig = el.querySelector('.sfig');
   fig.innerHTML = '';
-  fig.appendChild(faceEl(name, opts.state || ''));
+  const slug = slugs[name], kind = opts.talk ? 'talk' : 'idle';
+  // реакция — злое лицо, его даёт только статичный кадр; остальное — живое видео, если есть
+  if (opts.state !== '-angry' && probeVid(slug, kind)) fig.appendChild(videoEl(slug, kind));
+  else fig.appendChild(faceEl(name, opts.state || ''));
   // перезапуск наезда: убираем .on, даём кадру отрисоваться, включаем
   el.classList.remove('on');
   void el.offsetWidth;
@@ -593,10 +596,55 @@ function wideShot() {
   shotOn = null;
   document.body.classList.remove('cine');
 }
+/* ─── живые петли (LivePortrait) ───
+   assets/alive/<slug>-talk.webm и -idle.webm, WebM VP9 с прозрачностью.
+   Есть видео — на крупном плане живой человек; нет или браузер не умеет
+   прозрачное видео (Safari) — статичный портрет с морганием и лип-синком. */
+const ALPHA_VIDEO = !/^((?!chrome|android|crios|fxios).)*safari/i.test(navigator.userAgent);
+const hasVid = {};
+function vidSrc(slug, kind) {
+  const k = `${slug}-${kind}`;
+  if (window.EMBEDDED_VIDEOS) return window.EMBEDDED_VIDEOS[k] || null;
+  return `assets/alive/${k}.webm`;
+}
+function probeVid(slug, kind) {
+  const k = `${slug}-${kind}`;
+  if (k in hasVid) return hasVid[k];
+  if (!ALPHA_VIDEO || !slug) return (hasVid[k] = false);
+  const src = vidSrc(slug, kind);
+  if (!src) return (hasVid[k] = false);
+  hasVid[k] = false;
+  const v = document.createElement('video');
+  v.muted = true; v.preload = 'auto';
+  v.onloadeddata = () => { hasVid[k] = true; };
+  v.src = src;
+  return false;
+}
+function videoEl(slug, kind) {
+  const v = document.createElement('video');
+  v.muted = true; v.loop = true; v.playsInline = true; v.autoplay = true;
+  // старт с разного места: у соседних склеек один и тот же человек не повторяет движение
+  v.addEventListener('loadedmetadata', () => { v.currentTime = Math.random() * (v.duration || 0); }, { once: true });
+  v.src = vidSrc(slug, kind);
+  v.play().catch(() => {});
+  return v;
+}
+/* переключить живую петлю в текущем кадре: говорит ↔ слушает */
+function shotVideo(name, kind) {
+  if (shotOn !== name) return false;
+  const slug = slugs[name];
+  if (!probeVid(slug, kind)) return false;
+  const fig = document.getElementById(shotFront).querySelector('.sfig');
+  if (!fig.querySelector('video')) return false;
+  fig.innerHTML = ''; fig.appendChild(videoEl(slug, kind));
+  return true;
+}
+
 /* лицо в текущем крупном плане — для лип-синка и моргания */
 function shotFace(name, state) {
   if (shotOn !== name) return;
   const fig = document.getElementById(shotFront).querySelector('.sfig');
+  if (fig.querySelector('video')) return;     // живое видео моргает и говорит само
   fig.innerHTML = ''; fig.appendChild(faceEl(name, state));
 }
 /* Моргание. Живое лицо моргает раз в 3–6 секунд; без этого крупный план
@@ -758,6 +806,7 @@ function speak(text, name, hint, onend) {
 
 /* ─────────────────────── отрисовка ─────────────────────── */
 function drawRoster(players) {
+  for (const p of players) { probeVid(p.slug, 'talk'); probeVid(p.slug, 'idle'); }
   const cast = $('#cast');
   cast.innerHTML = '';
   for (const k in cards) delete cards[k];
@@ -957,7 +1006,7 @@ function handle(e) {
       $('#narr').classList.remove('on');
       if (e.slug) slugs[e.name] = e.slug;
       focusOn(e.name);
-      closeUp(e.name);
+      closeUp(e.name, { talk: true });
       $('#speaker').textContent = e.name;
       $('#line').textContent = e.text;
       $('#speech').classList.add('on');
@@ -968,6 +1017,7 @@ function handle(e) {
         const target = e.suspect || Object.keys(cards).find(n => n !== e.name && e.text.includes(n));
         speak(e.text, e.name, e.voice, () => {
           stopTalking(e.name);
+          shotVideo(e.name, 'idle');
           if (target) setTimeout(() => reactionShot(target), 250);
         });
       }
@@ -1012,7 +1062,7 @@ function handle(e) {
     case 'lastword':
       if (e.slug) slugs[e.name] = e.slug;
       focusOn(e.name);
-      closeUp(e.name);
+      closeUp(e.name, { talk: true });
       $('#speaker').textContent = `${e.name} · ${t('LASTWORD')}`;
       $('#line').textContent = e.text;
       $('#speech').classList.add('on');

@@ -10,21 +10,22 @@
 
 ## Быстрая установка
 
-Сначала скачай репозиторий на ноутбук (GitHub → Code → Download ZIP или `git clone`) и открой терминал в этой папке.
+Сначала поставь **VS Code**: https://code.visualstudio.com
 
-**Mac / Linux**
+Потом выполни одну команду. Она скачает офис в папку `leads-office` в домашней папке, поставит Claude Code и Pixel Agents и откроет офис в VS Code.
+
+**Mac / Linux** (программа «Терминал»)
 ```bash
-bash office/install-mac-linux.sh            # Claude Code + Pixel Agents
-bash office/install-mac-linux.sh --ai-town  # плюс AI Town
+curl -fsSL https://raw.githubusercontent.com/artempojda27-ux/-/main/office/install-mac-linux.sh | bash
 ```
+С AI Town: в конце команды вместо `bash` напиши `AI_TOWN=1 bash`.
 
-**Windows (PowerShell)**
+**Windows** (программа PowerShell)
 ```powershell
-powershell -ExecutionPolicy Bypass -File office\install-windows.ps1
-powershell -ExecutionPolicy Bypass -File office\install-windows.ps1 -AiTown
+irm https://raw.githubusercontent.com/artempojda27-ux/-/main/office/install-windows.ps1 | iex
 ```
+С AI Town: сначала выполни `$env:AI_TOWN=1`, потом команду выше.
 
-Перед запуском поставь **VS Code**: https://code.visualstudio.com
 Для AI Town ещё нужны **Node.js** (nodejs.org), **git** и **Ollama** (ollama.com).
 
 ---

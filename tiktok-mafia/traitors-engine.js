@@ -633,7 +633,9 @@ ${publicLog(state)}
     if (!out || !out.line) continue;
 
     state.log.push(`${sp.name}: ${out.line}`);
-    broadcast({ type: 'line', name: sp.name, slug: sp.slug, text: out.line, voice: sp.voice });
+    // suspect нужен сцене для склейки на реакцию того, на кого показали
+    const suspect = out.suspect && alive.some((p) => p.name === out.suspect && p.name !== sp.name) ? out.suspect : null;
+    broadcast({ type: 'line', name: sp.name, slug: sp.slug, text: out.line, voice: sp.voice, suspect });
     say(`  ${C.bold(sp.name)}: ${out.line}`, `**${sp.name}:** ${out.line}`);
 
     if (out.suspect && alive.some((p) => p.name === out.suspect && p.name !== sp.name)) {

@@ -119,6 +119,45 @@ header{position:relative;display:flex;align-items:baseline;justify-content:space
 body.night #table{filter:brightness(.5) saturate(.5)}
 body.montage #table{opacity:0}
 
+
+/* ── кино: крупные планы и склейки ──
+   Доска из восьми вырезок читается как интерфейс, а не как фильм. Здесь
+   режиссёр: говорящий на крупном плане во весь кадр, за ним то же место,
+   но размытое (малая глубина резкости), камера медленно наезжает. После
+   острой реплики — склейка на реакцию того, на кого показали. Общий план
+   с доской остаётся для начала дня и голосования. Два слоя — чтобы
+   склейка шла коротким наплывом, а не миганием. */
+#shots{position:absolute;inset:0;pointer-events:none}
+.shot{position:absolute;inset:0;opacity:0;transition:opacity .28s ease;overflow:hidden}
+.shot.on{opacity:1}
+.shot .sbg{position:absolute;inset:-8%;background-size:cover;background-position:center;
+  filter:blur(9px) brightness(.62) saturate(.9);transform:scale(1.18);
+  transition:transform 14s linear}
+.shot.on .sbg{transform:scale(1.3)}
+.shot .sfig{position:absolute;left:50%;bottom:420px;width:980px;height:1310px;margin-left:-490px;
+  display:flex;align-items:flex-end;justify-content:center;
+  transform:translateX(var(--off,0)) scale(1);transition:transform 12s cubic-bezier(.2,.6,.2,1)}
+.shot.on .sfig{transform:translateX(var(--off,0)) scale(1.06)}
+.shot .sfig img{height:100%;width:auto;max-width:none;display:block;
+  filter:drop-shadow(0 30px 40px rgba(0,0,0,.75)) brightness(1.04);
+  transform-origin:50% 90%;animation:breathe2 6.5s ease-in-out infinite, sway 11s ease-in-out infinite alternate}
+.shot .sfig .mono{width:600px;height:800px;border-radius:8px;background:var(--bone);color:var(--ink);
+  display:grid;place-items:center;font-family:Georgia,serif;font-size:300px}
+@keyframes breathe2{0%,100%{scale:1}50%{scale:1.012}}
+/* ключевой свет со стороны камеры и тень с другой: лицо объёмное, а не наклейка */
+.shot .slight{position:absolute;inset:0;mix-blend-mode:soft-light;
+  background:linear-gradient(var(--lightdir,100deg),rgba(255,214,150,.55),rgba(0,0,0,.0) 45%,rgba(0,0,0,.55))}
+.shot .sgrade{position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(8,6,6,.55),rgba(8,6,6,0) 22%,rgba(8,6,6,0) 55%,rgba(8,6,6,.92) 74%)}
+body.night .shot .sbg{filter:blur(9px) brightness(.55) saturate(.7) hue-rotate(-8deg)}
+body.night .shot .slight{background:linear-gradient(var(--lightdir,100deg),rgba(150,190,255,.45),rgba(0,0,0,0) 45%,rgba(0,0,0,.6))}
+/* реакция — короче и ближе: только лицо, без слов */
+.shot.react .sfig{bottom:200px;width:1200px;height:1600px;margin-left:-600px}
+/* в кино-режиме доска и стол уходят, субтитры остаются */
+/* !important: сцена сама ставит #cast инлайн-прозрачность в ночных сценах */
+body.cine #cast, body.cine #table{opacity:0 !important}
+#cast,#table{transition:opacity .35s ease}
+
 /* ── субтитр ── */
 #speech{position:absolute;left:70px;right:70px;top:1060px;min-height:180px;
   text-align:center;opacity:0;transition:opacity .3s}
@@ -290,6 +329,10 @@ body.rain #weather{background-image:repeating-linear-gradient(104deg,
   <div id="weather"></div>
 
   <div id="world">
+    <div id="shots">
+      <div class="shot" id="shotA"><div class="sbg"></div><div class="sfig"></div><div class="slight"></div><div class="sgrade"></div></div>
+      <div class="shot" id="shotB"><div class="sbg"></div><div class="sfig"></div><div class="slight"></div><div class="sgrade"></div></div>
+    </div>
     <div id="stage">
       <header>
         <div id="title" class="serif"><span id="titleText">ГОРОД ЗАСЫПАЕТ</span> <em id="partyno"></em></div>
@@ -429,6 +472,57 @@ function setFace(container, name, state) {
   container.appendChild(faceEl(name, state));
 }
 
+
+/* ─────────────────────── режиссёр ───────────────────────
+   Крупный план говорящего, склейка на реакцию, общий план. */
+let shotFront = 'shotA', shotOn = null, shotSide = 1, reactTimer = null;
+function currentBg() {
+  const a = $('#room'), b = $('#room2');
+  return (parseFloat(getComputedStyle(b).opacity) > 0.5 ? b : a).style.backgroundImage || '';
+}
+function closeUp(name, opts = {}) {
+  clearTimeout(reactTimer);
+  const next = shotFront === 'shotA' ? 'shotB' : 'shotA';
+  const el = document.getElementById(next), prev = document.getElementById(shotFront);
+  el.className = 'shot' + (opts.react ? ' react' : '');
+  el.querySelector('.sbg').style.backgroundImage = currentBg();
+  // восьмёрка по очереди слева и справа: читается как восьмёрка в монтаже
+  // диалога, а не как один и тот же кадр с разными лицами
+  if (!opts.react) shotSide = -shotSide;
+  el.style.setProperty('--off', opts.react ? '0px' : `${shotSide * 110}px`);
+  el.style.setProperty('--lightdir', shotSide > 0 ? '260deg' : '100deg');
+  const fig = el.querySelector('.sfig');
+  fig.innerHTML = '';
+  fig.appendChild(faceEl(name, opts.state || ''));
+  // перезапуск наезда: убираем .on, даём кадру отрисоваться, включаем
+  el.classList.remove('on');
+  void el.offsetWidth;
+  el.classList.add('on');
+  prev.classList.remove('on');
+  shotFront = next; shotOn = name;
+  document.body.classList.add('cine');
+  cameraWide();
+}
+function wideShot() {
+  clearTimeout(reactTimer);
+  $('#shotA').classList.remove('on'); $('#shotB').classList.remove('on');
+  shotOn = null;
+  document.body.classList.remove('cine');
+}
+/* лицо в текущем крупном плане — для лип-синка и моргания */
+function shotFace(name, state) {
+  if (shotOn !== name) return;
+  const fig = document.getElementById(shotFront).querySelector('.sfig');
+  fig.innerHTML = ''; fig.appendChild(faceEl(name, state));
+}
+/* реакция: через секунду после того, как реплика договорена, короткий
+   план того, на кого показали, со злым лицом */
+function reactionShot(name) {
+  if (!cards[name]) return;
+  closeUp(name, { react: true, state: '-angry' });
+  reactTimer = setTimeout(() => { if (shotOn === name) wideShot(); }, 1700);
+}
+
 /* примитивный лип-синк: кадры «говорит» и «спокоен» чередуются, пока
    звучит реплика. Дешевле любой генерации видео и на вертикальном экране
    читается как живое лицо */
@@ -439,12 +533,13 @@ function startTalking(name) {
   talkTimer = setInterval(() => {
     open = !open;
     setFace(cards[name] && cards[name].querySelector('.figure'), name, open ? '-talk' : '');
+    shotFace(name, open ? '-talk' : '');
   }, 190);
 }
 function stopTalking(name) {
   if (talkTimer) clearInterval(talkTimer);
   talkTimer = null;
-  if (name) setFace(cards[name] && cards[name].querySelector('.figure'), name, '');
+  if (name) { setFace(cards[name] && cards[name].querySelector('.figure'), name, ''); shotFace(name, ''); }
 }
 
 /* камера: наезд к говорящему. Origin переносим на его место в кадре,
@@ -678,6 +773,7 @@ function handle(e) {
     }
 
     case 'chapter': {
+      wideShot();
       const c = $('#card');
       c.className = 'on';
       c.querySelector('.ct').textContent = e.title;
@@ -708,6 +804,7 @@ function handle(e) {
       break;
 
     case 'phase': {
+      wideShot();
       const night = e.phase === 'night';
       document.body.classList.toggle('night', night);
       document.body.classList.toggle('rain', !!e.rain);
@@ -747,12 +844,20 @@ function handle(e) {
       $('#narr').classList.remove('on');
       if (e.slug) slugs[e.name] = e.slug;
       focusOn(e.name);
+      closeUp(e.name);
       $('#speaker').textContent = e.name;
       $('#line').textContent = e.text;
       $('#speech').classList.add('on');
       reactTo(e.text, e.name);
       startTalking(e.name);
-      speak(e.text, e.name, e.voice, () => stopTalking(e.name));
+      {
+        // на кого показали: из движка, а в старых записях — первое имя в тексте
+        const target = e.suspect || Object.keys(cards).find(n => n !== e.name && e.text.includes(n));
+        speak(e.text, e.name, e.voice, () => {
+          stopTalking(e.name);
+          if (target) setTimeout(() => reactionShot(target), 250);
+        });
+      }
       break;
 
     case 'vote_open':
@@ -761,6 +866,7 @@ function handle(e) {
         <span style="font-size:23px;opacity:.85">${t('callHint')}</span>`;
       $('#vote').classList.add('on');
       $('#clock').textContent = e.seconds;
+      wideShot();
       unfocus();
       Object.values(cards).forEach(c => {
         c.querySelector('.bar').style.width = '0';
@@ -793,6 +899,7 @@ function handle(e) {
     case 'lastword':
       if (e.slug) slugs[e.name] = e.slug;
       focusOn(e.name);
+      closeUp(e.name);
       $('#speaker').textContent = `${e.name} · ${t('LASTWORD')}`;
       $('#line').textContent = e.text;
       $('#speech').classList.add('on');
@@ -801,6 +908,7 @@ function handle(e) {
       break;
 
     case 'vote_restart':
+      wideShot();
       $('#call').innerHTML = `${t('revote')}<br>
         <span style="font-size:23px;opacity:.85">${t('revoteHint')}</span>`;
       $('#clock').textContent = e.seconds;
@@ -817,6 +925,7 @@ function handle(e) {
       break;
 
     case 'montage': {
+      wideShot();
       // Проход по городу. Персонажи уходят, остаётся место — но не пустое:
       // в нём шевелятся силуэты. Кто именно, зритель знать не должен.
       $('#curtain').classList.remove('on');
@@ -856,6 +965,7 @@ function handle(e) {
     }
 
     case 'nightplace': {
+      wideShot();
       // место преступления во весь кадр: единственный раз, когда локация
       // не перебивка, а сцена
       if (e.whereId) {

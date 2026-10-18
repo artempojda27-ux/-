@@ -127,18 +127,103 @@ function previously(last) {
   return `${head} ${last.epilogue || ''}`.trim();
 }
 
+// ───────────────────────── английский эфир ─────────────────────────
+// Не перевод, а та же интонация на английском: коротко, сухо, как
+// закадровый голос в нуаре. Имена всегда отдельно, без склонений.
+
+const EN = {
+  NIGHT_OPEN: [
+    'The city sleeps. The streets go quiet, and everyone heads where no one is waiting for them.',
+    'The city sleeps. One by one the windows go dark, and someone will not wake up.',
+    'The city sleeps. Eight people walk into the dark, and two of them know exactly where they are going.',
+  ],
+  MORNING: [
+    '{name}. Last night the city lost one of its own.',
+    'Morning. {name} never made it home.',
+    'Dawn. Someone who sat at this table last night is gone.',
+  ],
+  PLACE: [
+    'This is where it happened — {where}. Someone was very close last night.',
+    '{where}. This is where it ended.',
+    'It all happened here — {where}. And someone is keeping quiet about it.',
+  ],
+  QUIET: [
+    'A quiet night. No one was hurt — and no one understands why.',
+    'Morning. Everyone is alive. Somehow that is scarier.',
+  ],
+  VOTE: [
+    'The city decides. Type a name.',
+    'Your call, city. Who walks out of the gates tonight?',
+  ],
+};
+const ORD = ['', 'first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh'];
+const listEn = (ps) => ps.map((p) => p.name).join(', ').replace(/, ([^,]*)$/, ' and $1');
+const pron = (p, he, she) => (fem(p) ? she : he);
+
+function epilogueEn(winner, players, verdicts) {
+  const by = (n) => players.find((p) => p.name === n);
+  const innocents = verdicts.filter((v) => v.role !== 'traitor').map((v) => by(v.name));
+  const caught = verdicts.filter((v) => v.role === 'traitor').map((v) => by(v.name));
+  const sheriffOut = verdicts.find((v) => v.role === 'sheriff');
+  const traitorsLeft = players.filter((p) => p.role === 'traitor' && p.alive);
+  const key = winner === 'faithful'
+    ? verdicts.filter((v) => v.role === 'traitor').sort((a, b) => b.pct - a.pct)[0]
+    : sheriffOut || verdicts[verdicts.length - 1];
+
+  const out = [];
+  if (winner === 'faithful') {
+    out.push(innocents.length
+      ? `The city survived. But innocent people were left outside the gates: ${listEn(innocents)}.`
+      : 'The city survived. You never got it wrong — not one innocent sent away.');
+    if (key) out.push(`${key.name}: the ${ORD[key.round] || key.round} day, ${key.pct}% of you — and the mask came off.`);
+  } else {
+    if (sheriffOut) {
+      out.push(`Day ${sheriffOut.round}. You voted out the sheriff. It was ${sheriffOut.name} — and that is where it all fell apart.`);
+    } else if (caught.length) {
+      out.push(`You caught ${listEn(caught)}. It was not enough.`);
+    } else {
+      out.push('You never once found the mafia.');
+    }
+    if (traitorsLeft.length) {
+      out.push(`${listEn(traitorsLeft)} sat at the same table with you until the very end.`);
+    }
+  }
+  return out.join(' ');
+}
+
+function previouslyEn(last) {
+  if (!last) return null;
+  const v = (last.verdicts || [])[0];
+  const head = v
+    ? `Previously in the City. ${v.name} — the first verdict. ${v.role === 'traitor' ? 'Mafia.' : v.role === 'sheriff' ? 'The sheriff.' : 'Innocent.'}`
+    : 'Previously in the City.';
+  return `${head} ${last.epilogue || ''}`.trim();
+}
+
+/** 22:40 → 10:40 PM: американскому зрителю 24-часовые часы читаются как армейские */
+function clockEn(round) {
+  const [h, m] = clockFor(round).split(':').map(Number);
+  return `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
+}
+
+const { LANG } = require('./i18n');
+const L = LANG === 'en'
+  ? EN
+  : { NIGHT_OPEN, MORNING, PLACE, QUIET, VOTE };
+
 const narrate = {
-  nightOpen: (round) => pickLine(NIGHT_OPEN, round * 7 + 3),
+  nightOpen: (round) => pickLine(L.NIGHT_OPEN, round * 7 + 3),
   // род подставляем, иначе рассказчик выдаёт «Рита не вернулся домой»
   morning: (round, name, female) =>
-    fill(pickLine(MORNING, round * 5 + 1), { name, verned: female ? 'вернулась' : 'вернулся' }),
-  place: (round, where) => fill(pickLine(PLACE, round * 11 + 2), { where }),
-  quiet: (round) => pickLine(QUIET, round),
-  vote: (round) => pickLine(VOTE, round),
+    fill(pickLine(L.MORNING, round * 5 + 1), { name, verned: female ? 'вернулась' : 'вернулся' }),
+  // место может открыть фразу: «the pier. This is…» — заглавная нужна в обоих языках
+  place: (round, where) => cap(fill(pickLine(L.PLACE, round * 11 + 2), { where })),
+  quiet: (round) => pickLine(L.QUIET, round),
+  vote: (round) => pickLine(L.VOTE, round),
   ending: (winner) => pickLine(ENDING[winner] || ENDING.traitor, Date.now() / 1000 | 0),
-  clock: clockFor,
-  epilogue,
-  previously,
+  clock: LANG === 'en' ? clockEn : clockFor,
+  epilogue: LANG === 'en' ? epilogueEn : epilogue,
+  previously: LANG === 'en' ? previouslyEn : previously,
 };
 
 module.exports = { narrate };

@@ -62,6 +62,7 @@ const { rollEvent, clearEvent } = require('./events');
 const { tierByKind } = require('./gifts');
 const { CITY, cityTonight, byId, placeEveryone, whoWasAt, nightKnowledge } = require('./city');
 const { narrate } = require('./narrator');
+const { LANG, tr } = require('./i18n');
 
 const RULES = `Игра «Город засыпает». В городе восемь человек. Двое из них — МАФИЯ, один — ШЕРИФ, остальные — мирные жители.
 Ночью город засыпает: все расходятся по местам, а мафия убирает одного человека. Шериф этой же ночью тайно проверяет одного жителя и узнаёт, мафия он или нет.
@@ -208,7 +209,22 @@ function mockResponse(user) {
   }
   const names = user.match(/В ИГРЕ: (.+)/)?.[1].split(', ') || ['Лиза'];
   return JSON.stringify({
-    line: pick([
+    line: LANG === 'en' ? pick([
+      "I don't like how quiet you've been all round.",
+      'Yesterday you defended the one we kicked out. Explain that.',
+      'Are you serious? I was asleep all night.',
+      'Facts, people. Not feelings.',
+      'You were alone last night. Nobody can vouch for you. Nobody.',
+      "Funny how you always talk first and say nothing.",
+      "I saw who was by the warehouse. I'm not saying yet.",
+      "Don't look at me like that. I was at the bar, ask anyone.",
+      "Every time someone gets close, you change the subject.",
+      "If I were mafia, would I really be this loud? Think.",
+      "That alibi is too clean. Real nights are messy.",
+      "Okay, I'll say it. I don't trust you. Never did.",
+      "We kicked out an innocent yesterday. Let's not do it twice.",
+      "You're defending them a little too hard, aren't you?",
+    ]) : pick([
       'Мне не нравится, как он молчит весь раунд.',
       'Вчера ты защищал того, кого выгнали. Объяснись.',
       'Да вы серьёзно? Я всю ночь спала.',
@@ -282,7 +298,9 @@ ${roleBlock}
 
 Жёстко:
 - максимум ${player.maxWords} слов
-- живой разговорный русский, как в реалити-шоу, а не как в книге
+- ${LANG === 'en'
+    ? 'ОТВЕЧАЙ ТОЛЬКО ПО-АНГЛИЙСКИ: живой разговорный американский английский, как в реалити-шоу, а не как в книге. Имена пиши как есть.'
+    : 'живой разговорный русский, как в реалити-шоу, а не как в книге'}
 - реагируй на конкретную реплику, которая прозвучала прямо перед твоей
 - не пересказывай правила, не описывай свои действия, только прямая речь
 - не повторяй мысль, которую уже высказал кто-то до тебя — возражай или добавляй новое
@@ -411,11 +429,12 @@ async function drainActions(state) {
       case 'evidence': {
         // улику придумывает модель — так она ложится в текущий разговор,
         // а не выглядит вставкой из другого эфира
-        let text = `Кто-то видел, как ${target.name} ночью выходил из комнаты.`;
+        let text = tr(`Кто-то видел, как ${target.name} ночью ${female(target) ? 'выходила' : 'выходил'} из комнаты.`,
+          `Someone saw ${target.name} sneaking out last night.`);
         try {
           const raw = await callLLM(
             `Ты анонимный голос в доме. Придумай короткую правдоподобную улику против участника.
-Опирайся на то, что уже обсуждали. Максимум 20 слов, разговорный русский.
+Опирайся на то, что уже обсуждали. Максимум 20 слов, ${tr('разговорный русский', 'разговорный АНГЛИЙСКИЙ — пиши только по-английски')}.
 ФОРМАТ — только JSON: {"line": "текст улики"}`,
             `УЛИКА ПРОТИВ: ${target.name}\n\nЧТО ОБСУЖДАЛИ:\n${publicLog(state)}`,
             120
@@ -693,12 +712,14 @@ async function runGame() {
 
   broadcast({
     type: 'titles',
+    lang: LANG,          // сцена переключает надписи и голоса под язык эфира
     no: partyNumber() + 1,
     cast: state.players.map((p) => ({ name: p.name, slug: p.slug, bio: p.bio })),
   });
 
   broadcast({
     type: 'party',
+    lang: LANG,          // сцена переключает надписи и голоса под язык эфира
     no: partyNumber() + 1,
     players: state.players.map((p) => ({ name: p.name, slug: p.slug, bio: p.bio, voice: p.voice })),
   });
@@ -707,7 +728,7 @@ async function runGame() {
   // «Ранее в Городе»: чем кончилась прошлая серия и что решил тогда зал
   const recap = narrate.previously(lastParty());
   if (recap) {
-    broadcast({ type: 'chapter', title: 'РАНЕЕ', sub: `серия ${partyNumber()}` });
+    broadcast({ type: 'chapter', title: tr('РАНЕЕ', 'PREVIOUSLY'), sub: tr(`серия ${partyNumber()}`, `episode ${partyNumber()}`) });
     await sleep(CONFIG.beat);
     broadcast({ type: 'narrate', text: recap });
     say(C.dim(recap), `_${recap}_`);
@@ -757,11 +778,11 @@ async function runGame() {
       await drainActions(state);   // щит должен успеть до выбора жертвы
       // Ночь — отдельная сцена, а не мгновение: карточке главы и закадровому
       // голосу надо дать отзвучать, иначе всё слипается в одну секунду.
-      broadcast({ type: 'chapter', title: `НОЧЬ ${roman(state.round)}`, sub: narrate.clock(state.round) });
+      broadcast({ type: 'chapter', title: `${tr('НОЧЬ', 'NIGHT')} ${roman(state.round)}`, sub: narrate.clock(state.round) });
       await sleep(CONFIG.beat);
       broadcast({
         type: 'phase', phase: 'night', round: state.round,
-        title: 'ГОРОД ЗАСЫПАЕТ',
+        title: tr('ГОРОД ЗАСЫПАЕТ', 'THE CITY SLEEPS'),
         rain: state.round % 2 === 0,   // погода меняется от ночи к ночи
       });
       broadcast({ type: 'narrate', text: narrate.nightOpen(state.round) });
@@ -791,7 +812,7 @@ async function runGame() {
           type: 'out', name: night.victim.name, role: night.victim.role,
           by: 'night', where: night.where,
         });
-        broadcast({ type: 'chapter', title: 'УТРО', sub: '' });
+        broadcast({ type: 'chapter', title: tr('УТРО', 'MORNING'), sub: '' });
         await sleep(CONFIG.beat);
         broadcast({
           type: 'narrate',
@@ -811,7 +832,7 @@ async function runGame() {
           say(C.dim(`  там же были: ${night.witnesses.join(', ')}`), null);
         }
       } else if (state.skipNight) {
-        broadcast({ type: 'chapter', title: 'УТРО', sub: '' });
+        broadcast({ type: 'chapter', title: tr('УТРО', 'MORNING'), sub: '' });
         await sleep(CONFIG.beat);
         broadcast({ type: 'narrate', text: narrate.quiet(state.round) });
         await sleep(CONFIG.beat * 1.5);
@@ -823,7 +844,7 @@ async function runGame() {
 
     // ── ОБСУЖДЕНИЕ ──
     if (state.round > 1) {
-      broadcast({ type: 'chapter', title: `ДЕНЬ ${roman(state.round)}`, sub: '' });
+      broadcast({ type: 'chapter', title: `${tr('ДЕНЬ', 'DAY')} ${roman(state.round)}`, sub: '' });
       await sleep(CONFIG.beat);
     }
     broadcast({ type: 'phase', phase: 'day', round: state.round });
@@ -908,7 +929,7 @@ async function runGame() {
     rounds: state.round,
   });
 
-  broadcast({ type: 'chapter', title: winner === 'faithful' ? 'ГОРОД ВЫСТОЯЛ' : 'МАФИЯ ПОБЕДИЛА', sub: '' });
+  broadcast({ type: 'chapter', title: winner === 'faithful' ? tr('ГОРОД ВЫСТОЯЛ', 'THE CITY SURVIVES') : tr('МАФИЯ ПОБЕДИЛА', 'THE MAFIA WINS'), sub: '' });
   await sleep(CONFIG.beat);
   // финал называет решения зала, а не просто победителя
   state.epilogue = narrate.epilogue(winner, state.players, state.verdicts);

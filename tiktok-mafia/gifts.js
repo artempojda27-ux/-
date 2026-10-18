@@ -21,51 +21,53 @@
  * не отнимает: они просто голосуют заново, уже послушав его.
  */
 
+const { tr } = require('./i18n');
+
 const LADDER = [
   {
     gift: 'Rose', coins: 1,
     kind: 'vote',
-    label: 'голос с весом',
-    hint: 'усиливает твой голос',
+    label: tr('голос с весом', 'weighted vote'),
+    hint: tr('усиливает твой голос', 'your vote counts more'),
   },
   {
     gift: 'Doughnut', coins: 30,
     kind: 'speak',
-    label: 'дать слово',
+    label: tr('дать слово', 'make them talk'),
     perParty: 6,
     cooldownMs: 40000,
-    hint: 'заставит оправдаться вне очереди',
+    hint: tr('заставит оправдаться вне очереди', 'they must explain themselves now'),
   },
   {
     gift: 'Confetti', coins: 100,
     kind: 'evidence',
-    label: 'подкинуть улику',
+    label: tr('подкинуть улику', 'plant evidence'),
     perParty: 3,
     cooldownMs: 90000,
-    hint: 'против него появится компромат',
+    hint: tr('против него появится компромат', 'dirt surfaces against them'),
   },
   {
     gift: 'Swan', coins: 699,
     kind: 'shield',
-    label: 'щит',
+    label: tr('щит', 'shield'),
     perParty: 2,
-    hint: 'спасёт его от ночи',
+    hint: tr('спасёт его от ночи', 'protects them tonight'),
   },
   {
     gift: 'Galaxy', coins: 1000,
     kind: 'lastword',
-    label: 'последнее слово',
+    label: tr('последнее слово', 'last words'),
     perParty: 1,
-    hint: 'он оправдается, и голосуем заново',
+    hint: tr('он оправдается, и голосуем заново', 'they plead, then we vote again'),
   },
   {
     gift: 'Airplane', coins: 6000,
     kind: 'inspect',
-    label: 'проверка',
+    label: tr('проверка', 'reveal role'),
     perParty: 1,
     minAlive: 6,   // поздняя проверка почти решает партию
     maxRound: 2,   // поэтому только ранним раундом
-    hint: 'вскроет его роль при всех',
+    hint: tr('вскроет его роль при всех', 'exposes their role to everyone'),
   },
 ];
 

@@ -148,8 +148,11 @@ body.montage #table{opacity:0}
 /* ── что купили ── */
 #toast{position:absolute;left:48px;right:48px;top:1180px;background:var(--brass);
   color:var(--ink);border-radius:4px;padding:14px 22px;display:flex;gap:14px;
-  align-items:baseline;transform:translateY(200%);transition:transform .45s;z-index:8}
-#toast.on{transform:translateY(0)}
+  align-items:baseline;transform:translateY(40px);opacity:0;visibility:hidden;
+  transition:transform .45s,opacity .45s,visibility 0s .45s;z-index:8}
+/* пустое уведомление невысокое: сдвиг на 200% своей высоты оставлял его
+   жёлтой полосой над голосованием. Прячем целиком, как плашку события */
+#toast.on{transform:translateY(0);opacity:1;visibility:visible;transition:transform .45s,opacity .45s}
 /* в перебивке по городу подарок не перекрывает кадр: всплывёт после */
 body.montage #toast{opacity:0}
 #toast .who2{font-size:27px;font-weight:600}
@@ -185,6 +188,8 @@ body.montage #toast{opacity:0}
 #placeName{position:absolute;left:0;right:0;bottom:820px;text-align:center;z-index:8;
   opacity:0;transition:opacity .5s}
 #placeName.on{opacity:1}
+/* «the pier» на карточке — с заглавной */
+#placeName .pn::first-letter,#place .loc::first-letter{text-transform:uppercase}
 #placeName .pn{font-family:Georgia,serif;font-size:62px;color:var(--bone);
   text-shadow:0 4px 24px rgba(0,0,0,.9)}
 #placeName .pc{font-family:Georgia,serif;font-size:32px;color:var(--brass);
@@ -287,7 +292,7 @@ body.rain #weather{background-image:repeating-linear-gradient(104deg,
   <div id="world">
     <div id="stage">
       <header>
-        <div id="title" class="serif">ГОРОД ЗАСЫПАЕТ <em id="partyno"></em></div>
+        <div id="title" class="serif"><span id="titleText">ГОРОД ЗАСЫПАЕТ</span> <em id="partyno"></em></div>
         <div id="phase">ждём начала</div>
       </header>
 
@@ -456,13 +461,67 @@ function cameraWide() {
   $('#world').style.transform = 'scale(1)';
 }
 
+/* ─────────────────────── язык эфира ───────────────────────
+   Берётся из адреса (?lang=en — так его задаёшь в OBS) или из события
+   party, которое шлёт сервер, запущенный с STREAM_LANG=en. */
+let LANG = new URLSearchParams(location.search).get('lang') === 'en' ? 'en' : 'ru';
+const T = {
+  ru: {
+    title: 'ГОРОД ЗАСЫПАЕТ', caseNo: 'ДЕЛО № ', sayTitles: 'Город засыпает. Дело номер ',
+    allIn: 'все в сборе', night: 'ночь', day: 'день', waiting: 'ждём начала',
+    curtainSub: 'все расходятся по местам', sayNight: 'Город засыпает.',
+    call: 'Кто предатель? <b>Напиши имя в чат</b>', callHint: 'подарок после имени — особое действие',
+    lastword: 'последнее слово', LASTWORD: 'ПОСЛЕДНЕЕ СЛОВО',
+    revote: 'Голосуем заново! <b>Напиши имя в чат</b>', revoteHint: 'прошлые голоса сброшены',
+    sheriff: 'шериф проверяет одного из жителей', foundHere: 'НАШЛИ ЗДЕСЬ',
+    inspect: 'ПРОВЕРКА', evidence: 'УЛИКА', stampNight: 'НОЧЬ', stampOut: 'ИЗГНАН', stampMafia: 'МАФИЯ',
+    winCity: 'победа города', winMafia: 'победа мафии', next: 'следующая партия через 30 секунд',
+    crash: 'сбой — перезапуск',
+    role: { traitor: 'МАФИЯ', sheriff: 'ШЕРИФ', faithful: 'МИРНЫЙ' }, roleSay: { faithful: 'мирный' },
+  },
+  en: {
+    title: 'THE CITY SLEEPS', caseNo: 'CASE NO. ', sayTitles: 'The city sleeps. Case number ',
+    allIn: 'everyone is here', night: 'night', day: 'day', waiting: 'starting soon',
+    curtainSub: 'everyone heads somewhere for the night', sayNight: 'The city sleeps.',
+    call: 'Who is the mafia? <b>Type a name in chat</b>', callHint: 'send a gift after the name for a special move',
+    lastword: 'last words', LASTWORD: 'LAST WORDS',
+    revote: 'Vote again! <b>Type a name in chat</b>', revoteHint: 'previous votes are cleared',
+    sheriff: 'the sheriff is checking someone', foundHere: 'FOUND HERE',
+    inspect: 'REVEAL', evidence: 'EVIDENCE', stampNight: 'NIGHT', stampOut: 'VOTED OUT', stampMafia: 'MAFIA',
+    winCity: 'the city wins', winMafia: 'the mafia wins', next: 'next game in 30 seconds',
+    crash: 'glitch — restarting',
+    role: { traitor: 'MAFIA', sheriff: 'SHERIFF', faithful: 'INNOCENT' }, roleSay: { faithful: 'innocent' },
+  },
+};
+const t = (k) => T[LANG][k];
+function setLang(l) {
+  if (l !== 'en' && l !== 'ru') return;
+  LANG = l;
+  document.documentElement.lang = l;
+  for (const k in VOICE) delete VOICE[k];      // голоса подбираются под язык заново
+  applyStatic();
+}
+/* надписи, которые стоят в разметке до первого события */
+function applyStatic() {
+  const tt = document.getElementById('titleText');
+  if (tt) tt.textContent = t('title');
+  const ph = document.getElementById('phase');
+  if (ph && /ждём|starting/.test(ph.textContent)) ph.textContent = t('waiting');
+  const call = document.getElementById('call');
+  if (call) call.innerHTML = t('call');
+}
+document.addEventListener('DOMContentLoaded', applyStatic);
+
 /* ─────────────────────── озвучка ───────────────────────
    Голос даёт браузер. В OBS включи у Browser Source
    «Control audio via OBS», иначе звука в эфире не будет. */
 const VOICE = {};
-let ruVoices = [];
+let ruVoices = [], enVoices = [];
 speechSynthesis.onvoiceschanged = () => {
-  ruVoices = speechSynthesis.getVoices().filter(v => v.lang.startsWith('ru'));
+  const all = speechSynthesis.getVoices();
+  ruVoices = all.filter(v => v.lang.startsWith('ru'));
+  // английский эфир: сначала американские голоса, потом британские
+  enVoices = all.filter(v => v.lang === 'en-US').concat(all.filter(v => v.lang === 'en-GB'));
 };
 
 function voiceFor(name, hint = '') {
@@ -474,7 +533,7 @@ function voiceFor(name, hint = '') {
     rate: (hint.includes('быстр') ? 1.2
           : hint.includes('медленн') || hint.includes('ленив') ? 0.88 : 1.02)
           + ((h % 5) - 2) * 0.03,
-    voice: ruVoices[h % Math.max(1, ruVoices.length)] || null,
+    voice: (LANG === 'en' ? enVoices : ruVoices)[h % Math.max(1, (LANG === 'en' ? enVoices : ruVoices).length)] || null,
   };
   return VOICE[name];
 }
@@ -483,7 +542,7 @@ function speak(text, name, hint, onend) {
   if (!('speechSynthesis' in window)) { onend && onend(); return; }
   const u = new SpeechSynthesisUtterance(text);
   const v = voiceFor(name, hint || '');
-  u.lang = 'ru-RU'; u.pitch = v.pitch; u.rate = v.rate;
+  u.lang = LANG === 'en' ? 'en-US' : 'ru-RU'; u.pitch = v.pitch; u.rate = v.rate;
   if (v.voice) u.voice = v.voice;
   u.onend = () => onend && onend();
   speechSynthesis.speak(u);
@@ -574,7 +633,7 @@ function reactTo(text, exclude) {
   }
 }
 
-const ROLE_WORD = { traitor: 'МАФИЯ', sheriff: 'ШЕРИФ', faithful: 'МИРНЫЙ' };
+const roleWord = (role) => t('role')[role] || t('role').faithful;
 
 function showReveal(name, role, title) {
   stopTalking();
@@ -582,11 +641,11 @@ function showReveal(name, role, title) {
   setFace($('#rface'), name, role === 'traitor' ? '-angry' : '');
   r.querySelector('.rname').textContent = title || name;
   const label = r.querySelector('.rrole');
-  label.textContent = ROLE_WORD[role] || 'МИРНЫЙ';
+  label.textContent = roleWord(role);
   label.className = 'rrole serif ' + (role === 'traitor' ? 'traitor' : 'faithful');
   r.classList.add('on');
   $('#bars').classList.add('on');
-  speak(`${name}. ${ROLE_WORD[role] || 'мирный'}.`, 'ведущий', 'мужской');
+  speak(`${name}. ${role === 'faithful' || !t('role')[role] ? t('roleSay').faithful : roleWord(role)}.`, 'ведущий', 'мужской');
   setTimeout(() => r.classList.remove('on'), 4600);
   setTimeout(() => $('#bars').classList.remove('on'), 5400);
 }
@@ -604,14 +663,15 @@ function handle(e) {
     case 'titles': {
       // Открывающие титры: название, номер дела, состав. Дальше зритель
       // уже знает, кто перед ним, и обсуждение читается с первой реплики.
+      if (e.lang) setLang(e.lang);
       const c = $('#card');
       c.className = 'on titles';
-      c.querySelector('.ct').textContent = 'ГОРОД ЗАСЫПАЕТ';
-      c.querySelector('.cs').textContent = 'ДЕЛО № ' + e.no;
+      c.querySelector('.ct').textContent = t('title');
+      c.querySelector('.cs').textContent = t('caseNo') + e.no;
       c.querySelector('.roster').innerHTML = e.cast
         .map(p => `<div><b>${p.name}</b><br>${p.bio || ''}</div>`).join('');
       $('#bars').classList.add('on');
-      speak('Город засыпает. Дело номер ' + e.no, 'ведущий', 'мужской');
+      speak(t('sayTitles') + e.no, 'ведущий', 'мужской');
       setTimeout(() => { c.classList.remove('on'); }, 7000);
       setTimeout(() => $('#bars').classList.remove('on'), 8000);
       break;
@@ -640,8 +700,9 @@ function handle(e) {
     }
 
     case 'party':
-      $('#partyno').textContent = '№' + e.no;
-      $('#phase').textContent = 'все в сборе';
+      if (e.lang) setLang(e.lang);
+      $('#partyno').textContent = (LANG === 'en' ? '#' : '№') + e.no;
+      $('#phase').textContent = t('allIn');
       drawRoster(e.players);
       unfocus();
       break;
@@ -650,7 +711,7 @@ function handle(e) {
       const night = e.phase === 'night';
       document.body.classList.toggle('night', night);
       document.body.classList.toggle('rain', !!e.rain);
-      $('#phase').textContent = night ? `ночь ${e.round}` : `день ${e.round}`;
+      $('#phase').textContent = `${night ? t('night') : t('day')} ${e.round}`;
       if (!night) {
         // день — площадь, люди снова в кадре
         setBackground('square', true);
@@ -660,10 +721,10 @@ function handle(e) {
       }
       if (night) {
         const c = $('#curtain');
-        c.querySelector('.t').textContent = e.title || 'ГОРОД ЗАСЫПАЕТ';
-        c.querySelector('.s').textContent = 'все расходятся по местам';
+        c.querySelector('.t').textContent = e.title || t('title');
+        c.querySelector('.s').textContent = t('curtainSub');
         c.classList.add('on');
-        speak('Город засыпает.', 'ведущий', 'мужской');
+        speak(t('sayNight'), 'ведущий', 'мужской');
         setTimeout(() => c.classList.remove('on'), 2400);
       }
       stopTalking();
@@ -696,8 +757,8 @@ function handle(e) {
 
     case 'vote_open':
       $('#ladder').classList.add('hidden');
-      $('#call').innerHTML = `Кто предатель? <b>Напиши имя в чат</b><br>
-        <span style="font-size:23px;opacity:.85">подарок после имени — особое действие</span>`;
+      $('#call').innerHTML = `${t('call')}<br>
+        <span style="font-size:23px;opacity:.85">${t('callHint')}</span>`;
       $('#vote').classList.add('on');
       $('#clock').textContent = e.seconds;
       unfocus();
@@ -726,13 +787,13 @@ function handle(e) {
 
     case 'vote_paused':
       $('#clock').textContent = '—';
-      $('#call').innerHTML = `<b>${e.name}</b> — последнее слово`;
+      $('#call').innerHTML = `<b>${e.name}</b> — ${t('lastword')}`;
       break;
 
     case 'lastword':
       if (e.slug) slugs[e.name] = e.slug;
       focusOn(e.name);
-      $('#speaker').textContent = `${e.name} · ПОСЛЕДНЕЕ СЛОВО`;
+      $('#speaker').textContent = `${e.name} · ${t('LASTWORD')}`;
       $('#line').textContent = e.text;
       $('#speech').classList.add('on');
       startTalking(e.name);
@@ -740,8 +801,8 @@ function handle(e) {
       break;
 
     case 'vote_restart':
-      $('#call').innerHTML = `Голосуем заново! <b>Напиши имя в чат</b><br>
-        <span style="font-size:23px;opacity:.85">прошлые голоса сброшены</span>`;
+      $('#call').innerHTML = `${t('revote')}<br>
+        <span style="font-size:23px;opacity:.85">${t('revoteHint')}</span>`;
       $('#clock').textContent = e.seconds;
       unfocus();
       Object.values(cards).forEach(c => {
@@ -790,7 +851,7 @@ function handle(e) {
 
     case 'sheriff': {
       const c = $('#curtain');
-      c.querySelector('.s').textContent = 'шериф проверяет одного из жителей';
+      c.querySelector('.s').textContent = t('sheriff');
       break;
     }
 
@@ -803,7 +864,7 @@ function handle(e) {
         drawShades(1);
       }
       const p = $('#place');
-      p.querySelector('.lbl').textContent = 'НАШЛИ ЗДЕСЬ';
+      p.querySelector('.lbl').textContent = t('foundHere');
       p.querySelector('.loc').textContent = e.where;
       p.querySelector('.clock').textContent = e.clock || '';
       p.classList.add('on');
@@ -829,12 +890,12 @@ function handle(e) {
     }
 
     case 'inspect':
-      showReveal(e.name, e.role, `ПРОВЕРКА · ${e.name}`);
+      showReveal(e.name, e.role, `${t('inspect')} · ${e.name}`);
       break;
 
     case 'evidence': {
       const box = $('#event');
-      box.querySelector('h2').textContent = 'УЛИКА';
+      box.querySelector('h2').textContent = t('evidence');
       box.querySelector('p').textContent = e.text;
       box.classList.add('on');
       const fig = cards[e.name] && cards[e.name].querySelector('.figure');
@@ -848,7 +909,7 @@ function handle(e) {
       const c = cards[e.name];
       if (c) {
         c.classList.add('out');
-        c.querySelector('.plate').dataset.stamp = e.by === 'night' ? 'НОЧЬ' : 'ИЗГНАН';
+        c.querySelector('.plate').dataset.stamp = e.by === 'night' ? t('stampNight') : t('stampOut');
         if (e.by === 'night' && e.where) c.title = e.where;
       }
       if (e.by === 'vote') showReveal(e.name, e.role);
@@ -856,7 +917,7 @@ function handle(e) {
     }
 
     case 'over':
-      $('#phase').textContent = e.winner === 'faithful' ? 'победа города' : 'победа мафии';
+      $('#phase').textContent = e.winner === 'faithful' ? t('winCity') : t('winMafia');
       $('#speech').classList.remove('on');
       stopTalking();
       unfocus();
@@ -864,18 +925,18 @@ function handle(e) {
         const c = cards[p.name]; if (!c) continue;
         c.classList.remove('out');
         if (p.role === 'traitor') {
-          c.querySelector('.plate').dataset.stamp = 'МАФИЯ';
+          c.querySelector('.plate').dataset.stamp = t('stampMafia');
           c.querySelector('.plate').style.boxShadow = 'inset 0 0 0 2px var(--blood)';
         }
       }
       break;
 
     case 'intermission':
-      $('#phase').textContent = 'следующая партия через 30 секунд';
+      $('#phase').textContent = t('next');
       break;
 
     case 'error':
-      $('#phase').textContent = 'сбой — перезапуск';
+      $('#phase').textContent = t('crash');
       break;
   }
 }

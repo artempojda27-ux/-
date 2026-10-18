@@ -150,4 +150,18 @@ function nightKnowledge(placement) {
   return out;
 }
 
+// Английский эфир: названия мест на экране и в разговоре персонажей
+const EN_NAMES = {
+  city: 'the harbor city', square: 'the town square',
+  bar: 'the Midnight bar', station: 'the police station', depot: 'the harbor warehouse',
+  clinic: 'the night clinic', park: 'the city park', terminal: 'the bus terminal',
+  home: 'at home', diner: 'the highway diner', church: 'the old church',
+  roof: 'the high-rise rooftop', laundry: 'the laundromat', garages: 'the garages',
+  club: 'the underground club', pier: 'the pier', bridge: 'the railway bridge',
+  hotel: 'the Imperial hotel',
+};
+if (require('./i18n').LANG === 'en') {
+  for (const l of [CITY, SQUARE, ...LOCATIONS]) l.name = EN_NAMES[l.id] || l.name;
+}
+
 module.exports = { LOCATIONS, SQUARE, CITY, cityTonight, HAUNTS, byId, placeEveryone, whoWasAt, nightKnowledge };

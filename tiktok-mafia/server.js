@@ -116,8 +116,15 @@ const ALL_NAMES = [];          // имена текущего состава
  * Ищем только среди живых: зал по инерции пишет выбывших ещё минуту после
  * изгнания, и без этой проверки мертвецы копят голоса и лезут в полоски.
  */
+const { LANG } = require('./i18n');
 function nameIn(text) {
   const t = (text || '').toLowerCase();
+  if (LANG === 'en') {
+    // по-английски имя должно стоять отдельным словом: иначе «general»
+    // голосует за Gene, а «Ross» прячется в «across». «Gene's» засчитывается
+    return ALL_NAMES.find((n) => ALIVE.has(n)
+      && new RegExp(`(?<!\\p{L})${n.toLowerCase()}(?!\\p{L})`, 'u').test(t)) || null;
+  }
   return ALL_NAMES.find((n) => ALIVE.has(n) && t.includes(n.toLowerCase())) || null;
 }
 
@@ -149,7 +156,7 @@ function applyInput(msg) {
         push({ type: 'bought', user: msg.user, label: act.label, target, gift: msg.gift });
         console.log(`${msg.user}: последнее слово → ${target}`);
       } else {
-        engine.queueAction({ kind: 'speak', target, user: msg.user, gift: msg.gift, label: 'дать слово' });
+        engine.queueAction({ kind: 'speak', target, user: msg.user, gift: msg.gift, label: require('./i18n').tr('дать слово', 'make them talk') });
       }
       return;
     }

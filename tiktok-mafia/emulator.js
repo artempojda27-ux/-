@@ -18,7 +18,14 @@ const HUB = process.env.HUB || 'http://localhost:3000/input';
 const COUNT = Number(process.argv[2]) || 60;
 const HYPE = process.argv[3] === 'hype';
 
-const NAMES = ['Лиза','Марго','Давид','Артур','Нина','Костя','Вика','Олег','Рита','Слава','Эмма','Гена','Алина','Рустам'];
+// имена берём из каста: в английском эфире зрители пишут английские
+const NAMES = require('./characters').CAST.map((c) => c.name);
+const { LANG } = require('./i18n');
+// живой чат не пишет голое имя: «vote gene», «its ross!!» — так проверяется и распознавание
+const PHRASES = LANG === 'en'
+  ? ['{n}', '{n}', 'vote {n}', "it's {n}!!", '{n} is lying', 'kick {n}', '{n} sus']
+  : ['{n}', '{n}', '{n} мафия', 'гоните {n}', '{n} врёт'];
+const say = (n) => PHRASES[Math.floor(Math.random() * PHRASES.length)].replace('{n}', Math.random() < 0.5 ? n.toLowerCase() : n);
 // цены подобраны так, чтобы в отладке засветились все уровни действий
 // ровно та лестница, что висит на экране
 const GIFTS = [
@@ -71,10 +78,10 @@ setInterval(() => {
     if (v.whale && Math.random() < 0.18) {
       const g = rollGift();
       // как в жизни: сначала имя в чат, следом подарок без текста
-      send({ type: 'comment', user: v.user, text: name });
+      send({ type: 'comment', user: v.user, text: say(name) });
       send({ type: 'gift', user: v.user, text: '', gift: g.name, coins: g.coins });
     } else {
-      send({ type: 'comment', user: v.user, text: name });
+      send({ type: 'comment', user: v.user, text: say(name) });
     }
     sent++;
   }

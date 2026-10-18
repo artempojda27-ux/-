@@ -5,7 +5,8 @@
 события с работающего движка — со своими таймингами, решениями предателей,
 голосами зала и покупками. Ровно то, что было бы в эфире.
 
-    python3 make-replay.py
+    python3 make-replay.py                              → replay.html из run.json
+    python3 make-replay.py run-en.json replay-en.html   → английская запись
 
 Запись снимается так (сервер и эмулятор уже подняты):
 
@@ -17,7 +18,7 @@
     JSON.stringify(rec));process.exit(0)},2000)}}})})"
 """
 
-import base64, io, json, os
+import base64, io, json, os, sys
 from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -38,7 +39,9 @@ def packed(path, size, quality=None, fmt='PNG', alpha=False):
     return f"data:{mime};base64," + base64.b64encode(buf.getvalue()).decode()
 
 
-run = json.load(open(os.path.join(HERE, 'run.json'), encoding='utf-8'))
+SRC = sys.argv[1] if len(sys.argv) > 1 else 'run.json'
+DST = sys.argv[2] if len(sys.argv) > 2 else 'replay.html'
+run = json.load(open(os.path.join(HERE, SRC), encoding='utf-8'))
 
 # картинки кладём только для тех, кто реально играл в этой партии
 party = next((x['e'] for x in run if x['e']['type'] == 'party'), None)
@@ -74,8 +77,8 @@ inject += ",\n".join(f'  "{k}": "{v}"' for k, v in images.items())
 inject += "\n};\nwindow.REPLAY = " + json.dumps(run, ensure_ascii=False) + ";\n</script>\n"
 s = s.replace('<body>\n', '<body>\n' + inject, 1)
 
-out = os.path.join(HERE, 'replay.html')
+out = os.path.join(HERE, DST)
 open(out, 'w', encoding='utf-8').write(s)
 
 dur = round((run[-1]['t'] - run[0]['t']) / 1000)
-print(f'replay.html собран: {len(run)} событий, {dur} с, {os.path.getsize(out)//1024} KB')
+print(f'{DST} собран: {len(run)} событий, {dur} с, {os.path.getsize(out)//1024} KB')

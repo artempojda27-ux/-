@@ -282,4 +282,46 @@ function relationsFor(name) {
   return out;
 }
 
-module.exports = { CAST, RELATIONS, relationsFor };
+/**
+ * Английский эфир. Имена — короткие и такие, что их легко набрать в чате
+ * с американской клавиатуры: зритель голосует, печатая имя, и «Kostya»
+ * половина зала напишет с ошибкой. Внешность и характер те же — это тот же
+ * актёр, просто в другой версии сериала.
+ *
+ * Характер (speech, asTraitor…) остаётся русским: это указания модели,
+ * а не текст для зрителя, и отвечать она будет на языке эфира.
+ */
+const EN = {
+  margo:  { name: 'Margo',  bio: '34, beauty salon manager' },
+  david:  { name: 'David',  bio: '41, department head, ex-military' },
+  liza:   { name: 'Lisa',   bio: '22, college student' },
+  artur:  { name: 'Arthur', bio: '29, bartender' },
+  nina:   { name: 'Nina',   bio: '37, accountant' },
+  kostya: { name: 'Kevin',  bio: '26, delivery courier' },
+  vika:   { name: 'Vicky',  bio: '31, schoolteacher' },
+  oleg:   { name: 'Owen',   bio: '45, construction foreman' },
+  rita:   { name: 'Rita',   bio: '28, fitness trainer' },
+  slava:  { name: 'Steve',  bio: '33, taxi driver' },
+  emma:   { name: 'Emma',   bio: '24, designer' },
+  gena:   { name: 'Gene',   bio: '52, night security guard' },
+  alina:  { name: 'Alina',  bio: '27, influencer' },
+  rustam: { name: 'Ross',   bio: '35, head chef' },
+};
+
+const { LANG } = require('./i18n');
+if (LANG === 'en') {
+  const rename = {};
+  for (const c of CAST) {
+    const en = EN[c.slug];
+    if (!en) continue;
+    rename[c.name] = en.name;
+    c.name = en.name;
+    c.bio = en.bio;
+  }
+  for (const r of RELATIONS) {
+    r.a = rename[r.a] || r.a;
+    r.b = rename[r.b] || r.b;
+  }
+}
+
+module.exports = { CAST, RELATIONS, relationsFor, EN };

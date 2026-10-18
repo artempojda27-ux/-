@@ -2,3 +2,5 @@ node_modules/
 transcript-*.md
 calibration.json
 art_in/
+__pycache__/
+history-en.json

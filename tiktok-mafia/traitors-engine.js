@@ -140,7 +140,7 @@ const stripAnsi = (s) => s.replace(/\x1b\[[0-9;]*m/g, '');
 const usage = { calls: 0, inTokens: 0, outTokens: 0, ms: 0 };
 
 async function callLLM(system, user, maxTokens = 200) {
-  if (PROVIDER === 'mock') return mockResponse(user);
+  if (PROVIDER === 'mock') return mockResponse(user, system);
 
   const started = Date.now();
   let res, data;
@@ -202,12 +202,13 @@ function parseJSON(text, fallback) {
 }
 
 // заглушка для прогона логики без API
-function mockResponse(user) {
+function mockResponse(user, system = '') {
   if (user.includes('НОЧЬ')) {
     const names = user.match(/ВЕРНЫЕ В ИГРЕ: (.+)/)?.[1].split(', ') || ['Лиза'];
     return JSON.stringify({ target: pick(names), reason: 'слишком много замечает' });
   }
-  const names = user.match(/В ИГРЕ: (.+)/)?.[1].split(', ') || ['Лиза'];
+  // список «В ИГРЕ» — в системном промпте, без него подозреваемый всегда был мимо
+  const names = (user + '\n' + system).match(/В ИГРЕ: (.+)/)?.[1].split(', ') || ['Лиза'];
   return JSON.stringify({
     line: LANG === 'en' ? pick([
       "I don't like how quiet you've been all round.",

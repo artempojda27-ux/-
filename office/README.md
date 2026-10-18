@@ -1,0 +1,74 @@
+# Офис ИИ-агентов
+
+Здесь три вещи:
+
+1. **Команда агентов** для работы с лидами. Она уже лежит в `.claude/agents/`, ставить ничего не надо.
+2. **Pixel Agents**: пиксельный офис, где каждый агент Claude Code — это человечек за столом.
+3. **AI Town**: необязательная «живая» симуляция, где агенты сами ходят и болтают.
+
+---
+
+## Быстрая установка
+
+Сначала скачай репозиторий на ноутбук (GitHub → Code → Download ZIP или `git clone`) и открой терминал в этой папке.
+
+**Mac / Linux**
+```bash
+bash office/install-mac-linux.sh            # Claude Code + Pixel Agents
+bash office/install-mac-linux.sh --ai-town  # плюс AI Town
+```
+
+**Windows (PowerShell)**
+```powershell
+powershell -ExecutionPolicy Bypass -File office\install-windows.ps1
+powershell -ExecutionPolicy Bypass -File office\install-windows.ps1 -AiTown
+```
+
+Перед запуском поставь **VS Code**: https://code.visualstudio.com
+Для AI Town ещё нужны **Node.js** (nodejs.org), **git** и **Ollama** (ollama.com).
+
+---
+
+## 1. Команда агентов
+
+| Агент | Что делает |
+|---|---|
+| `lead-scout` | ищет бизнесы по нише и городу и ставит им score |
+| `site-auditor` | проверяет сайт и карты лида и заполняет поля weak / rec |
+| `copywriter` | пишет холодные письма и follow-up |
+| `call-script` | готовит скрипт звонка и ответы на возражения |
+| `console-dev` | правит саму консоль (index.html, Supabase, Vercel) |
+
+Как пользоваться: открой терминал в папке репозитория, запусти `claude` и пиши обычным текстом, например:
+
+> Попроси lead-scout найти 20 кофеен в Варшаве без сайта, потом site-auditor пусть проверит их, а copywriter напишет письма.
+
+Claude сам раздаст задачи нужным агентам. Команда `/agents` показывает список агентов и позволяет их редактировать. Роль агента можно поменять прямо в его `.md` файле.
+
+## 2. Pixel Agents (пиксельный офис)
+
+1. Открой папку репозитория в VS Code.
+2. Внизу (рядом с Terminal) появится вкладка **Pixel Agents**.
+3. Нажми **+ Agent**. Откроется терминал с Claude Code, а в офисе появится человечек.
+4. Когда агент пишет код, читает или ждёт твоего ответа, персонаж это показывает. Над тем, кому нужно разрешение, появляется облачко.
+5. Агенты из команды выше, которых вызывает Claude, тоже появляются в офисе как связанные персонажи.
+
+Без VS Code офис можно открыть в браузере: `npx pixel-agents` в папке проекта, затем открой ссылку, которую он напечатает. Не пересылай эту ссылку другим: в ней секретный токен.
+
+## 3. AI Town (по желанию)
+
+```bash
+ollama pull llama3          # локальная модель, бесплатно
+cd ~/ai-town
+npm run dev                 # первый раз попросит войти в Convex (бесплатно)
+```
+Открой адрес из терминала, обычно http://localhost:5173.
+AI Town — это развлечение и демо. С лидами он не работает.
+
+---
+
+## Если что-то не так
+
+- `claude: command not found`: закрой и заново открой терминал.
+- `code: command not found` на Mac: в VS Code нажми Cmd+Shift+P и выбери «Shell Command: Install 'code' command in PATH».
+- В Pixel Agents не видно персонажей: сначала запусти хотя бы одного агента кнопкой **+ Agent**.

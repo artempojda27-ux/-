@@ -33,7 +33,7 @@ UI.button({
 	end
 end)
 
-UI.label({
+local hintLabel = UI.label({
 	Text = "Встань на портал, чтобы собрать отряд",
 	AnchorPoint = Vector2.new(0.5, 1),
 	Position = UDim2.new(0.5, 0, 1, -20),
@@ -150,6 +150,7 @@ end)
 
 Remotes.get("SquadUpdate").OnClientEvent:Connect(function(view)
 	panel.Visible = view ~= nil
+	hintLabel.Visible = view == nil
 	countdownLabel.Visible = false
 	if not view then
 		currentCountdown = nil

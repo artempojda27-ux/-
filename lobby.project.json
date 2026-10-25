@@ -1,0 +1,19 @@
+{
+  "name": "Iskazhenie-Lobby",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Shared": { "$path": "src/shared" }
+    },
+    "ServerScriptService": {
+      "Common": { "$path": "src/server/common" },
+      "Lobby": { "$path": "src/server/lobby" }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "Common": { "$path": "src/client/common" },
+        "Lobby": { "$path": "src/client/lobby" }
+      }
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "Iskazhenie-Mission",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Shared": { "$path": "src/shared" }
+    },
+    "ServerScriptService": {
+      "Common": { "$path": "src/server/common" },
+      "Mission": { "$path": "src/server/mission" }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "Common": { "$path": "src/client/common" },
+        "Mission": { "$path": "src/client/mission" }
+      }
+    }
+  }
+}

@@ -1,20 +1,61 @@
-# Игра в Roblox
+# «Искажение» — игра в Roblox
 
 Отдельный проект, не связан с офисом агентов.
 
-## Устройство
-Код игры пишется в файлах и переносится в Roblox Studio через [Rojo](https://rojo.space):
-- `src/server` — серверные скрипты (ServerScriptService)
-- `src/client` — клиентские скрипты (StarterPlayerScripts)
-- `src/shared` — общие модули (ReplicatedStorage)
-
-## Как открыть в Roblox Studio
-1. Установи Roblox Studio и плагин Rojo.
-2. В папке проекта: `rojo serve`.
-3. В Studio в панели Rojo нажми Connect.
-
-## Идея игры
 «Искажение» — кооперативный шутер (без PvP) для 1–4 друзей с сюжетом по главам: команда
 героев зачищает мир-симуляцию от вируса.
 - Дизайн-документ: [docs/GDD.md](docs/GDD.md)
 - Исследование рынка: [docs/research.md](docs/research.md)
+
+## Устройство
+
+Игра состоит из двух мест (places) в одном проекте Roblox:
+
+| Место | Rojo-проект | Что там |
+|---|---|---|
+| **Штаб** (стартовое) | `lobby.project.json` | Порталы отряда, приглашение друзей, позже — герои и прокачка |
+| **Миссия** | `mission.project.json` | Сами главы; отряд попадает сюда на закрытый сервер |
+
+Код:
+- `src/shared` — общее для сервера и клиента: настройки (`Config`), сетевые события (`Remotes`)
+- `src/server/common` — сервер, оба места: сохранение (`DataService` на ProfileStore), переносы (`Teleport`), передача настроек миссии (`MissionStore`)
+- `src/server/lobby` — сервер Штаба: карта, отряды на порталах
+- `src/server/mission` — сервер Миссии: арена, ход миссии, награда, возвращение
+- `src/client/...` — интерфейс игрока (общий, Штаб, Миссия)
+
+Карты пока собираются кодом из простых блоков. Если положить в Workspace свою модель
+`LobbyMap` (с папкой `Portals`) или `MissionMap` (с папкой `GlitchNodes`), код возьмёт её.
+
+## Как открыть в Roblox Studio
+
+1. Установи Roblox Studio и [Rojo](https://rojo.space/docs/v7/getting-started/installation/) (программа + плагин для Studio).
+2. Открой в Studio пустое место (шаблон **Baseplate**).
+3. В папке проекта запусти один из серверов Rojo:
+   - Штаб: `rojo serve lobby.project.json`
+   - Миссия: `rojo serve mission.project.json`
+4. В Studio в панели Rojo нажми **Connect**, затем **Play**.
+
+### Что можно проверить в Studio
+- **Штаб:** встань на портал — появится панель отряда; меняй главу, сложность и режим,
+  жми «Старт». Перенос в Studio не работает — появится сообщение об этом.
+  Для нескольких игроков: вкладка **Test → Clients and Servers → 2 Players → Start**.
+- **Миссия:** брифинг → закрой три розовых «сбоя» (подойди и держи **E**) → победа → награда.
+  В Studio после победы миссия начинается заново.
+- Прогресс в Studio сохраняется, только если включено
+  **Game Settings → Security → Enable Studio Access to API Services** (игра должна быть опубликована).
+
+## Как опубликовать (перенос работает только так)
+
+1. Открой Штаб в Studio, подключи Rojo (`lobby.project.json`) и сделай
+   **File → Publish to Roblox** — создай новую игру «Искажение».
+2. На [create.roblox.com](https://create.roblox.com/dashboard/creations) открой игру →
+   **Places → Add Place** (или в Studio: **Asset Manager → Places → Add New Place**) — это будет Миссия.
+3. Открой Миссию в Studio, подключи Rojo (`mission.project.json`) и опубликуй её (**File → Publish to Roblox**).
+4. Узнай ID обоих мест (в Creator Hub в списке Places или в адресе страницы) и впиши их
+   в `src/shared/Config.luau` → `Config.PlaceIds`. После этого опубликуй оба места ещё раз.
+5. В настройках игры пройди анкету **Maturity & Compliance** (цель — рейтинг Mild),
+   иначе игру будешь видеть только ты.
+
+## Сторонний код
+- [ProfileStore](https://github.com/MadStudioRoblox/ProfileStore) (loleris, Apache-2.0) —
+  `src/server/common/Packages/ProfileStore.luau`, лицензия: `vendor-licenses/ProfileStore-LICENSE`.

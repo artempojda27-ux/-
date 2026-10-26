@@ -192,3 +192,21 @@ Remotes.get("SquadUpdate").OnClientEvent:Connect(function(view)
 		statusLabel.Text = if view.IsLeader then "Нажми «Старт», когда все готовы" else "Ждём лидера…"
 	end
 end)
+
+-- Машины на подиумах автосалона медленно крутятся (только у игрока на экране)
+local RunService = game:GetService("RunService")
+local SHOWCASE_SPIN = 0.4 -- радиан в секунду
+task.spawn(function()
+	local map = workspace:WaitForChild("LobbyMap", 30)
+	local garage = map and map:WaitForChild("Garage", 30)
+	if not garage then
+		return
+	end
+	RunService.RenderStepped:Connect(function(dt)
+		for _, model in garage:GetChildren() do
+			if model:IsA("Model") and model:GetAttribute("Showcase") then
+				model:PivotTo(model:GetPivot() * CFrame.Angles(0, SHOWCASE_SPIN * dt, 0))
+			end
+		end
+	end)
+end)

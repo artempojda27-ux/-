@@ -167,6 +167,13 @@ Config.GamePasses = {
 		Price = 249,
 	},
 	{
+		Key = "Thrusters",
+		Id = 0,
+		Name = "Реактивные сопла",
+		Description = "Твоя машина подпрыгивает и делает сальто в воздухе (Shift или F)",
+		Price = 199,
+	},
+	{
 		Key = "VIP",
 		Id = 0,
 		Name = "VIP",
@@ -248,6 +255,123 @@ Config.DroneFireInterval = 0.6
 Config.DroneRange = 60
 
 Config.VipRewardMultiplier = 2
+
+-- Машины на воздушной подушке
+export type VehicleKind = {
+	Id: string,
+	Name: string,
+	Order: number, -- место в автосалоне
+	Design: string, -- как выглядит (см. VehicleDesigns)
+	Seats: number, -- вместе с водителем
+	MaxSpeed: number, -- студов в секунду вперёд
+	ReverseSpeed: number,
+	Acceleration: number,
+	TurnSpeed: number, -- радиан в секунду
+	HoverHeight: number,
+	Size: Vector3, -- корпус
+	Color: Color3,
+	GlowColor: Color3,
+	AccentColor: Color3,
+	-- Детальный кузов: модель-ассет, сгенерированная в Studio (0 — собирать машину из деталей)
+	ShellAsset: number,
+	ShellScale: number, -- во сколько раз увеличить модель
+}
+
+Config.Vehicles = {
+	GlitchBike = {
+		Id = "GlitchBike",
+		Name = "Глитч-байк",
+		Order = 1,
+		Design = "Bike",
+		Seats = 1,
+		MaxSpeed = 95,
+		ReverseSpeed = 25,
+		Acceleration = 70,
+		TurnSpeed = 2.6,
+		HoverHeight = 1,
+		Size = Vector3.new(2.6, 1.6, 7.6),
+		Color = Color3.fromRGB(16, 16, 22),
+		GlowColor = Color3.fromRGB(255, 40, 120),
+		AccentColor = Color3.fromRGB(0, 255, 200),
+		ShellAsset = 121199819788764,
+		ShellScale = 1.3,
+	},
+	Volt = {
+		Id = "Volt",
+		Name = "Вольт",
+		Order = 2,
+		Design = "Roadster",
+		Seats = 2,
+		MaxSpeed = 110,
+		ReverseSpeed = 30,
+		Acceleration = 75,
+		TurnSpeed = 2.2,
+		HoverHeight = 0.8,
+		Size = Vector3.new(8, 2, 12.5),
+		Color = Color3.fromRGB(200, 20, 50),
+		GlowColor = Color3.fromRGB(255, 70, 90),
+		AccentColor = Color3.fromRGB(20, 20, 26),
+		ShellAsset = 119781525088819,
+		ShellScale = 1.25,
+	},
+	Prism = {
+		Id = "Prism",
+		Name = "Призма",
+		Order = 3,
+		Design = "Hypercar",
+		Seats = 2,
+		MaxSpeed = 125,
+		ReverseSpeed = 30,
+		Acceleration = 85,
+		TurnSpeed = 2.0,
+		HoverHeight = 0.8,
+		Size = Vector3.new(7.8, 2, 12),
+		Color = Color3.fromRGB(232, 234, 242),
+		GlowColor = Color3.fromRGB(150, 80, 255),
+		AccentColor = Color3.fromRGB(14, 14, 20),
+		ShellAsset = 140640410532428,
+		ShellScale = 1.3,
+	},
+	Orbit = {
+		Id = "Orbit",
+		Name = "Орбита",
+		Order = 4,
+		Design = "Roadster",
+		Seats = 2,
+		MaxSpeed = 115,
+		ReverseSpeed = 30,
+		Acceleration = 80,
+		TurnSpeed = 2.3,
+		HoverHeight = 0.8,
+		Size = Vector3.new(7.2, 2, 12),
+		Color = Color3.fromRGB(200, 204, 214),
+		GlowColor = Color3.fromRGB(200, 230, 255),
+		AccentColor = Color3.fromRGB(14, 14, 20),
+		ShellAsset = 86566532341843,
+		ShellScale = 1.4,
+	},
+	Transporter = {
+		Id = "Transporter",
+		Name = "Транспортник",
+		Order = 5,
+		Design = "Transporter",
+		Seats = 4,
+		MaxSpeed = 70,
+		ReverseSpeed = 25,
+		Acceleration = 45,
+		TurnSpeed = 1.9,
+		HoverHeight = 0.8,
+		Size = Vector3.new(6.5, 4, 11.5),
+		Color = Color3.fromRGB(28, 32, 48),
+		GlowColor = Color3.fromRGB(0, 255, 200),
+		AccentColor = Color3.fromRGB(255, 190, 40),
+		ShellAsset = 139313519205735,
+		ShellScale = 1.6,
+	},
+} :: { [string]: VehicleKind }
+
+Config.VehicleIdleDespawn = 60 -- пустая машина исчезает через столько секунд
+Config.VehicleFlipCooldown = 3 -- секунд между реактивными прыжками
 
 -- Двойник: вирус копирует одного из игроков отряда и в какой-то момент предаёт
 Config.Doppelganger = {

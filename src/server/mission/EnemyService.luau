@@ -5,9 +5,10 @@
 --   Стрелок — держит дистанцию и стреляет медленными снарядами (от них можно увернуться).
 -- Враг — модель с тегом "Enemy": по нему попадают оружие, дрон и «Код уничтожения».
 -- При гибели враг рассыпается на зелёные пиксели.
--- Пока враги бегут к игроку напрямую; обход препятствий (PathfindingService) — позже.
+-- Если игрок виден, враг бежит к нему напрямую; если мешают дома — ищет путь по улицам.
 
 local CollectionService = game:GetService("CollectionService")
+local PathfindingService = game:GetService("PathfindingService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -19,6 +20,10 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local THINK_INTERVAL = 0.15
 local SHOOTER_MIN_DISTANCE = 22 -- ближе Стрелок отступает
 local PROJECTILE_LIFETIME = 4
+local PATH_REFRESH = 1.5 -- секунд, через сколько путь пересчитывается
+local MAX_PATH_JOBS = 4 -- сколько путей считается одновременно (чтобы сервер не тормозил)
+local WAYPOINT_REACHED = 4
+local HOVER_HEIGHT = 1.5
 local FLASH = Color3.fromRGB(255, 255, 255)
 local SHARD = Color3.fromRGB(60, 255, 120)
 
@@ -30,6 +35,11 @@ type Enemy = {
 	DamageMultiplier: number,
 	LastAttack: number,
 	Busy: boolean, -- Блок замахивается и стоит на месте
+	-- Путь в обход домов
+	Waypoints: { PathWaypoint }?,
+	WaypointIndex: number,
+	PathAt: number,
+	Computing: boolean,
 }
 
 type Projectile = {
@@ -44,6 +54,7 @@ local EnemyService = {}
 local enemies: { [Model]: Enemy } = {}
 local projectiles: { Projectile } = {}
 local folder: Folder
+local pathJobs = 0
 local diedEvent = Instance.new("BindableEvent")
 
 -- Срабатывает при гибели врага: EnemyService.Died:Connect(function(kindId) end)
@@ -108,7 +119,7 @@ local function build(kind: Config.EnemyKind, position: Vector3, healthMultiplier
 	local root = part({
 		Name = "HumanoidRootPart",
 		Size = kind.Size,
-		Position = position + Vector3.new(0, kind.Size.Y / 2 + 0.5, 0),
+		Position = position + Vector3.new(0, kind.Size.Y / 2 + HOVER_HEIGHT, 0),
 		Color = Color3.fromRGB(14, 30, 20),
 		Material = Enum.Material.SmoothPlastic,
 		Parent = model,
@@ -132,7 +143,7 @@ local function build(kind: Config.EnemyKind, position: Vector3, healthMultiplier
 
 	local humanoid = Instance.new("Humanoid")
 	humanoid.RigType = Enum.HumanoidRigType.R15 -- чтобы работала HipHeight у модели без ног
-	humanoid.HipHeight = 0.2
+	humanoid.HipHeight = HOVER_HEIGHT -- вирус парит над землёй и так перебирается через бордюры
 	humanoid.MaxHealth = kind.Health * healthMultiplier
 	humanoid.Health = humanoid.MaxHealth
 	humanoid.WalkSpeed = kind.Speed
@@ -216,6 +227,77 @@ local function areaAttack(enemy: Enemy)
 	end)
 end
 
+-- Видит ли враг точку: между ними нет домов и укрытий
+local function canSee(enemy: Enemy, target: Vector3): boolean
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	local ignore: { Instance } = { folder }
+	for _, player in Players:GetPlayers() do
+		if player.Character then
+			table.insert(ignore, player.Character)
+		end
+	end
+	params.FilterDescendantsInstances = ignore
+	local from = enemy.Root.Position
+	return Workspace:Raycast(from, target - from, params) == nil
+end
+
+local function computePath(enemy: Enemy, target: Vector3)
+	if enemy.Computing or pathJobs >= MAX_PATH_JOBS then
+		return
+	end
+	enemy.Computing = true
+	pathJobs += 1
+	task.spawn(function()
+		local size = enemy.Kind.Size
+		local path = PathfindingService:CreatePath({
+			AgentRadius = math.max(size.X, size.Z) / 2 + 0.5,
+			AgentHeight = size.Y + 1,
+			AgentCanJump = false,
+		})
+		local ok = pcall(function()
+			path:ComputeAsync(enemy.Root.Position, target)
+		end)
+		pathJobs -= 1
+		enemy.Computing = false
+		enemy.PathAt = os.clock()
+		if ok and path.Status == Enum.PathStatus.Success then
+			enemy.Waypoints = path:GetWaypoints()
+			enemy.WaypointIndex = 2
+		else
+			enemy.Waypoints = nil
+		end
+	end)
+end
+
+-- Идёт к цели: напрямую, если видно, иначе по найденному пути
+local function moveToward(enemy: Enemy, target: Vector3, now: number)
+	if canSee(enemy, target) then
+		enemy.Waypoints = nil
+		enemy.Humanoid:MoveTo(target)
+		return
+	end
+	if not enemy.Waypoints or now - enemy.PathAt > PATH_REFRESH then
+		computePath(enemy, target)
+	end
+	local waypoints = enemy.Waypoints
+	if not waypoints then
+		enemy.Humanoid:MoveTo(target) -- пути пока нет: хотя бы двигаемся в сторону цели
+		return
+	end
+	local waypoint = waypoints[enemy.WaypointIndex]
+	if not waypoint then
+		enemy.Waypoints = nil
+		return
+	end
+	local offset = waypoint.Position - enemy.Root.Position
+	if Vector3.new(offset.X, 0, offset.Z).Magnitude < WAYPOINT_REACHED then
+		enemy.WaypointIndex += 1
+		waypoint = waypoints[enemy.WaypointIndex] or waypoint
+	end
+	enemy.Humanoid:MoveTo(waypoint.Position)
+end
+
 local function think(enemy: Enemy, now: number)
 	if enemy.Busy then
 		return
@@ -237,8 +319,9 @@ local function think(enemy: Enemy, now: number)
 	local targetPosition = nearest.Root.Position
 
 	if kind.Ranged then
-		if nearestDistance > kind.AttackRange then
-			enemy.Humanoid:MoveTo(targetPosition)
+		local visible = nearestDistance <= kind.AttackRange and canSee(enemy, targetPosition)
+		if not visible then
+			moveToward(enemy, targetPosition, now)
 		elseif nearestDistance < SHOOTER_MIN_DISTANCE then
 			local away = position - targetPosition
 			away = Vector3.new(away.X, 0, away.Z)
@@ -248,7 +331,7 @@ local function think(enemy: Enemy, now: number)
 		else
 			enemy.Humanoid:MoveTo(position)
 		end
-		if nearestDistance <= kind.AttackRange and now - enemy.LastAttack >= kind.AttackInterval then
+		if visible and now - enemy.LastAttack >= kind.AttackInterval then
 			enemy.LastAttack = now
 			fireProjectile(enemy, targetPosition)
 		end
@@ -256,7 +339,7 @@ local function think(enemy: Enemy, now: number)
 	end
 
 	-- Ближний бой
-	enemy.Humanoid:MoveTo(targetPosition)
+	moveToward(enemy, targetPosition, now)
 	if nearestDistance <= kind.AttackRange and now - enemy.LastAttack >= kind.AttackInterval then
 		enemy.LastAttack = now
 		if kind.AreaRadius then
@@ -315,6 +398,10 @@ function EnemyService.spawn(kindId: string, position: Vector3, healthMultiplier:
 		DamageMultiplier = damageMultiplier or 1,
 		LastAttack = os.clock(),
 		Busy = false,
+		Waypoints = nil,
+		WaypointIndex = 1,
+		PathAt = 0,
+		Computing = false,
 	}
 	enemies[model] = enemy
 

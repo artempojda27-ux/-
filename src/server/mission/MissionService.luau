@@ -21,7 +21,7 @@ local EnemyService = require(script.Parent.EnemyService)
 local MissionMap = require(script.Parent.MissionMap)
 
 local RETURN_ATTEMPTS = 3
-local SPAWN_RADIUS = 70 -- враги Выживания появляются у краёв арены
+local SPAWN_RADIUS = 70 -- запасной вариант, если на карте нет точек появления врагов
 local STORY_SPAWN_INTERVAL = 6 -- в сюжетной главе Пиксели лезут из открытых сбоев
 local STORY_MAX_ENEMIES = 10
 local DEFEAT_GRACE = 1 -- столько секунд все должны быть мертвы, чтобы засчитать поражение
@@ -175,9 +175,15 @@ local function groundAt(x: number, z: number): Vector3
 	return if hit then hit.Position else Vector3.new(x, 1, z)
 end
 
-local function edgePoint(random: Random): Vector3
-	local angle = random:NextNumber() * math.pi * 2
-	return groundAt(math.cos(angle) * SPAWN_RADIUS, math.sin(angle) * SPAWN_RADIUS)
+-- Случайная точка появления врага: одна из точек карты с небольшим разбросом
+local function spawnPoint(random: Random): Vector3
+	local points = MissionMap.enemySpawns()
+	if #points == 0 then
+		local angle = random:NextNumber() * math.pi * 2
+		return groundAt(math.cos(angle) * SPAWN_RADIUS, math.sin(angle) * SPAWN_RADIUS)
+	end
+	local point = points[random:NextInteger(1, #points)]
+	return groundAt(point.X + random:NextNumber(-5, 5), point.Z + random:NextNumber(-5, 5))
 end
 
 -- Сюжетная глава: закрыть сбои, пока из открытых сбоев лезут Пиксели
@@ -188,13 +194,14 @@ local function runStory()
 	end
 	setState("Combat")
 	local healthMultiplier, damageMultiplier = enemyMultipliers()
+	local random = Random.new()
 	local lastSpawn = 0
 	while closedCount() < #nodes do
 		if os.clock() - lastSpawn >= STORY_SPAWN_INTERVAL and EnemyService.aliveCount() < STORY_MAX_ENEMIES then
 			lastSpawn = os.clock()
 			for _, node in nodes do
 				if not closed[node] then
-					local spot = groundAt(node.Position.X + 6, node.Position.Z + 6)
+					local spot = groundAt(node.Position.X + random:NextNumber(-5, 5), node.Position.Z + random:NextNumber(-5, 5))
 					EnemyService.spawn("Pixel", spot, healthMultiplier, damageMultiplier)
 				end
 			end
@@ -238,7 +245,7 @@ local function runWave(random: Random): boolean
 			and EnemyService.aliveCount() < Config.Survival.MaxAlive then
 			lastSpawn = now
 			spawned += 1
-			EnemyService.spawn(pickKind(wave, random), edgePoint(random), healthMultiplier, damageMultiplier)
+			EnemyService.spawn(pickKind(wave, random), spawnPoint(random), healthMultiplier, damageMultiplier)
 		end
 		if spawned >= waveSize and EnemyService.aliveCount() == 0 then
 			connection:Disconnect()

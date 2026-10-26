@@ -6,10 +6,12 @@
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
+local DataService = require(ServerScriptService.Common.DataService)
 local MissionStore = require(ServerScriptService.Common.MissionStore)
 local Teleport = require(ServerScriptService.Common.Teleport)
 
@@ -26,6 +28,7 @@ type Squad = {
 	Chapter: number,
 	Difficulty: string,
 	Mode: Mode,
+	World: string,
 	LaunchAt: number?, -- когда стартует отсчёт до переноса
 	AutoStartAt: number?, -- когда открытый отряд стартует сам
 	LaunchingSince: number?, -- идёт перенос
@@ -62,6 +65,7 @@ local function resetSquad(squad: Squad)
 	squad.Chapter = Config.Chapters[1].Id
 	squad.Difficulty = Config.Difficulties[1].Id
 	squad.Mode = "Open"
+	squad.World = Config.Worlds[1].Id
 	squad.LaunchAt = nil
 	squad.AutoStartAt = nil
 	squad.LaunchingSince = nil
@@ -152,6 +156,7 @@ local function launch(squad: Squad)
 				Chapter = squad.Chapter,
 				Difficulty = squad.Difficulty,
 				Members = userIds,
+				World = squad.World,
 			})
 		end
 
@@ -276,6 +281,8 @@ local function viewFor(player: Player, squad: Squad)
 		Difficulty = squad.Difficulty,
 		DifficultyName = if difficulty then difficulty.Name else "?",
 		Mode = squad.Mode,
+		World = squad.World,
+		WorldName = Config.getWorld(squad.World).Name,
 		Countdown = secondsLeft(squad.LaunchAt),
 		AutoStart = if squad.LaunchAt then nil else secondsLeft(squad.AutoStartAt),
 		Launching = squad.LaunchingSince ~= nil,
@@ -339,6 +346,21 @@ local function onAction(player: Player, action: unknown, value: unknown)
 			table.insert(ids, difficulty.Id)
 		end
 		squad.Difficulty = cycle(ids, squad.Difficulty, step)
+	elseif action == "World" then
+		-- Только открытые лидеру миры; в Studio открыты все
+		local ids = {}
+		local data = DataService.get(player)
+		for _, world in Config.Worlds do
+			local unlocked = world.UnlockChapter == nil or RunService:IsStudio()
+				or (data ~= nil and data.ChaptersCompleted[tostring(world.UnlockChapter)] == true)
+			if unlocked then
+				table.insert(ids, world.Id)
+			end
+		end
+		if #ids < #Config.Worlds then
+			notify:FireClient(player, "Новые миры открываются по очереди: пройди Главу 1, чтобы попасть в Зеркальный город.")
+		end
+		squad.World = cycle(ids, squad.World, step)
 	elseif action == "Mode" then
 		squad.Mode = if squad.Mode == "Open" then "Friends" else "Open"
 		squad.AutoStartAt = if squad.Mode == "Open" then now + Config.OpenSquadAutoStart else nil
@@ -361,6 +383,7 @@ function SquadService.start(pads: { BasePart })
 			Chapter = 0,
 			Difficulty = "",
 			Mode = "Open",
+			World = "",
 		}
 		resetSquad(squad)
 		table.insert(squads, squad)

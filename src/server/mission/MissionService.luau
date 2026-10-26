@@ -21,6 +21,7 @@ local DoppelgangerService = require(script.Parent.DoppelgangerService)
 local EnemyService = require(script.Parent.EnemyService)
 local EscapeMap = require(script.Parent.EscapeMap)
 local VehicleService = require(ServerScriptService.Common.VehicleService)
+local WorldLook = require(script.Parent.WorldLook)
 local MissionMap = require(script.Parent.MissionMap)
 
 local RETURN_ATTEMPTS = 3
@@ -92,7 +93,11 @@ local function snapshot()
 	return {
 		State = state,
 		Kind = kind,
-		ChapterName = if chapter then Config.chapterTitle(chapter) else "?",
+		ChapterName = if chapter
+			then (if info.World and info.World ~= Config.Worlds[1].Id
+				then `{Config.chapterTitle(chapter)} · {Config.getWorld(info.World).Name}`
+				else Config.chapterTitle(chapter))
+			else "?",
 		DifficultyName = if difficulty then difficulty.Name else "?",
 		Objective = objective,
 		Progress = progress,
@@ -137,6 +142,11 @@ local function loadInfo()
 		if typeof(testChapter) == "number" and Config.getChapter(testChapter) then
 			info.Chapter = testChapter
 		end
+		-- и в каком мире — атрибут "TestWorld" (например, "Mirror")
+		local testWorld = game:GetService("ServerScriptService"):GetAttribute("TestWorld")
+		if typeof(testWorld) == "string" then
+			info.World = Config.getWorld(testWorld).Id
+		end
 		print(`Тестовый запуск миссии: {Config.chapterTitle(Config.getChapter(info.Chapter) :: any)}, обычная сложность`)
 		return
 	end
@@ -169,8 +179,9 @@ end
 local function enemyMultipliers(): (number, number, number)
 	local difficulty = Config.getDifficulty(info.Difficulty)
 	local squad = Config.SquadScaling[math.clamp(#Players:GetPlayers(), 1, 4)]
-	local health = squad.Health * (if difficulty then difficulty.EnemyHealth else 1)
-	local damage = if difficulty then difficulty.EnemyDamage else 1
+	local world = Config.getWorld(info.World)
+	local health = squad.Health * (if difficulty then difficulty.EnemyHealth else 1) * world.EnemyHealth
+	local damage = (if difficulty then difficulty.EnemyDamage else 1) * world.EnemyDamage
 	return health, damage, squad.Count
 end
 
@@ -218,7 +229,7 @@ local function runStory()
 
 	-- Двойник появится посреди боя; если предаст — снова откроет один из закрытых сбоев
 	local delay = Config.Doppelganger.StoryDelay
-	local doubleAt = os.clock() + random:NextNumber(delay[1], delay[2])
+	local doubleAt = os.clock() + random:NextNumber(delay[1], delay[2]) / Config.getWorld(info.World).DoubleRate
 	-- Тест в Studio: атрибут "TestDoubleDelay" у ServerScriptService — через сколько секунд появится двойник
 	local testDelay = ServerScriptService:GetAttribute("TestDoubleDelay")
 	if RunService:IsStudio() and typeof(testDelay) == "number" then
@@ -278,7 +289,8 @@ local function runWave(random: Random): boolean
 	waveSize = math.max(1, math.floor(base * countMultiplier + 0.5))
 	waveKilled = 0
 	setState("Combat")
-	if wave % Config.Doppelganger.SurvivalEvery == 0 then
+	local every = math.max(1, math.floor(Config.Doppelganger.SurvivalEvery / Config.getWorld(info.World).DoubleRate + 0.5))
+	if wave % every == 0 then
 		DoppelgangerService.spawn()
 	end
 
@@ -578,8 +590,10 @@ function MissionService.start()
 	loadInfo()
 	if MissionService.isEscape() then
 		course = EscapeMap.setup()
+		WorldLook.apply(Config.getWorld(info.World).Id, nil)
 	else
 		nodes = MissionMap.setup()
+		WorldLook.apply(Config.getWorld(info.World).Id, Workspace:FindFirstChild("MissionMap"))
 	end
 	for _, node in nodes do
 		MissionMap.setNodeActive(node, false)

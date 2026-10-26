@@ -38,6 +38,31 @@ function Config.chapterTitle(chapter: Chapter): string
 	return if chapter.Kind == "Story" then `Глава {chapter.Id}: {chapter.Name}` else chapter.Name
 end
 
+-- Параллельные миры: та же глава в другой версии симуляции.
+-- UnlockChapter — какую главу нужно пройти, чтобы мир открылся (nil — открыт сразу).
+export type World = {
+	Id: string,
+	Name: string,
+	EnemyHealth: number,
+	EnemyDamage: number,
+	DoubleRate: number, -- во сколько раз чаще появляются двойники
+	UnlockChapter: number?,
+}
+
+Config.Worlds = {
+	{ Id = "Neon", Name = "Неоновый город", EnemyHealth = 1, EnemyDamage = 1, DoubleRate = 1, UnlockChapter = nil },
+	{ Id = "Mirror", Name = "Зеркальный город", EnemyHealth = 1.3, EnemyDamage = 1.2, DoubleRate = 2, UnlockChapter = 1 },
+} :: { World }
+
+function Config.getWorld(id: string?): World
+	for _, world in Config.Worlds do
+		if world.Id == id then
+			return world
+		end
+	end
+	return Config.Worlds[1]
+end
+
 -- Враги. Урон — по игрокам; Speed — скорость бега (у игрока 16).
 export type EnemyKind = {
 	Id: string,

@@ -12,6 +12,7 @@ export type MissionInfo = {
 	Chapter: number,
 	Difficulty: string,
 	Members: { number }, -- UserId участников отряда
+	World: string?, -- параллельный мир (nil — Неоновый город)
 }
 
 local map: MemoryStoreHashMap? = nil

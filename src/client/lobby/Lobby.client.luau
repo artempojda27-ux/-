@@ -59,7 +59,7 @@ local countdownLabel = UI.label({
 local panel = UI.panel({
 	AnchorPoint = Vector2.new(1, 0.5),
 	Position = UDim2.new(1, -20, 0.5, 0),
-	Size = UDim2.fromOffset(300, 380),
+	Size = UDim2.fromOffset(300, 424),
 	Visible = false,
 	Parent = gui,
 })
@@ -126,10 +126,11 @@ end
 
 local chapterValue, chapterLeft, chapterRight = settingRow(3, "Chapter")
 local difficultyValue, difficultyLeft, difficultyRight = settingRow(4, "Difficulty")
-local modeValue, modeLeft, modeRight = settingRow(5, "Mode")
+local worldValue, worldLeft, worldRight = settingRow(5, "World")
+local modeValue, modeLeft, modeRight = settingRow(6, "Mode")
 
 local statusLabel = UI.label({
-	LayoutOrder = 6,
+	LayoutOrder = 7,
 	Size = UDim2.new(1, 0, 0, 24),
 	TextSize = 16,
 	TextColor3 = UI.Colors.Muted,
@@ -139,7 +140,7 @@ local statusLabel = UI.label({
 local currentCountdown: number? = nil
 
 local startButton = UI.button({
-	LayoutOrder = 7,
+	LayoutOrder = 8,
 	Text = "СТАРТ",
 	Size = UDim2.new(1, 0, 0, 48),
 	TextSize = 22,
@@ -169,9 +170,10 @@ Remotes.get("SquadUpdate").OnClientEvent:Connect(function(view)
 
 	chapterValue.Text = view.ChapterName
 	difficultyValue.Text = `Сложность: {view.DifficultyName}`
+	worldValue.Text = `Мир: {view.WorldName}`
 	modeValue.Text = if view.Mode == "Friends" then "Только друзья" else "Открытый отряд"
 
-	for _, button in { chapterLeft, chapterRight, difficultyLeft, difficultyRight, modeLeft, modeRight } do
+	for _, button in { chapterLeft, chapterRight, difficultyLeft, difficultyRight, worldLeft, worldRight, modeLeft, modeRight } do
 		button.Visible = view.IsLeader
 	end
 	startButton.Visible = view.IsLeader and not view.Launching

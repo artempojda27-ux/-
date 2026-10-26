@@ -41,9 +41,13 @@ type Vehicle = {
 	FlipStart: number?,
 	LastFlip: number,
 	Flame: ParticleEmitter?,
+	NitroUntil: number,
+	LastNitro: number,
 }
 
 local VehicleService = {}
+
+local applyTuning: (Player, Model) -> ()
 
 local vehicles: { [Model]: Vehicle } = {}
 local folder: Folder
@@ -252,9 +256,11 @@ local function update(vehicle: Vehicle, dt: number, now: number)
 	end
 
 	-- Скорость плавно стремится к нужной; тормозит вдвое резче
-	local target = if throttle > 0 then throttle * kind.MaxSpeed elseif throttle < 0 then throttle * kind.ReverseSpeed else 0
+	local nitro = now < vehicle.NitroUntil
+	local maxSpeed = if nitro then kind.MaxSpeed * Config.NitroMultiplier else kind.MaxSpeed
+	local target = if throttle > 0 then throttle * maxSpeed elseif throttle < 0 then throttle * kind.ReverseSpeed else 0
 	local braking = target == 0 or (target > 0) ~= (vehicle.Speed > 0)
-	local step = kind.Acceleration * dt * (if braking then 2 else 1)
+	local step = kind.Acceleration * dt * (if braking then 2 elseif nitro then 2.5 else 1)
 	if math.abs(target - vehicle.Speed) <= step then
 		vehicle.Speed = target
 	else
@@ -288,9 +294,9 @@ local function update(vehicle: Vehicle, dt: number, now: number)
 		end
 		vehicle.FlipStart = nil
 		vehicle.Align.Responsiveness = 25
-		if vehicle.Flame then
-			vehicle.Flame.Enabled = false
-		end
+	end
+	if vehicle.Flame then
+		vehicle.Flame.Enabled = nitro
 	end
 
 	-- Парение: держим высоту над землёй, без земли — падаем
@@ -311,6 +317,53 @@ local function count(): number
 		n += 1
 	end
 	return n
+end
+
+-- Неоновый тюнинг: светящийся контур и след за машиной цвета, выбранного владельцем
+local function tuningColor(player: Player): Color3
+	local index = player:GetAttribute("CarColor")
+	return Config.CarColors[if typeof(index) == "number" then index else 1] or Config.CarColors[1]
+end
+
+applyTuning = function(player: Player, model: Model)
+	local chassis = model.PrimaryPart
+	if not chassis or not PassService.owns(player, "NeonTuning") then
+		return
+	end
+	local color = tuningColor(player)
+	local outline = model:FindFirstChild("TuningOutline") :: Highlight?
+	if not outline then
+		local created = Instance.new("Highlight")
+		created.Name = "TuningOutline"
+		created.FillTransparency = 1
+		created.DepthMode = Enum.HighlightDepthMode.Occluded
+		created.Parent = model
+		outline = created
+	end
+	(outline :: Highlight).OutlineColor = color
+
+	local trail = chassis:FindFirstChild("TuningTrail") :: Trail?
+	if not trail then
+		local size = chassis.Size
+		local left = Instance.new("Attachment")
+		left.Name = "TrailLeft"
+		left.Position = Vector3.new(-size.X / 2, -size.Y / 2, size.Z / 2)
+		left.Parent = chassis
+		local right = Instance.new("Attachment")
+		right.Name = "TrailRight"
+		right.Position = Vector3.new(size.X / 2, -size.Y / 2, size.Z / 2)
+		right.Parent = chassis
+		local created = Instance.new("Trail")
+		created.Name = "TuningTrail"
+		created.Attachment0 = left
+		created.Attachment1 = right
+		created.Lifetime = 0.6
+		created.LightEmission = 1
+		created.Transparency = NumberSequence.new(0.2, 1)
+		created.Parent = chassis
+		trail = created
+	end
+	(trail :: Trail).Color = ColorSequence.new(color)
 end
 
 -- Вызывает машину игрока в точку cf (старая машина этого игрока исчезает).
@@ -387,7 +440,10 @@ function VehicleService.spawnFor(player: Player, kindId: string, cf: CFrame): (M
 		FlipStart = nil,
 		LastFlip = 0,
 		Flame = flame,
+		NitroUntil = 0,
+		LastNitro = 0,
 	}
+	applyTuning(player, model)
 	return model, nil
 end
 
@@ -449,6 +505,39 @@ function VehicleService.start()
 	-- Реактивный прыжок: только водитель, только с пропуском, только с земли и не чаще перезарядки
 	local notify = Remotes.get("Notify")
 	Remotes.get("VehicleAction").OnServerEvent:Connect(function(player, action: any)
+		if action == "Color" then
+			if not PassService.owns(player, "NeonTuning") then
+				notify:FireClient(player, "Цвет машины меняется с пропуском «Неоновый тюнинг».")
+				return
+			end
+			local index = player:GetAttribute("CarColor")
+			local nextIndex = (if typeof(index) == "number" then index else 1) % #Config.CarColors + 1
+			player:SetAttribute("CarColor", nextIndex)
+			for _, vehicle in vehicles do
+				if vehicle.Owner == player then
+					applyTuning(player, vehicle.Model)
+				end
+			end
+			return
+		end
+		if action == "Nitro" then
+			local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+			for _, vehicle in vehicles do
+				if humanoid and vehicle.Seat.Occupant == humanoid then
+					if not PassService.owns(player, "Nitro") then
+						notify:FireClient(player, "Нитро — в магазине.")
+						return
+					end
+					local now = os.clock()
+					if now - vehicle.LastNitro >= Config.NitroCooldown then
+						vehicle.LastNitro = now
+						vehicle.NitroUntil = now + Config.NitroDuration
+					end
+					return
+				end
+			end
+			return
+		end
 		if action ~= "Flip" then
 			return
 		end

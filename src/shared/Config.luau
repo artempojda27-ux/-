@@ -200,6 +200,20 @@ Config.GamePasses = {
 		Price = 199,
 	},
 	{
+		Key = "Nitro",
+		Id = 0,
+		Name = "Нитро",
+		Description = "Q — три секунды машина едет в 1,6 раза быстрее (раз в 10 секунд)",
+		Price = 149,
+	},
+	{
+		Key = "NeonTuning",
+		Id = 0,
+		Name = "Неоновый тюнинг",
+		Description = "Светящийся контур и след у твоей машины, их видят все. C — сменить цвет",
+		Price = 99,
+	},
+	{
 		Key = "VIP",
 		Id = 0,
 		Name = "VIP",
@@ -398,6 +412,19 @@ Config.Vehicles = {
 
 Config.VehicleIdleDespawn = 60 -- пустая машина исчезает через столько секунд
 Config.VehicleFlipCooldown = 3 -- секунд между реактивными прыжками
+Config.NitroDuration = 3
+Config.NitroCooldown = 10
+Config.NitroMultiplier = 1.6
+
+-- Цвета неонового тюнинга машин
+Config.CarColors = {
+	Color3.fromRGB(0, 255, 200),
+	Color3.fromRGB(255, 40, 120),
+	Color3.fromRGB(150, 80, 255),
+	Color3.fromRGB(60, 140, 255),
+	Color3.fromRGB(255, 190, 40),
+	Color3.fromRGB(255, 255, 255),
+}
 
 -- Побег: отряд на машинах уходит по трассе от стены вируса
 Config.Escape = {

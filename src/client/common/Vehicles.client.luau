@@ -1,6 +1,7 @@
 --!strict
--- Управление машиной для водителя: подсказка внизу экрана и реактивный прыжок с сальто
--- (Shift или F; на телефоне — кнопка «ПРЫЖОК»). Прыжок проверяет и выполняет сервер (VehicleService).
+-- Управление машиной для водителя: подсказка внизу экрана и платные возможности машины:
+-- реактивный прыжок с сальто (Shift или F), нитро (Q), смена цвета неонового тюнинга (C).
+-- На телефоне — кнопки «ПРЫЖОК» и «НИТРО». Всё проверяет и выполняет сервер (VehicleService).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -37,16 +38,42 @@ local jumpButton = UI.button({
 	vehicleAction:FireServer("Flip")
 end)
 UI.new("UICorner", { CornerRadius = UDim.new(1, 0), Parent = jumpButton })
+local nitroButton = UI.button({
+	Name = "NitroButton",
+	AnchorPoint = Vector2.new(1, 1),
+	Position = UDim2.new(1, -144, 1, -120),
+	Size = UDim2.fromOffset(90, 90),
+	Text = "НИТРО",
+	TextSize = 16,
+	Visible = false,
+	Parent = gui,
+}, function()
+	vehicleAction:FireServer("Nitro")
+end)
+UI.new("UICorner", { CornerRadius = UDim.new(1, 0), Parent = nitroButton })
 
 local driving = false
 
+local function owns(key: string): boolean
+	return player:GetAttribute(`Pass_{key}`) == true
+end
+
 local function refresh()
-	local owns = player:GetAttribute("Pass_Thrusters") == true
+	local parts = { "W/S — газ, A/D — руль" }
+	if owns("Thrusters") then
+		table.insert(parts, "Shift/F — прыжок")
+	end
+	if owns("Nitro") then
+		table.insert(parts, "Q — нитро")
+	end
+	if owns("NeonTuning") then
+		table.insert(parts, "C — цвет")
+	end
+	table.insert(parts, "пробел — выйти")
 	hint.Visible = driving
-	hint.Text = if owns
-		then "W/S — газ, A/D — руль, Shift или F — реактивный прыжок, пробел — выйти"
-		else "W/S — газ, A/D — руль, пробел — выйти · реактивный прыжок — в магазине"
-	jumpButton.Visible = driving and owns and UserInputService.TouchEnabled
+	hint.Text = table.concat(parts, ", ")
+	jumpButton.Visible = driving and owns("Thrusters") and UserInputService.TouchEnabled
+	nitroButton.Visible = driving and owns("Nitro") and UserInputService.TouchEnabled
 end
 
 local function watchCharacter(character: Model)
@@ -63,7 +90,9 @@ if player.Character then
 	task.spawn(watchCharacter, player.Character)
 end
 player.CharacterAdded:Connect(watchCharacter)
-player:GetAttributeChangedSignal("Pass_Thrusters"):Connect(refresh)
+for _, key in { "Thrusters", "Nitro", "NeonTuning" } do
+	player:GetAttributeChangedSignal(`Pass_{key}`):Connect(refresh)
+end
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed or not driving then
@@ -71,5 +100,9 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	end
 	if input.KeyCode == Enum.KeyCode.LeftShift or input.KeyCode == Enum.KeyCode.F then
 		vehicleAction:FireServer("Flip")
+	elseif input.KeyCode == Enum.KeyCode.Q then
+		vehicleAction:FireServer("Nitro")
+	elseif input.KeyCode == Enum.KeyCode.C then
+		vehicleAction:FireServer("Color")
 	end
 end)

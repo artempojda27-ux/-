@@ -17,6 +17,7 @@ local DataService = require(ServerScriptService.Common.DataService)
 local MissionStore = require(ServerScriptService.Common.MissionStore)
 local PassService = require(ServerScriptService.Common.PassService)
 local Teleport = require(ServerScriptService.Common.Teleport)
+local DoppelgangerService = require(script.Parent.DoppelgangerService)
 local EnemyService = require(script.Parent.EnemyService)
 local MissionMap = require(script.Parent.MissionMap)
 
@@ -196,7 +197,35 @@ local function runStory()
 	local healthMultiplier, damageMultiplier = enemyMultipliers()
 	local random = Random.new()
 	local lastSpawn = 0
+
+	-- Двойник появится посреди боя; если предаст — снова откроет один из закрытых сбоев
+	local delay = Config.Doppelganger.StoryDelay
+	local doubleAt = os.clock() + random:NextNumber(delay[1], delay[2])
+	-- Тест в Studio: атрибут "TestDoubleDelay" у ServerScriptService — через сколько секунд появится двойник
+	local testDelay = ServerScriptService:GetAttribute("TestDoubleDelay")
+	if RunService:IsStudio() and typeof(testDelay) == "number" then
+		doubleAt = os.clock() + testDelay
+	end
+	local doubleTried = false
+	DoppelgangerService.setBetrayHandler(function()
+		local closedNodes = {}
+		for node in closed do
+			table.insert(closedNodes, node)
+		end
+		if #closedNodes > 0 then
+			local node = closedNodes[random:NextInteger(1, #closedNodes)]
+			closed[node] = nil
+			MissionMap.setNodeActive(node, true)
+			notifyAll("Двойник взломал систему: сбой снова открыт!")
+			sendAll()
+		end
+	end)
+
 	while closedCount() < #nodes do
+		if not doubleTried and os.clock() >= doubleAt then
+			doubleTried = true
+			DoppelgangerService.spawn()
+		end
 		if os.clock() - lastSpawn >= STORY_SPAWN_INTERVAL and EnemyService.aliveCount() < STORY_MAX_ENEMIES then
 			lastSpawn = os.clock()
 			for _, node in nodes do
@@ -209,6 +238,7 @@ local function runStory()
 		task.wait(0.25)
 	end
 	EnemyService.clear()
+	DoppelgangerService.clear()
 end
 
 -- Какой враг появится: сначала только Пиксели, потом Стрелки, потом Блоки
@@ -230,6 +260,9 @@ local function runWave(random: Random): boolean
 	waveSize = math.max(1, math.floor(base * countMultiplier + 0.5))
 	waveKilled = 0
 	setState("Combat")
+	if wave % Config.Doppelganger.SurvivalEvery == 0 then
+		DoppelgangerService.spawn()
+	end
 
 	local spawned = 0
 	local lastSpawn = 0
@@ -279,6 +312,7 @@ local function runSurvival()
 		countdown(Config.Survival.BreakTime)
 	end
 	EnemyService.clear()
+	DoppelgangerService.clear()
 end
 
 local function rewardMultiplier(player: Player): (number, boolean)

@@ -13,6 +13,7 @@ local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
+local DoppelgangerService = require(script.Parent.DoppelgangerService)
 
 local FIELD_NAME = "InvincibleField"
 local GLITCH = Color3.fromRGB(255, 40, 120)
@@ -99,7 +100,12 @@ function BoostEffects.damageMultiplier(player: Player): number
 end
 
 BoostEffects.handlers = {
-	-- Стирает всех врагов в радиусе вокруг покупателя
+	-- Раскрывает двойника всему отряду (или сработает, когда он появится)
+	ScanAll = function(player: Player): boolean
+		return DoppelgangerService.scanAll(player)
+	end,
+
+	-- Стирает всех врагов в радиусе вокруг покупателя (нераскрытого двойника не трогает)
 	Nuke = function(player: Player): boolean
 		local center = positionOf(player)
 		if not center then
@@ -109,7 +115,8 @@ BoostEffects.handlers = {
 		local count = 0
 		for _, enemy in CollectionService:GetTagged("Enemy") do
 			local humanoid = enemy:FindFirstChildOfClass("Humanoid")
-			if enemy:IsA("Model") and humanoid and humanoid.Health > 0
+			local hiddenDouble = enemy:GetAttribute("Doppelganger") and not enemy:GetAttribute("Revealed")
+			if enemy:IsA("Model") and humanoid and humanoid.Health > 0 and not hiddenDouble
 				and (enemy:GetPivot().Position - center).Magnitude <= Config.NukeRadius then
 				humanoid.Health = 0
 				count += 1

@@ -81,7 +81,8 @@ local function findTarget(from: Vector3): (Model?, Vector3?)
 	local bestDistance = Config.DroneRange
 	for _, enemy in CollectionService:GetTagged("Enemy") do
 		local humanoid = enemy:FindFirstChildOfClass("Humanoid")
-		if enemy:IsA("Model") and humanoid and humanoid.Health > 0 then
+		local hiddenDouble = enemy:GetAttribute("Doppelganger") and not enemy:GetAttribute("Revealed")
+		if enemy:IsA("Model") and humanoid and humanoid.Health > 0 and not hiddenDouble then
 			local point = enemy:GetPivot().Position
 			local distance = (point - from).Magnitude
 			if distance < bestDistance then

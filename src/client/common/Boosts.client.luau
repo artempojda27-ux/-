@@ -1,7 +1,8 @@
 --!strict
 -- Платные бусты, которые видны только самому игроку:
 -- «Ускорение» — второй прыжок в воздухе (скорость бега ставит сервер),
--- «Взгляд сквозь код» — подсветка врагов сквозь стены.
+-- «Взгляд сквозь код» — подсветка врагов сквозь стены,
+-- «Сканер вируса» — подсветка двойников.
 -- Купленные бусты сервер отмечает атрибутами игрока "Pass_<Key>".
 
 local CollectionService = game:GetService("CollectionService")
@@ -12,6 +13,7 @@ local UserInputService = game:GetService("UserInputService")
 local DOUBLE_JUMP_DELAY = 0.2 -- первый прыжок не должен сразу съесть второй
 
 local GLITCH = Color3.fromRGB(255, 40, 120)
+local SCANNER = Color3.fromRGB(255, 30, 60)
 
 local player = Players.LocalPlayer
 
@@ -62,18 +64,32 @@ UserInputService.JumpRequest:Connect(function()
 	current:ChangeState(Enum.HumanoidStateType.Jumping)
 end)
 
--- Подсветка врагов сквозь стены
-local function highlight(enemy: Instance)
-	if not owns("XRay") or not enemy:IsA("Model") or enemy:FindFirstChild("XRayHighlight") then
+-- Подсветка врагов сквозь стены. Двойника «Взгляд сквозь код» не выдаёт — для этого есть «Сканер вируса»,
+-- он подсвечивает двойника красным.
+local function addHighlight(enemy: Model, name: string, color: Color3)
+	if enemy:FindFirstChild(name) then
 		return
 	end
 	local h = Instance.new("Highlight")
-	h.Name = "XRayHighlight"
+	h.Name = name
 	h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-	h.FillColor = GLITCH
+	h.FillColor = color
 	h.FillTransparency = 0.6
-	h.OutlineColor = GLITCH
+	h.OutlineColor = color
 	h.Parent = enemy
+end
+
+local function highlight(enemy: Instance)
+	if not enemy:IsA("Model") then
+		return
+	end
+	if enemy:GetAttribute("Doppelganger") then
+		if owns("Scanner") then
+			addHighlight(enemy, "ScannerHighlight", SCANNER)
+		end
+	elseif owns("XRay") then
+		addHighlight(enemy, "XRayHighlight", GLITCH)
+	end
 end
 
 local function highlightAll()
@@ -95,4 +111,5 @@ end
 
 CollectionService:GetInstanceAddedSignal("Enemy"):Connect(highlight)
 player:GetAttributeChangedSignal("Pass_XRay"):Connect(highlightAll)
+player:GetAttributeChangedSignal("Pass_Scanner"):Connect(highlightAll)
 highlightAll()

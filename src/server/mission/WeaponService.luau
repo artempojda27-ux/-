@@ -218,10 +218,14 @@ local function onFire(player: Player, weaponId: any, origin: any, directions: an
 	for enemy, amount in damage do
 		local enemyHumanoid = enemy:FindFirstChildOfClass("Humanoid")
 		if enemyHumanoid and enemyHumanoid.Health > 0 then
+			-- По нераскрытому двойнику отметку попадания не показываем, иначе его легко вычислить
+			local hiddenDouble = enemy:GetAttribute("Doppelganger") and not enemy:GetAttribute("Revealed")
 			enemyHumanoid:TakeDamage(amount)
-			hitAny = true
-			if enemyHumanoid.Health <= 0 then
-				killed = true
+			if not hiddenDouble then
+				hitAny = true
+				if enemyHumanoid.Health <= 0 then
+					killed = true
+				end
 			end
 		end
 	end

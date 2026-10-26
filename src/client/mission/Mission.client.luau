@@ -56,23 +56,33 @@ Remotes.get("MissionUpdate").OnClientEvent:Connect(function(view)
 		bigLabel.Visible = false
 	elseif view.State == "Briefing" then
 		objectiveLabel.Text = view.Objective
-		bigLabel.Text = if view.Kind == "Survival"
-			then `ВЫЖИВАНИЕ\nДержитесь как можно дольше!\nСтарт через {view.Timer or 0}`
-			else `СЕКТОР ПОВРЕЖДЁН\nСтарт через {view.Timer or 0}`
+		if view.Kind == "Survival" then
+			bigLabel.Text = `ВЫЖИВАНИЕ\nДержитесь как можно дольше!\nСтарт через {view.Timer or 0}`
+		elseif view.Kind == "Escape" then
+			bigLabel.Text = `ПОБЕГ\nСектор рушится — гоните к выходу!\nСтарт через {view.Timer or 0}`
+		else
+			bigLabel.Text = `СЕКТОР ПОВРЕЖДЁН\nСтарт через {view.Timer or 0}`
+		end
 	elseif view.State == "Combat" then
-		objectiveLabel.Text = `{view.Objective}: {view.Progress}/{view.Total}`
+		objectiveLabel.Text = if view.Kind == "Escape"
+			then `{view.Objective}: {math.floor(view.Progress / math.max(view.Total, 1) * 100)}%`
+			else `{view.Objective}: {view.Progress}/{view.Total}`
 		bigLabel.Visible = false
 	elseif view.State == "Break" then
 		objectiveLabel.Text = `Пройдено волн: {view.WavesCleared}`
 		bigLabel.Text = `ВОЛНА {view.Wave} ПРОЙДЕНА\nСледующая через {view.Timer or 0}`
 	elseif view.State == "GameOver" then
-		objectiveLabel.Text = `Пройдено волн: {view.WavesCleared}`
+		local result = if view.Kind == "Escape"
+			then `Пройдено пути: {math.floor(view.Progress / math.max(view.Total, 1) * 100)}%`
+			else `Продержались волн: {view.WavesCleared}`
+		local title = if view.Kind == "Escape" then "ВИРУС ДОГНАЛ ОТРЯД" else "ОТРЯД ПАЛ"
+		objectiveLabel.Text = result
 		bigLabel.TextColor3 = UI.Colors.Glitch
 		bigLabel.Text = if view.Timer
-			then `ОТРЯД ПАЛ\nПродержались волн: {view.WavesCleared}\nВозвращение в Штаб через {view.Timer}`
-			else `ОТРЯД ПАЛ\nПродержались волн: {view.WavesCleared}`
+			then `{title}\n{result}\nВозвращение в Штаб через {view.Timer}`
+			else `{title}\n{result}`
 	elseif view.State == "Victory" then
-		objectiveLabel.Text = "Сектор очищен"
+		objectiveLabel.Text = if view.Kind == "Escape" then "Отряд вырвался" else "Сектор очищен"
 		bigLabel.Text = if view.Timer then `ПОБЕДА!\nВозвращение в Штаб через {view.Timer}` else "ПОБЕДА!"
 	elseif view.State == "Returning" then
 		objectiveLabel.Text = "Возвращение в Штаб"

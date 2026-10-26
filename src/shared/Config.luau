@@ -24,17 +24,18 @@ export type Chapter = {
 	Id: number,
 	Name: string,
 	Sector: string,
-	Kind: "Story" | "Survival", -- сюжетная глава или бесконечные волны
+	Kind: "Story" | "Survival" | "Escape", -- сюжетная глава, бесконечные волны или побег на машинах
 }
 
 Config.Chapters = {
 	{ Id = 1, Name = "Сбой в городе", Sector = "Город", Kind = "Story" },
 	{ Id = 100, Name = "Выживание", Sector = "Город", Kind = "Survival" },
+	{ Id = 200, Name = "Побег", Sector = "Трасса", Kind = "Escape" },
 } :: { Chapter }
 
 -- Подпись главы для интерфейса: «Глава 1: Сбой в городе» или «Выживание»
 function Config.chapterTitle(chapter: Chapter): string
-	return if chapter.Kind == "Survival" then chapter.Name else `Глава {chapter.Id}: {chapter.Name}`
+	return if chapter.Kind == "Story" then `Глава {chapter.Id}: {chapter.Name}` else chapter.Name
 end
 
 -- Враги. Урон — по игрокам; Speed — скорость бега (у игрока 16).
@@ -372,6 +373,18 @@ Config.Vehicles = {
 
 Config.VehicleIdleDespawn = 60 -- пустая машина исчезает через столько секунд
 Config.VehicleFlipCooldown = 3 -- секунд между реактивными прыжками
+
+-- Побег: отряд на машинах уходит по трассе от стены вируса
+Config.Escape = {
+	Length = 2400, -- длина трассы в студах
+	Vehicle = "Transporter", -- машина отряда (до 4 человек в одной)
+	WallDelay = 10, -- секунд форы, прежде чем стена вируса двинется
+	WallSpeed = 36, -- начальная скорость стены
+	WallAcceleration = 0.8, -- на сколько стена ускоряется каждую секунду
+	WallMaxSpeed = 62, -- быстрее стена не бывает (Транспортник — до 70)
+	EnemyAhead = 320, -- враги у обочин появляются, когда отряд в стольких студах от них
+	RewardMultiplier = 1.2, -- награда за побег относительно сюжетной главы
+}
 
 -- Двойник: вирус копирует одного из игроков отряда и в какой-то момент предаёт
 Config.Doppelganger = {

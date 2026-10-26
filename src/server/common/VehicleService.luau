@@ -391,6 +391,30 @@ function VehicleService.spawnFor(player: Player, kindId: string, cf: CFrame): (M
 	return model, nil
 end
 
+-- Убирает машину (например, её догнала стена вируса)
+function VehicleService.despawn(model: Model)
+	local vehicle = vehicles[model]
+	if vehicle then
+		destroy(vehicle)
+	end
+end
+
+-- Убирает все машины
+function VehicleService.clear()
+	for _, vehicle in vehicles do
+		destroy(vehicle)
+	end
+end
+
+-- Все машины на сервере
+function VehicleService.all(): { Model }
+	local list = {}
+	for model in vehicles do
+		table.insert(list, model)
+	end
+	return list
+end
+
 -- Неподвижная витринная копия машины (для автосалона)
 function VehicleService.buildDisplay(kindId: string, cf: CFrame): Model?
 	local kind = Config.Vehicles[kindId]

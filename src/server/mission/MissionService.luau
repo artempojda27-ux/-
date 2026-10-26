@@ -19,6 +19,8 @@ local PassService = require(ServerScriptService.Common.PassService)
 local Teleport = require(ServerScriptService.Common.Teleport)
 local DoppelgangerService = require(script.Parent.DoppelgangerService)
 local EnemyService = require(script.Parent.EnemyService)
+local EscapeMap = require(script.Parent.EscapeMap)
+local VehicleService = require(ServerScriptService.Common.VehicleService)
 local MissionMap = require(script.Parent.MissionMap)
 
 local RETURN_ATTEMPTS = 3
@@ -48,15 +50,23 @@ local waveSize = 0
 local waveKilled = 0
 local wavesCleared = 0
 
+-- Побег
+local course: EscapeMap.Course? = nil
+local escapeProgress = 0 -- сколько студов прошёл лучший из отряда
+
 local MissionService = {}
 
-local function chapterKind(): "Story" | "Survival"
+local function chapterKind(): "Story" | "Survival" | "Escape"
 	local chapter = Config.getChapter(info.Chapter)
 	return if chapter then chapter.Kind else "Story"
 end
 
 function MissionService.isSurvival(): boolean
 	return chapterKind() == "Survival"
+end
+
+function MissionService.isEscape(): boolean
+	return chapterKind() == "Escape"
 end
 
 local function closedCount(): number
@@ -70,15 +80,23 @@ end
 local function snapshot()
 	local chapter = Config.getChapter(info.Chapter)
 	local difficulty = Config.getDifficulty(info.Difficulty)
-	local survival = MissionService.isSurvival()
+	local kind = chapterKind()
+	local objective, progress, total
+	if kind == "Survival" then
+		objective, progress, total = `Волна {wave}`, waveKilled, waveSize
+	elseif kind == "Escape" then
+		objective, progress, total = "Уйдите от вируса! Пройдено", escapeProgress, Config.Escape.Length
+	else
+		objective, progress, total = "Закройте все сбои", closedCount(), #nodes
+	end
 	return {
 		State = state,
-		Kind = chapterKind(),
+		Kind = kind,
 		ChapterName = if chapter then Config.chapterTitle(chapter) else "?",
 		DifficultyName = if difficulty then difficulty.Name else "?",
-		Objective = if survival then `Волна {wave}` else "Закройте все сбои",
-		Progress = if survival then waveKilled else closedCount(),
-		Total = if survival then waveSize else #nodes,
+		Objective = objective,
+		Progress = progress,
+		Total = total,
 		Wave = wave,
 		WavesCleared = wavesCleared,
 		Timer = timer,
@@ -352,6 +370,168 @@ local function giveSurvivalRewards()
 	end
 end
 
+-- Побег: отряд садится в машины и уходит по трассе от стены вируса
+local function seatInVehicle(player: Player, model: Model): boolean
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	if not character or not humanoid or humanoid.Health <= 0 then
+		return false
+	end
+	for _, seatName in { "DriverSeat", "Seat2", "Seat3", "Seat4" } do
+		local seat = model:FindFirstChild(seatName)
+		if seat and (seat:IsA("Seat") or seat:IsA("VehicleSeat")) and not seat.Occupant then
+			character:PivotTo(seat.CFrame + Vector3.new(0, 3, 0))
+			seat:Sit(humanoid)
+			return true
+		end
+	end
+	return false
+end
+
+local function runEscape(): boolean
+	local escapeCourse = course :: EscapeMap.Course
+	local settings = Config.Escape
+	escapeProgress = 0
+	local players = Players:GetPlayers()
+
+	-- По машине на каждые четыре игрока; первый в четвёрке — водитель
+	local spotIndex = 1
+	for first = 1, #players, 4 do
+		local spot = escapeCourse.VehicleSpots[spotIndex] or escapeCourse.VehicleSpots[1]
+		spotIndex += 1
+		local model = VehicleService.spawnFor(players[first], settings.Vehicle, spot)
+		if model then
+			task.wait(0.2)
+			for i = first, math.min(first + 3, #players) do
+				seatInVehicle(players[i], model)
+			end
+		end
+	end
+
+	-- Погибший возрождается сразу на свободном месте в машине отряда
+	local respawnConnections = {}
+	for _, player in Players:GetPlayers() do
+		table.insert(respawnConnections, player.CharacterAdded:Connect(function(character)
+			character:WaitForChild("HumanoidRootPart", 5)
+			task.wait(0.3)
+			for _, model in VehicleService.all() do
+				if seatInVehicle(player, model) then
+					return
+				end
+			end
+		end))
+	end
+
+	-- Стена вируса
+	local wall = Instance.new("Part")
+	wall.Name = "VirusWall"
+	wall.Anchored = true
+	wall.CanCollide = false
+	wall.CanQuery = false
+	wall.CanTouch = false
+	wall.Material = Enum.Material.Neon
+	wall.Color = Color3.fromRGB(255, 40, 120)
+	wall.Transparency = 0.35
+	wall.Size = Vector3.new(90, 80, 4)
+	local wallZ = escapeCourse.Start + 70
+	wall.Position = Vector3.new(0, 40, wallZ)
+	wall.Parent = Workspace
+
+	setState("Combat")
+	local healthMultiplier, damageMultiplier = enemyMultipliers()
+	local spawnedSpots: { [number]: boolean } = {}
+	local started = os.clock()
+	local last = started
+	local lastSend = 0
+	local deadSince: number? = nil
+	local escaped = false
+
+	while true do
+		task.wait(0.1)
+		local now = os.clock()
+		local dt = now - last
+		last = now
+		local elapsed = now - started
+
+		-- Стена трогается после форы и разгоняется
+		if elapsed > settings.WallDelay then
+			local speed = math.min(settings.WallMaxSpeed, settings.WallSpeed + settings.WallAcceleration * (elapsed - settings.WallDelay))
+			wallZ -= speed * dt
+			wall.Position = Vector3.new(0, 40, wallZ)
+		end
+
+		-- Кого догнала стена — гибнет; машины за стеной исчезают
+		local leader = math.huge
+		for _, player in Players:GetPlayers() do
+			local character = player.Character
+			local root = character and character:FindFirstChild("HumanoidRootPart")
+			local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+			if root and root:IsA("BasePart") and humanoid and humanoid.Health > 0 then
+				if root.Position.Z > wallZ - 2 then
+					humanoid.Health = 0
+				else
+					leader = math.min(leader, root.Position.Z)
+				end
+			end
+		end
+		for _, model in VehicleService.all() do
+			if model:GetPivot().Position.Z > wallZ + 4 then
+				VehicleService.despawn(model)
+			end
+		end
+
+		if leader < math.huge then
+			escapeProgress = math.clamp(math.floor(escapeCourse.Start - leader), 0, settings.Length)
+			if leader <= escapeCourse.Finish then
+				escaped = true
+				break
+			end
+			-- Враги у обочин появляются впереди отряда
+			for index, spot in escapeCourse.EnemySpots do
+				if not spawnedSpots[index] and leader - spot.Z < settings.EnemyAhead then
+					spawnedSpots[index] = true
+					EnemyService.spawn(if index % 3 == 0 then "Pixel" else "Shooter", spot, healthMultiplier, damageMultiplier)
+				end
+			end
+		end
+
+		-- Поражение: все мертвы и возродиться некуда
+		if anyoneAlive() then
+			deadSince = nil
+		elseif not deadSince then
+			deadSince = now
+		elseif now - deadSince >= DEFEAT_GRACE + 1 and #VehicleService.all() == 0 then
+			break
+		end
+
+		if now - lastSend > 0.5 then
+			lastSend = now
+			sendAll()
+		end
+	end
+
+	for _, connection in respawnConnections do
+		connection:Disconnect()
+	end
+	wall:Destroy()
+	EnemyService.clear()
+	VehicleService.clear()
+	sendAll()
+	return escaped
+end
+
+local function giveEscapeRewards()
+	for _, player in Players:GetPlayers() do
+		task.spawn(function()
+			local multiplier, vip = rewardMultiplier(player)
+			local reward = math.floor(Config.MissionReward * Config.Escape.RewardMultiplier * multiplier)
+			if DataService.waitFor(player, 10) and DataService.completeMission(player, info.Chapter, reward) then
+				notify:FireClient(player, if vip then `Награда: +{reward} бит (x2 VIP)` else `Награда: +{reward} бит`)
+			end
+		end)
+	end
+end
+
 -- true, если игроков отправили в Штаб
 local function returnToLobby(): boolean
 	local available, reason = Teleport.check(Config.PlaceIds.Lobby)
@@ -395,7 +575,12 @@ local function respawnDead()
 end
 
 function MissionService.start()
-	nodes = MissionMap.setup()
+	loadInfo()
+	if MissionService.isEscape() then
+		course = EscapeMap.setup()
+	else
+		nodes = MissionMap.setup()
+	end
 	for _, node in nodes do
 		MissionMap.setNodeActive(node, false)
 		local prompt = node:FindFirstChildOfClass("ProximityPrompt")
@@ -410,8 +595,6 @@ function MissionService.start()
 		missionUpdate:FireClient(player, snapshot())
 	end)
 
-	loadInfo()
-
 	task.spawn(function()
 		while true do
 			waitForSquad()
@@ -419,7 +602,16 @@ function MissionService.start()
 			setState("Briefing")
 			countdown(Config.BriefingTime)
 
-			if MissionService.isSurvival() then
+			if MissionService.isEscape() then
+				if runEscape() then
+					setState("Victory")
+					notifyAll("Отряд вырвался из сектора!")
+					giveEscapeRewards()
+				else
+					setState("GameOver")
+					notifyAll(`Вирус догнал отряд. Пройдено {math.floor(escapeProgress / Config.Escape.Length * 100)}% пути`)
+				end
+			elseif MissionService.isSurvival() then
 				runSurvival()
 				setState("GameOver")
 				notifyAll(`Отряд пал. Пройдено волн: {wavesCleared}`)

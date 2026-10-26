@@ -14,6 +14,59 @@
         "Common": { "$path": "src/client/common" },
         "Lobby": { "$path": "src/client/lobby" }
       }
+    },
+    "Lighting": {
+      "$ignoreUnknownInstances": false,
+      "$properties": {
+        "Technology": "Future",
+        "ClockTime": 18.6,
+        "Brightness": 2.5,
+        "Ambient": [0.1, 0.1, 0.16],
+        "OutdoorAmbient": [0.35, 0.3, 0.45],
+        "EnvironmentDiffuseScale": 0.6,
+        "EnvironmentSpecularScale": 1,
+        "GlobalShadows": true
+      },
+      "Sky": {
+        "$className": "Sky",
+        "$properties": {
+          "StarCount": 2000,
+          "SunAngularSize": 12
+        }
+      },
+      "Atmosphere": {
+        "$className": "Atmosphere",
+        "$properties": {
+          "Density": 0.3,
+          "Offset": 0.2,
+          "Color": [0.4, 0.55, 0.75],
+          "Decay": [0.35, 0.2, 0.45],
+          "Glare": 0.6,
+          "Haze": 1.5
+        }
+      },
+      "Bloom": {
+        "$className": "BloomEffect",
+        "$properties": {
+          "Intensity": 0.7,
+          "Size": 28,
+          "Threshold": 0.9
+        }
+      },
+      "SunRays": {
+        "$className": "SunRaysEffect",
+        "$properties": {
+          "Intensity": 0.06,
+          "Spread": 0.6
+        }
+      },
+      "ColorCorrection": {
+        "$className": "ColorCorrectionEffect",
+        "$properties": {
+          "Contrast": 0.1,
+          "Saturation": 0.15
+        }
+      }
     }
   }
 }

@@ -24,22 +24,107 @@ export type Chapter = {
 	Id: number,
 	Name: string,
 	Sector: string,
+	Kind: "Story" | "Survival", -- сюжетная глава или бесконечные волны
 }
 
 Config.Chapters = {
-	{ Id = 1, Name = "Сбой в городе", Sector = "Город" },
+	{ Id = 1, Name = "Сбой в городе", Sector = "Город", Kind = "Story" },
+	{ Id = 100, Name = "Выживание", Sector = "Город", Kind = "Survival" },
 } :: { Chapter }
+
+-- Подпись главы для интерфейса: «Глава 1: Сбой в городе» или «Выживание»
+function Config.chapterTitle(chapter: Chapter): string
+	return if chapter.Kind == "Survival" then chapter.Name else `Глава {chapter.Id}: {chapter.Name}`
+end
+
+-- Враги. Урон — по игрокам; Speed — скорость бега (у игрока 16).
+export type EnemyKind = {
+	Id: string,
+	Name: string,
+	Health: number,
+	Speed: number,
+	Damage: number,
+	AttackInterval: number, -- секунд между атаками
+	AttackRange: number, -- с какого расстояния бьёт
+	Size: Vector3,
+	Color: Color3,
+	Reward: number, -- бит за уничтожение (в Выживании)
+	-- Стрелок держит дистанцию и стреляет медленными снарядами
+	Ranged: boolean,
+	ProjectileSpeed: number?,
+	-- Блок бьёт по площади: перед ударом мигает, можно отбежать
+	AreaRadius: number?,
+	WindUp: number?, -- секунд предупреждения перед ударом по площади
+}
+
+Config.Enemies = {
+	Pixel = {
+		Id = "Pixel",
+		Name = "Пиксель",
+		Health = 40,
+		Speed = 20,
+		Damage = 8,
+		AttackInterval = 0.8,
+		AttackRange = 4,
+		Size = Vector3.new(2, 2, 2),
+		Color = Color3.fromRGB(60, 255, 120),
+		Reward = 1,
+		Ranged = false,
+	},
+	Block = {
+		Id = "Block",
+		Name = "Блок",
+		Health = 300,
+		Speed = 9,
+		Damage = 30,
+		AttackInterval = 2.5,
+		AttackRange = 7,
+		Size = Vector3.new(5, 5, 5),
+		Color = Color3.fromRGB(40, 200, 90),
+		Reward = 5,
+		Ranged = false,
+		AreaRadius = 9,
+		WindUp = 0.8,
+	},
+	Shooter = {
+		Id = "Shooter",
+		Name = "Стрелок",
+		Health = 90,
+		Speed = 12,
+		Damage = 15,
+		AttackInterval = 2.2,
+		AttackRange = 45,
+		Size = Vector3.new(2, 4, 2),
+		Color = Color3.fromRGB(120, 255, 60),
+		Reward = 3,
+		Ranged = true,
+		ProjectileSpeed = 45,
+	},
+} :: { [string]: EnemyKind }
+
+-- Выживание: волны врагов
+Config.Survival = {
+	FirstWaveSize = 6, -- врагов в первой волне при 3 игроках
+	WaveGrowth = 3, -- на сколько больше врагов в каждой следующей волне
+	HealthGrowth = 0.08, -- +8% здоровья врагов за каждую волну
+	BreakTime = 8, -- секунд отдыха между волнами
+	SpawnInterval = 0.6, -- секунд между появлениями врагов в волне
+	MaxAlive = 30, -- больше врагов одновременно не бывает (чтобы не тормозило)
+	RewardPerWave = 20, -- бит за каждую пройденную волну
+}
 
 export type Difficulty = {
 	Id: string,
 	Name: string,
 	RewardMultiplier: number,
+	EnemyHealth: number, -- множитель здоровья врагов
+	EnemyDamage: number, -- множитель урона врагов
 }
 
 Config.Difficulties = {
-	{ Id = "Normal", Name = "Обычная", RewardMultiplier = 1 },
-	{ Id = "Hard", Name = "Сложная", RewardMultiplier = 1.5 },
-	{ Id = "Nightmare", Name = "Кошмар", RewardMultiplier = 2.5 },
+	{ Id = "Normal", Name = "Обычная", RewardMultiplier = 1, EnemyHealth = 1, EnemyDamage = 1 },
+	{ Id = "Hard", Name = "Сложная", RewardMultiplier = 1.5, EnemyHealth = 1.5, EnemyDamage = 1.3 },
+	{ Id = "Nightmare", Name = "Кошмар", RewardMultiplier = 2.5, EnemyHealth = 2.2, EnemyDamage = 1.7 },
 } :: { Difficulty }
 
 -- Платные бусты навсегда (Game Pass). Id — номер пропуска из Creator Hub;

@@ -14,6 +14,54 @@
         "Common": { "$path": "src/client/common" },
         "Mission": { "$path": "src/client/mission" }
       }
+    },
+    "Lighting": {
+      "$ignoreUnknownInstances": false,
+      "$properties": {
+        "Technology": "Future",
+        "ClockTime": 20.5,
+        "Brightness": 2,
+        "Ambient": [0.22, 0.18, 0.32],
+        "OutdoorAmbient": [0.5, 0.42, 0.66],
+        "EnvironmentDiffuseScale": 0.4,
+        "EnvironmentSpecularScale": 1,
+        "GlobalShadows": true,
+        "ExposureCompensation": 0.5
+      },
+      "Sky": {
+        "$className": "Sky",
+        "$properties": {
+          "StarCount": 3000,
+          "CelestialBodiesShown": false
+        }
+      },
+      "Atmosphere": {
+        "$className": "Atmosphere",
+        "$properties": {
+          "Density": 0.3,
+          "Offset": 0.25,
+          "Color": [0.55, 0.35, 0.7],
+          "Decay": [0.25, 0.1, 0.35],
+          "Glare": 0.4,
+          "Haze": 1.8
+        }
+      },
+      "Bloom": {
+        "$className": "BloomEffect",
+        "$properties": {
+          "Intensity": 0.9,
+          "Size": 32,
+          "Threshold": 0.85
+        }
+      },
+      "ColorCorrection": {
+        "$className": "ColorCorrectionEffect",
+        "$properties": {
+          "Contrast": 0.15,
+          "Saturation": 0.2,
+          "TintColor": [0.96, 0.95, 1]
+        }
+      }
     }
   }
 }

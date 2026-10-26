@@ -1,11 +1,15 @@
 --!strict
--- Ход миссии: ждём отряд → брифинг → бой (пока: закрыть три сбоя) →
--- победа и награда → все вместе возвращаются в Штаб.
+-- Ход миссии. Два вида:
+--   Сюжетная глава: ждём отряд → брифинг → бой (закрыть три сбоя, пока лезут Пиксели) →
+--     победа и награда → все вместе возвращаются в Штаб.
+--   Выживание: ждём отряд → брифинг → волны врагов, каждая сильнее → когда отряд пал,
+--     награда за пройденные волны и рекорд → возвращение в Штаб.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local ServerScriptService = game:GetService("ServerScriptService")
+local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
@@ -13,11 +17,16 @@ local DataService = require(ServerScriptService.Common.DataService)
 local MissionStore = require(ServerScriptService.Common.MissionStore)
 local PassService = require(ServerScriptService.Common.PassService)
 local Teleport = require(ServerScriptService.Common.Teleport)
+local EnemyService = require(script.Parent.EnemyService)
 local MissionMap = require(script.Parent.MissionMap)
 
 local RETURN_ATTEMPTS = 3
+local SPAWN_RADIUS = 70 -- враги Выживания появляются у краёв арены
+local STORY_SPAWN_INTERVAL = 6 -- в сюжетной главе Пиксели лезут из открытых сбоев
+local STORY_MAX_ENEMIES = 10
+local DEFEAT_GRACE = 1 -- столько секунд все должны быть мертвы, чтобы засчитать поражение
 
-type MissionState = "Waiting" | "Briefing" | "Combat" | "Victory" | "Returning"
+type MissionState = "Waiting" | "Briefing" | "Combat" | "Break" | "Victory" | "GameOver" | "Returning"
 
 local notify = Remotes.get("Notify")
 local missionUpdate = Remotes.get("MissionUpdate")
@@ -32,7 +41,22 @@ local timer: number? = nil -- секунд до следующего этапа
 local nodes: { BasePart } = {}
 local closed: { [BasePart]: boolean } = {}
 
+-- Выживание
+local wave = 0
+local waveSize = 0
+local waveKilled = 0
+local wavesCleared = 0
+
 local MissionService = {}
+
+local function chapterKind(): "Story" | "Survival"
+	local chapter = Config.getChapter(info.Chapter)
+	return if chapter then chapter.Kind else "Story"
+end
+
+function MissionService.isSurvival(): boolean
+	return chapterKind() == "Survival"
+end
 
 local function closedCount(): number
 	local count = 0
@@ -45,13 +69,17 @@ end
 local function snapshot()
 	local chapter = Config.getChapter(info.Chapter)
 	local difficulty = Config.getDifficulty(info.Difficulty)
+	local survival = MissionService.isSurvival()
 	return {
 		State = state,
-		ChapterName = if chapter then `Глава {chapter.Id}: {chapter.Name}` else "?",
+		Kind = chapterKind(),
+		ChapterName = if chapter then Config.chapterTitle(chapter) else "?",
 		DifficultyName = if difficulty then difficulty.Name else "?",
-		Objective = "Закройте все сбои",
-		Progress = closedCount(),
-		Total = #nodes,
+		Objective = if survival then `Волна {wave}` else "Закройте все сбои",
+		Progress = if survival then waveKilled else closedCount(),
+		Total = if survival then waveSize else #nodes,
+		Wave = wave,
+		WavesCleared = wavesCleared,
 		Timer = timer,
 	}
 end
@@ -85,7 +113,12 @@ end
 
 local function loadInfo()
 	if not isReservedServer() then
-		print("Тестовый запуск миссии: глава 1, обычная сложность")
+		-- Тест в Studio: какую главу запускать, задаёт атрибут "TestChapter" у ServerScriptService
+		local testChapter = game:GetService("ServerScriptService"):GetAttribute("TestChapter")
+		if typeof(testChapter) == "number" and Config.getChapter(testChapter) then
+			info.Chapter = testChapter
+		end
+		print(`Тестовый запуск миссии: {Config.chapterTitle(Config.getChapter(info.Chapter) :: any)}, обычная сложность`)
 		return
 	end
 	local loaded = MissionStore.load(game.PrivateServerId)
@@ -113,27 +146,166 @@ local function waitForSquad()
 	end
 end
 
-local function runCombat()
+-- Множители врагов от сложности и числа игроков
+local function enemyMultipliers(): (number, number, number)
+	local difficulty = Config.getDifficulty(info.Difficulty)
+	local squad = Config.SquadScaling[math.clamp(#Players:GetPlayers(), 1, 4)]
+	local health = squad.Health * (if difficulty then difficulty.EnemyHealth else 1)
+	local damage = if difficulty then difficulty.EnemyDamage else 1
+	return health, damage, squad.Count
+end
+
+local function anyoneAlive(): boolean
+	for _, player in Players:GetPlayers() do
+		local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+		if humanoid and humanoid.Health > 0 then
+			return true
+		end
+	end
+	return false
+end
+
+-- Точка на земле (на полу или на укрытии) над координатами x, z
+local function groundAt(x: number, z: number): Vector3
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Include
+	local map = Workspace:FindFirstChild("MissionMap")
+	params.FilterDescendantsInstances = if map then { map } else {}
+	local hit = Workspace:Raycast(Vector3.new(x, 60, z), Vector3.new(0, -120, 0), params)
+	return if hit then hit.Position else Vector3.new(x, 1, z)
+end
+
+local function edgePoint(random: Random): Vector3
+	local angle = random:NextNumber() * math.pi * 2
+	return groundAt(math.cos(angle) * SPAWN_RADIUS, math.sin(angle) * SPAWN_RADIUS)
+end
+
+-- Сюжетная глава: закрыть сбои, пока из открытых сбоев лезут Пиксели
+local function runStory()
 	closed = {}
 	for _, node in nodes do
 		MissionMap.setNodeActive(node, true)
 	end
 	setState("Combat")
+	local healthMultiplier, damageMultiplier = enemyMultipliers()
+	local lastSpawn = 0
 	while closedCount() < #nodes do
+		if os.clock() - lastSpawn >= STORY_SPAWN_INTERVAL and EnemyService.aliveCount() < STORY_MAX_ENEMIES then
+			lastSpawn = os.clock()
+			for _, node in nodes do
+				if not closed[node] then
+					local spot = groundAt(node.Position.X + 6, node.Position.Z + 6)
+					EnemyService.spawn("Pixel", spot, healthMultiplier, damageMultiplier)
+				end
+			end
+		end
 		task.wait(0.25)
+	end
+	EnemyService.clear()
+end
+
+-- Какой враг появится: сначала только Пиксели, потом Стрелки, потом Блоки
+local function pickKind(waveNumber: number, random: Random): string
+	local roll = random:NextNumber()
+	if waveNumber >= 3 and roll < 0.12 + 0.01 * waveNumber then
+		return "Block"
+	elseif waveNumber >= 2 and roll < 0.35 then
+		return "Shooter"
+	end
+	return "Pixel"
+end
+
+-- Одна волна. false, если отряд пал
+local function runWave(random: Random): boolean
+	local healthMultiplier, damageMultiplier, countMultiplier = enemyMultipliers()
+	healthMultiplier *= 1 + Config.Survival.HealthGrowth * (wave - 1)
+	local base = Config.Survival.FirstWaveSize + Config.Survival.WaveGrowth * (wave - 1)
+	waveSize = math.max(1, math.floor(base * countMultiplier + 0.5))
+	waveKilled = 0
+	setState("Combat")
+
+	local spawned = 0
+	local lastSpawn = 0
+	local deadSince: number? = nil
+	local connection = EnemyService.Died:Connect(function()
+		waveKilled += 1
+		sendAll()
+	end)
+
+	while true do
+		local now = os.clock()
+		if spawned < waveSize and now - lastSpawn >= Config.Survival.SpawnInterval
+			and EnemyService.aliveCount() < Config.Survival.MaxAlive then
+			lastSpawn = now
+			spawned += 1
+			EnemyService.spawn(pickKind(wave, random), edgePoint(random), healthMultiplier, damageMultiplier)
+		end
+		if spawned >= waveSize and EnemyService.aliveCount() == 0 then
+			connection:Disconnect()
+			return true
+		end
+		if anyoneAlive() then
+			deadSince = nil
+		elseif not deadSince then
+			deadSince = now
+		elseif now - deadSince >= DEFEAT_GRACE then
+			connection:Disconnect()
+			return false
+		end
+		task.wait(0.1)
 	end
 end
 
-local function giveRewards()
+local function runSurvival()
+	local random = Random.new()
+	wave = 0
+	wavesCleared = 0
+	while true do
+		wave += 1
+		local survived = runWave(random)
+		if not survived then
+			break
+		end
+		wavesCleared = wave
+		notifyAll(`Волна {wave} пройдена!`)
+		setState("Break")
+		countdown(Config.Survival.BreakTime)
+	end
+	EnemyService.clear()
+end
+
+local function rewardMultiplier(player: Player): (number, boolean)
 	local difficulty = Config.getDifficulty(info.Difficulty)
 	local multiplier = if difficulty then difficulty.RewardMultiplier else 1
-	local baseReward = math.floor(Config.MissionReward * multiplier)
+	local vip = PassService.owns(player, "VIP")
+	return if vip then multiplier * Config.VipRewardMultiplier else multiplier, vip
+end
+
+local function giveStoryRewards()
 	for _, player in Players:GetPlayers() do
 		task.spawn(function()
-			local vip = PassService.owns(player, "VIP")
-			local reward = if vip then baseReward * Config.VipRewardMultiplier else baseReward
+			local multiplier, vip = rewardMultiplier(player)
+			local reward = math.floor(Config.MissionReward * multiplier)
 			if DataService.waitFor(player, 10) and DataService.completeMission(player, info.Chapter, reward) then
 				notify:FireClient(player, if vip then `Награда: +{reward} бит (x2 VIP)` else `Награда: +{reward} бит`)
+			end
+		end)
+	end
+end
+
+local function giveSurvivalRewards()
+	for _, player in Players:GetPlayers() do
+		task.spawn(function()
+			local multiplier, vip = rewardMultiplier(player)
+			local reward = math.floor(Config.Survival.RewardPerWave * wavesCleared * multiplier)
+			if not DataService.waitFor(player, 10) then
+				return
+			end
+			if reward > 0 and DataService.addBits(player, reward) then
+				notify:FireClient(player, if vip then `Награда: +{reward} бит (x2 VIP)` else `Награда: +{reward} бит`)
+			end
+			if DataService.recordWave(player, wavesCleared) then
+				notify:FireClient(player, `Новый рекорд: {wavesCleared} волн!`)
 			end
 		end)
 	end
@@ -171,6 +343,16 @@ local function onNodeTriggered(node: BasePart, player: Player)
 	sendAll()
 end
 
+-- Возрождает погибших (после поражения в Выживании, перед новой попыткой)
+local function respawnDead()
+	for _, player in Players:GetPlayers() do
+		local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+		if not humanoid or humanoid.Health <= 0 then
+			player:LoadCharacter()
+		end
+	end
+end
+
 function MissionService.start()
 	nodes = MissionMap.setup()
 	for _, node in nodes do
@@ -196,17 +378,24 @@ function MissionService.start()
 			setState("Briefing")
 			countdown(Config.BriefingTime)
 
-			runCombat()
-
-			setState("Victory")
-			notifyAll("Сектор очищен!")
-			giveRewards()
+			if MissionService.isSurvival() then
+				runSurvival()
+				setState("GameOver")
+				notifyAll(`Отряд пал. Пройдено волн: {wavesCleared}`)
+				giveSurvivalRewards()
+			else
+				runStory()
+				setState("Victory")
+				notifyAll("Сектор очищен!")
+				giveStoryRewards()
+			end
 			countdown(Config.ReturnDelay)
 
 			if returnToLobby() then
 				break
 			end
 			-- Перенос недоступен (например, тест в Studio) — играем снова
+			respawnDead()
 			if not RunService:IsStudio() then
 				task.wait(5)
 			end

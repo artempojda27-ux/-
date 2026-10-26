@@ -13,6 +13,7 @@ local TEMPLATE = {
 	UnlockedHeroes = { Guard = true, Bolt = true },
 	ChaptersCompleted = {} :: { [string]: boolean }, -- ключ — номер главы строкой
 	MissionsCompleted = 0,
+	BestWave = 0, -- рекорд в Выживании: сколько волн отряд продержался
 	Purchases = {} :: { [string]: boolean }, -- PurchaseId выданных покупок, чтобы не выдать дважды
 }
 
@@ -114,6 +115,16 @@ function DataService.completeMission(player: Player, chapterId: number, reward: 
 	data.MissionsCompleted += 1
 	data.ChaptersCompleted[tostring(chapterId)] = true
 	return DataService.addBits(player, reward)
+end
+
+-- Запоминает рекорд Выживания. true, если это новый рекорд
+function DataService.recordWave(player: Player, waves: number): boolean
+	local data = DataService.get(player)
+	if not data or waves <= data.BestWave then
+		return false
+	end
+	data.BestWave = waves
+	return true
 end
 
 for _, player in Players:GetPlayers() do

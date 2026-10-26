@@ -56,10 +56,21 @@ Remotes.get("MissionUpdate").OnClientEvent:Connect(function(view)
 		bigLabel.Visible = false
 	elseif view.State == "Briefing" then
 		objectiveLabel.Text = view.Objective
-		bigLabel.Text = `СЕКТОР ПОВРЕЖДЁН\nСтарт через {view.Timer or 0}`
+		bigLabel.Text = if view.Kind == "Survival"
+			then `ВЫЖИВАНИЕ\nДержитесь как можно дольше!\nСтарт через {view.Timer or 0}`
+			else `СЕКТОР ПОВРЕЖДЁН\nСтарт через {view.Timer or 0}`
 	elseif view.State == "Combat" then
 		objectiveLabel.Text = `{view.Objective}: {view.Progress}/{view.Total}`
 		bigLabel.Visible = false
+	elseif view.State == "Break" then
+		objectiveLabel.Text = `Пройдено волн: {view.WavesCleared}`
+		bigLabel.Text = `ВОЛНА {view.Wave} ПРОЙДЕНА\nСледующая через {view.Timer or 0}`
+	elseif view.State == "GameOver" then
+		objectiveLabel.Text = `Пройдено волн: {view.WavesCleared}`
+		bigLabel.TextColor3 = UI.Colors.Glitch
+		bigLabel.Text = if view.Timer
+			then `ОТРЯД ПАЛ\nПродержались волн: {view.WavesCleared}\nВозвращение в Штаб через {view.Timer}`
+			else `ОТРЯД ПАЛ\nПродержались волн: {view.WavesCleared}`
 	elseif view.State == "Victory" then
 		objectiveLabel.Text = "Сектор очищен"
 		bigLabel.Text = if view.Timer then `ПОБЕДА!\nВозвращение в Штаб через {view.Timer}` else "ПОБЕДА!"

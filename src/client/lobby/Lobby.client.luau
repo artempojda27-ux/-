@@ -167,7 +167,7 @@ Remotes.get("SquadUpdate").OnClientEvent:Connect(function(view)
 	table.insert(lines, `{#view.Members}/{view.MaxMembers} игроков`)
 	membersLabel.Text = table.concat(lines, "\n")
 
-	chapterValue.Text = `Глава {view.Chapter}: {view.ChapterName}`
+	chapterValue.Text = view.ChapterName
 	difficultyValue.Text = `Сложность: {view.DifficultyName}`
 	modeValue.Text = if view.Mode == "Friends" then "Только друзья" else "Открытый отряд"
 

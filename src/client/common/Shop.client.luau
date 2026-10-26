@@ -254,11 +254,24 @@ local reviveButton = UI.button({
 	buyProduct("Revive")
 end)
 
+-- Вставать имеет смысл только посреди боя: после поражения или победы кнопку прячем
+local missionState = ""
+local dead = false
+local function refreshRevive()
+	reviveButton.Visible = dead and inMission() and (missionState == "Combat" or missionState == "Break")
+end
+Remotes.get("MissionUpdate").OnClientEvent:Connect(function(view)
+	missionState = view.State
+	refreshRevive()
+end)
+
 local function watchCharacter(character: Model)
-	reviveButton.Visible = false
+	dead = false
+	refreshRevive()
 	local humanoid = character:WaitForChild("Humanoid") :: Humanoid
 	humanoid.Died:Connect(function()
-		reviveButton.Visible = inMission()
+		dead = true
+		refreshRevive()
 	end)
 end
 if player.Character then

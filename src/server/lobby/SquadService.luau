@@ -272,7 +272,7 @@ local function viewFor(player: Player, squad: Squad)
 		MaxMembers = Config.SquadSize,
 		IsLeader = leaderOf(squad) == player,
 		Chapter = squad.Chapter,
-		ChapterName = if chapter then chapter.Name else "?",
+		ChapterName = if chapter then Config.chapterTitle(chapter) else "?",
 		Difficulty = squad.Difficulty,
 		DifficultyName = if difficulty then difficulty.Name else "?",
 		Mode = squad.Mode,

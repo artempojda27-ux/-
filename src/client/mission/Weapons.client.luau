@@ -1,0 +1,225 @@
+--!strict
+-- Стрельба игрока: клавиши 1–4 — выбор оружия, левая кнопка мыши — огонь, R — перезарядка.
+-- Выстрел рисуется сразу, а попадание и урон считает сервер (WeaponService).
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
+
+local Remotes = require(ReplicatedStorage.Shared.Remotes)
+local Weapons = require(ReplicatedStorage.Shared.Weapons)
+local Hud = require(script.Parent:WaitForChild("Hud"))
+
+local AIM_DISTANCE = 1000
+
+local player = Players.LocalPlayer
+local fireRemote = Remotes.get("Fire")
+local weaponAction = Remotes.get("WeaponAction")
+
+local equipped = Weapons.Default
+local ammo: { [string]: number } = {}
+local reloading = false
+local lastFire = 0
+local triggerHeld = false
+local random = Random.new()
+
+local SLOT_KEYS = {
+	[Enum.KeyCode.One] = 1,
+	[Enum.KeyCode.Two] = 2,
+	[Enum.KeyCode.Three] = 3,
+	[Enum.KeyCode.Four] = 4,
+}
+
+local function currentWeapon(): Weapons.Weapon
+	return Weapons.get(equipped) or Weapons.List[1]
+end
+
+local function refreshHud()
+	local weapon = currentWeapon()
+	Hud.setWeapon(weapon, ammo[weapon.Id], reloading)
+end
+
+-- Луч, который не задевает игроков: пули пролетают сквозь своих
+local function playerFilter(): RaycastParams
+	local ignore = {}
+	for _, other in Players:GetPlayers() do
+		if other.Character then
+			table.insert(ignore, other.Character)
+		end
+	end
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = ignore
+	return params
+end
+
+-- Откуда вылетает след: из правой руки, если она есть
+local function muzzleOf(character: Model): Vector3?
+	local hand = character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")
+		or character:FindFirstChild("Head")
+	if hand and hand:IsA("BasePart") then
+		return hand.Position
+	end
+	return nil
+end
+
+local function drawTracer(from: Vector3, to: Vector3, color: Color3)
+	local length = (to - from).Magnitude
+	if length < 0.1 then
+		return
+	end
+	local beam = Instance.new("Part")
+	beam.Anchored = true
+	beam.CanCollide = false
+	beam.CanQuery = false
+	beam.CanTouch = false
+	beam.CastShadow = false
+	beam.Material = Enum.Material.Neon
+	beam.Color = color
+	beam.Size = Vector3.new(0.12, 0.12, length)
+	beam.CFrame = CFrame.lookAt((from + to) / 2, to)
+	beam.Parent = Workspace.CurrentCamera
+	TweenService:Create(beam, TweenInfo.new(0.15), { Transparency = 1 }):Play()
+	task.delay(0.15, function()
+		beam:Destroy()
+	end)
+end
+
+local function requestReload()
+	local weapon = currentWeapon()
+	if not weapon.MagSize or reloading or ammo[weapon.Id] == weapon.MagSize then
+		return
+	end
+	reloading = true
+	refreshHud()
+	weaponAction:FireServer("Reload")
+end
+
+local function equip(weaponId: string)
+	if weaponId == equipped or not Weapons.get(weaponId) then
+		return
+	end
+	equipped = weaponId
+	reloading = false
+	triggerHeld = false
+	refreshHud()
+	weaponAction:FireServer("Equip", weaponId)
+end
+
+local function fire()
+	local weapon = currentWeapon()
+	local now = os.clock()
+	if reloading or now - lastFire < weapon.FireInterval then
+		return
+	end
+	if weapon.MagSize and (ammo[weapon.Id] or 0) <= 0 then
+		requestReload()
+		return
+	end
+
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	local head = character and character:FindFirstChild("Head")
+	if not character or not humanoid or humanoid.Health <= 0 or not head or not head:IsA("BasePart") then
+		return
+	end
+	lastFire = now
+
+	-- Куда смотрит курсор: луч из камеры через точку под мышью
+	local camera = Workspace.CurrentCamera
+	local mouse = UserInputService:GetMouseLocation()
+	local aimRay = camera:ViewportPointToRay(mouse.X, mouse.Y)
+	local params = playerFilter()
+	local aimHit = Workspace:Raycast(aimRay.Origin, aimRay.Direction * AIM_DISTANCE, params)
+	local target = if aimHit then aimHit.Position else aimRay.Origin + aimRay.Direction * AIM_DISTANCE
+
+	local origin = head.Position
+	local aim = target - origin
+	if aim.Magnitude < 0.1 then
+		return
+	end
+
+	local directions = {}
+	local muzzle = muzzleOf(character) or origin
+	for _ = 1, weapon.Pellets do
+		local direction = Weapons.spread(aim.Unit, weapon.Spread, random)
+		table.insert(directions, direction)
+		local result = Workspace:Raycast(origin, direction * weapon.Range, params)
+		drawTracer(muzzle, if result then result.Position else origin + direction * weapon.Range, weapon.Color)
+	end
+	fireRemote:FireServer(weapon.Id, origin, directions)
+
+	if weapon.MagSize then
+		ammo[weapon.Id] -= 1
+		refreshHud()
+		if ammo[weapon.Id] <= 0 then
+			requestReload()
+		end
+	end
+end
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then
+		return
+	end
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		triggerHeld = true
+		fire()
+	elseif input.KeyCode == Enum.KeyCode.R then
+		requestReload()
+	else
+		local slot = SLOT_KEYS[input.KeyCode]
+		if slot then
+			for _, weapon in Weapons.List do
+				if weapon.Slot == slot then
+					equip(weapon.Id)
+				end
+			end
+		end
+	end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		triggerHeld = false
+	end
+end)
+
+-- Автоматическое оружие стреляет, пока зажата кнопка
+RunService.RenderStepped:Connect(function()
+	if triggerHeld and currentWeapon().Auto then
+		fire()
+	end
+end)
+
+Hud.onSlotClicked(equip)
+
+-- Сервер — главный: его данные о патронах заменяют наши
+Remotes.get("WeaponState").OnClientEvent:Connect(function(state)
+	equipped = state.Equipped
+	ammo = state.Ammo
+	reloading = state.Reloading
+	refreshHud()
+end)
+
+Remotes.get("HitConfirm").OnClientEvent:Connect(function(killed: boolean)
+	Hud.showHit(killed)
+end)
+
+-- Выстрелы других игроков
+Remotes.get("ShotFx").OnClientEvent:Connect(function(shooter: Player, weaponId: string, origin: Vector3, endpoints: { Vector3 })
+	local weapon = Weapons.get(weaponId)
+	if not weapon or shooter == player then
+		return
+	end
+	local from = if shooter.Character then muzzleOf(shooter.Character) or origin else origin
+	for _, endpoint in endpoints do
+		drawTracer(from, endpoint, weapon.Color)
+	end
+end)
+
+refreshHud()
+weaponAction:FireServer("Sync")

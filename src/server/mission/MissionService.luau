@@ -11,6 +11,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local DataService = require(ServerScriptService.Common.DataService)
 local MissionStore = require(ServerScriptService.Common.MissionStore)
+local PassService = require(ServerScriptService.Common.PassService)
 local Teleport = require(ServerScriptService.Common.Teleport)
 local MissionMap = require(script.Parent.MissionMap)
 
@@ -126,11 +127,13 @@ end
 local function giveRewards()
 	local difficulty = Config.getDifficulty(info.Difficulty)
 	local multiplier = if difficulty then difficulty.RewardMultiplier else 1
-	local reward = math.floor(Config.MissionReward * multiplier)
+	local baseReward = math.floor(Config.MissionReward * multiplier)
 	for _, player in Players:GetPlayers() do
 		task.spawn(function()
+			local vip = PassService.owns(player, "VIP")
+			local reward = if vip then baseReward * Config.VipRewardMultiplier else baseReward
 			if DataService.waitFor(player, 10) and DataService.completeMission(player, info.Chapter, reward) then
-				notify:FireClient(player, `Награда: +{reward} бит`)
+				notify:FireClient(player, if vip then `Награда: +{reward} бит (x2 VIP)` else `Награда: +{reward} бит`)
 			end
 		end)
 	end

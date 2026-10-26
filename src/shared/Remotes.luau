@@ -10,6 +10,12 @@ local NAMES = {
 	"SquadUpdate", -- сервер → клиент: состояние отряда игрока или nil
 	"SquadAction", -- клиент → сервер: действие лидера (action, value)
 	"MissionUpdate", -- сервер → клиент: состояние миссии
+	"WeaponAction", -- клиент → сервер: "Sync" | "Equip" (weaponId) | "Reload"
+	"Fire", -- клиент → сервер: выстрел (weaponId, origin, directions)
+	"WeaponState", -- сервер → клиент: оружие в руках, патроны, перезарядка
+	"ShotFx", -- сервер → клиенты: нарисовать чужой выстрел (shooter, weaponId, origin, endpoints)
+	"HitConfirm", -- сервер → клиент: попадание (killed)
+	"TestPurchase", -- клиент → сервер: бесплатная «покупка» разового буста, только в Studio (productKey)
 }
 
 local folder: Instance

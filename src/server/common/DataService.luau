@@ -13,6 +13,7 @@ local TEMPLATE = {
 	UnlockedHeroes = { Guard = true, Bolt = true },
 	ChaptersCompleted = {} :: { [string]: boolean }, -- ключ — номер главы строкой
 	MissionsCompleted = 0,
+	Purchases = {} :: { [string]: boolean }, -- PurchaseId выданных покупок, чтобы не выдать дважды
 }
 
 export type PlayerData = typeof(TEMPLATE)

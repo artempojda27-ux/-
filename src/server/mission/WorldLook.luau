@@ -654,7 +654,9 @@ local function applyTemple(map: Instance?)
 		end
 	end
 	for _, building in buildings(map) do
-		pagodaRoofs(building, props)
+		if not building:FindFirstChild("Skin") then -- у детальной пагоды крыша уже своя
+			pagodaRoofs(building, props)
+		end
 	end
 
 	-- Сакура по углам кварталов
@@ -769,10 +771,12 @@ local function applyCrystal(map: Instance?)
 	-- Дома — цветные полупрозрачные кристаллы с самоцветами на вершинах
 	eachPart(map, function(p)
 		if p.Name == "Body" then
-			p.Color = CRYSTAL_COLORS[random:NextInteger(1, #CRYSTAL_COLORS)]
-			p.Material = Enum.Material.Glass
-			p.Transparency = 0.3
-			p.Reflectance = 0.25
+			if p.Transparency < 1 then -- невидимая коробка под детальной моделью остаётся невидимой
+				p.Color = CRYSTAL_COLORS[random:NextInteger(1, #CRYSTAL_COLORS)]
+				p.Material = Enum.Material.Glass
+				p.Transparency = 0.3
+				p.Reflectance = 0.25
+			end
 		elseif p.Material == Enum.Material.Neon and p.Name ~= "Beacon" then
 			p.Color = Color3.fromRGB(245, 240, 255)
 		elseif p.Name == "Ground" then
@@ -785,7 +789,7 @@ local function applyCrystal(map: Instance?)
 	end)
 	for _, building in buildings(map) do
 		local body = building:FindFirstChild("Body")
-		if body and body:IsA("BasePart") then
+		if body and body:IsA("BasePart") and not building:FindFirstChild("Skin") then
 			local size = math.min(body.Size.X, body.Size.Z) * 0.6
 			gem(props, CFrame.new(body.Position + Vector3.new(0, body.Size.Y / 2 + size * 0.6, 0)), size, body.Color, false)
 		end

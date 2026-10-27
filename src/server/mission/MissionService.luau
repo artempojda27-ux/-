@@ -21,6 +21,7 @@ local DoppelgangerService = require(script.Parent.DoppelgangerService)
 local EnemyService = require(script.Parent.EnemyService)
 local EscapeMap = require(script.Parent.EscapeMap)
 local VehicleService = require(ServerScriptService.Common.VehicleService)
+local CitySkins = require(script.Parent.CitySkins)
 local WorldLook = require(script.Parent.WorldLook)
 local MissionMap = require(script.Parent.MissionMap)
 
@@ -593,6 +594,8 @@ function MissionService.start()
 		WorldLook.apply(Config.getWorld(info.World).Id, nil)
 	else
 		nodes = MissionMap.setup()
+		-- сначала детальные здания мира, потом его свет и убранство
+		CitySkins.apply(Config.getWorld(info.World).Id, Workspace:FindFirstChild("MissionMap") :: Instance)
 		WorldLook.apply(Config.getWorld(info.World).Id, Workspace:FindFirstChild("MissionMap"))
 	end
 	for _, node in nodes do

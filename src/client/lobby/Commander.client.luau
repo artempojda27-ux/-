@@ -1,6 +1,7 @@
 --!strict
 -- Разговор с Командором Вегой в Штабе (кнопка «Поговорить» у голостола, строит LobbyLook).
--- Реплики — Config.Commander.Lines, по одной; «Далее» — следующая, после последней окно закрывается.
+-- Реплики — Config.Commander.Stages: какой набор, зависит от числа пройденных миров (атрибут "WorldsDone"
+-- от StoryService). По одной; «Далее» — следующая, после последней окно закрывается.
 
 local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
@@ -43,8 +44,21 @@ local text = UI.label({
 local index = 0
 local nextButton: TextButton
 
+-- Реплики для текущего прогресса: самый поздний этап, до которого игрок дошёл
+local function currentLines(): { string }
+	local done = Players.LocalPlayer:GetAttribute("WorldsDone")
+	local stage = if typeof(done) == "number" then done else 0
+	for s = stage, 0, -1 do
+		local lines = Config.Commander.Stages[s]
+		if lines then
+			return lines
+		end
+	end
+	return Config.Commander.Stages[0]
+end
+
 local function show()
-	local lines = Config.Commander.Lines
+	local lines = currentLines()
 	if index > #lines then
 		panel.Visible = false
 		index = 0

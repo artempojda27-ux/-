@@ -25,6 +25,8 @@ local BossService = require(script.Parent.BossService)
 local CitySkins = require(script.Parent.CitySkins)
 local CityLife = require(ServerScriptService.Common.CityLife)
 local CodeLeaks = require(script.Parent.CodeLeaks)
+local MemoryShards = require(script.Parent.MemoryShards)
+local StoryService = require(ServerScriptService.Common.StoryService)
 local WorldDetails = require(script.Parent.WorldDetails)
 local WorldLook = require(script.Parent.WorldLook)
 local MissionMap = require(script.Parent.MissionMap)
@@ -292,6 +294,10 @@ local function runBoss(): boolean
 		DamageMultiplier = damageMultiplier,
 		GroundAt = groundAt,
 		Notify = notifyAll,
+		Say = StoryService.say,
+		DropShard = function(position)
+			MemoryShards.place("Core", groundAt(position.X, position.Z))
+		end,
 		Update = function(view)
 			boss = view
 			sendAll()
@@ -397,6 +403,7 @@ local function giveStoryRewards(bonus: number?)
 			local multiplier, vip = rewardMultiplier(player)
 			local reward = math.floor(Config.MissionReward * multiplier * (bonus or 1))
 			if DataService.waitFor(player, 10) and DataService.completeMission(player, info.Chapter, reward, info.World) then
+				StoryService.refresh(player)
 				notify:FireClient(player, if vip then `Награда: +{reward} бит (x2 VIP)` else `Награда: +{reward} бит`)
 			end
 		end)
@@ -642,6 +649,10 @@ function MissionService.start()
 		WorldLook.apply(worldId, map)
 		WorldDetails.apply(worldId, map)
 		CodeLeaks.apply(worldId, map)
+		-- осколок памяти (запись Кая); в Ядре он выпадает из Нуля после победы
+		if worldId ~= "Core" then
+			MemoryShards.hide(worldId, groundAt)
+		end
 	end
 	for _, node in nodes do
 		MissionMap.setNodeActive(node, false)
@@ -662,6 +673,10 @@ function MissionService.start()
 			waitForSquad()
 
 			setState("Briefing")
+			local briefing = Config.Story.Briefings[Config.getWorld(info.World).Id]
+			if briefing and not MissionService.isEscape() then
+				StoryService.say("Вега (связь)", briefing)
+			end
 			countdown(Config.BriefingTime)
 
 			if MissionService.isEscape() then
@@ -692,7 +707,8 @@ function MissionService.start()
 					giveStoryRewards(if isBossFight() then Config.BossRewardMultiplier else 1)
 				end
 			end
-			countdown(Config.ReturnDelay)
+			-- после победы над Нулём — время подобрать значок Кая и дослушать Вегу
+			countdown(if isBossFight() and state == "Victory" then Config.ReturnDelay * 3 else Config.ReturnDelay)
 
 			if returnToLobby() then
 				break

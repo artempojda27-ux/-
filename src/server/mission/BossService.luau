@@ -38,6 +38,8 @@ export type Context = {
 	DamageMultiplier: number,
 	GroundAt: (x: number, z: number) -> Vector3,
 	Notify: (text: string) -> (),
+	Say: (speaker: string, text: string) -> (), -- реплика с субтитрами (Нуль, Вега)
+	DropShard: (position: Vector3) -> (), -- оставить значок Кая (осколок памяти Ядра)
 	Update: (view: { [string]: any }?) -> (), -- сообщает клиентам полоску здоровья босса (nil — убрать)
 	OpenNodes: () -> (), -- снова открыть сбои на карте (для щита)
 	OpenNodeCount: () -> number,
@@ -418,6 +420,7 @@ function BossService.run(ctx: Context): boolean
 		shatterSmall(start)
 	end
 	ctx.Notify("НУЛЬ ПРОБУДИЛСЯ")
+	ctx.Say("Нуль", Config.Story.Null.Spawn)
 	for i = 1, 50 do
 		local t = i / 50
 		model:PivotTo(CFrame.new(start:Lerp(home, t * t * (3 - 2 * t))))
@@ -481,6 +484,7 @@ function BossService.run(ctx: Context): boolean
 	end)
 
 	local attackIndex = 0
+	local nextTaunt = os.clock() + 30
 	while alive and os.clock() < deadline do
 		local fraction = humanoid.Health / maxHealth
 		-- щит на 60%: закройте сбои
@@ -489,6 +493,7 @@ function BossService.run(ctx: Context): boolean
 			setShield(model, root, true)
 			ctx.OpenNodes()
 			ctx.Notify("Нуль закрылся щитом! Закройте три сбоя, чтобы его снять")
+			ctx.Say("Нуль", Config.Story.Null.Shield)
 			view()
 			local nextSummon = 0
 			while alive and ctx.OpenNodeCount() > 0 and os.clock() < deadline do
@@ -502,6 +507,7 @@ function BossService.run(ctx: Context): boolean
 			setShield(model, root, false)
 			phase = 2
 			ctx.Notify("Щит Нуля пал! Волна перезаписи — прыгайте через кольца")
+			ctx.Say("Нуль", Config.Story.Null.Phase2)
 			view()
 			if DoppelgangerService.spawn() then
 				ctx.Notify("Нуль скопировал одного из вас…")
@@ -510,9 +516,16 @@ function BossService.run(ctx: Context): boolean
 			phase = 3
 			overload(true)
 			ctx.Notify("ПЕРЕГРУЗКА ЯДРА! Нуль в ярости")
+			ctx.Say("Нуль", Config.Story.Null.Phase3)
 			view()
 		end
 
+		-- время от времени Нуль говорит сам с собой
+		if os.clock() >= nextTaunt then
+			nextTaunt = os.clock() + random:NextNumber(35, 50)
+			local taunts = Config.Story.Null.Taunts
+			ctx.Say("Нуль", taunts[random:NextInteger(1, #taunts)])
+		end
 		local fast = phase == 3
 		attackIndex += 1
 		local pattern = attackIndex % (if phase == 1 then 3 else 4)
@@ -545,10 +558,16 @@ function BossService.run(ctx: Context): boolean
 	local won = not alive
 	local position = root.Position
 	if won then
+		ctx.Say("Нуль", Config.Story.Null.Death)
 		ctx.Notify("НУЛЬ СТЁРТ. СЕТЬ СПАСЕНА!")
 		model:Destroy()
 		shatter(position)
+		ctx.DropShard(position)
+		task.delay(5, function()
+			ctx.Say("Вега (связь)", Config.Story.Null.VegaAfter)
+		end)
 	else
+		ctx.Say("Нуль", Config.Story.Null.Timeout)
 		ctx.Notify("Нуль перезаписал Сеть…")
 		model:Destroy()
 	end

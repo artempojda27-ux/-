@@ -148,6 +148,11 @@ CitySkins теперь не даёт модели вылезать за учас
 небоскрёбов (наборы Neon и Core), летающий транспорт, светящаяся сетка пола, голостол с Кристаллом семи миров,
 арки над порталами, голограмма «ИСКАЖЕНИЕ», Командор Вега (`Config.Commander`, разговор — `src/client/lobby/Commander.client.luau`).
 Модели — `Config.LobbyProps`. Клиентские WorldMotion/Ambience/CodeLeaks перенесены в `src/client/common` (работают в обоих местах).
+Сюжет встроен в игру (2026-10-27, проверено в Studio): поворот «Нуль — это Кай, первый Корректор» (`docs/Saga.md`).
+Тексты — `Config.Commander.Stages` (реплики Веги по числу пройденных миров) и `Config.Story` (связь в начале миссии,
+осколки памяти, речь Нуля). Сервер — `src/server/common/StoryService.luau` (атрибуты `WorldsDone`, `Shard_<мир>`,
+сохранение `ShardsFound`, события `Speech`/`Lore`), осколки в городах — `src/server/mission/MemoryShards.luau`,
+клиент — `src/client/common/Story.client.luau` (субтитры, окно записи, журнал «ПАМЯТЬ» и значок Кая в Штабе).
 Важно: generate_mesh кладёт каждую модель в Workspace Studio — после генерации удаляй модели с атрибутом
 `RBX_AI_GENERATED`, иначе они попадут в тест. Мир выбирают на портале (строка «Мир»), передаётся в `MissionInfo.World`. Зеркальный город
 (`src/server/mission/WorldLook.luau`): красный свет и цвета, перевёрнутая копия кварталов в небе, враги x1.3

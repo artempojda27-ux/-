@@ -16,6 +16,7 @@ local TEMPLATE = {
 	MissionsCompleted = 0,
 	BestWave = 0, -- рекорд в Выживании: сколько волн отряд продержался
 	WorldsCompleted = {} :: { [string]: boolean }, -- в каких мирах отряд побеждал (открывает следующие)
+	ShardsFound = {} :: { [string]: boolean }, -- найденные осколки памяти (записи Кая) по мирам
 	Purchases = {} :: { [string]: boolean }, -- PurchaseId выданных покупок, чтобы не выдать дважды
 }
 

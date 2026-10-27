@@ -7,6 +7,7 @@ require(ServerScriptService.Common.DataService)
 local PassService = require(ServerScriptService.Common.PassService)
 local ProductService = require(ServerScriptService.Common.ProductService)
 local SkinService = require(ServerScriptService.Common.SkinService)
+local StoryService = require(ServerScriptService.Common.StoryService)
 local VehicleService = require(ServerScriptService.Common.VehicleService)
 local Garage = require(script.Parent.Garage)
 local LobbyLook = require(script.Parent.LobbyLook)
@@ -17,6 +18,7 @@ Workspace:SetAttribute("PlaceKind", "Lobby") -- клиент по нему по�
 
 PassService.start()
 SkinService.start()
+StoryService.start()
 ProductService.start({}) -- разовые бусты действуют только в Миссии
 VehicleService.start()
 SquadService.start(LobbyMap.setup())

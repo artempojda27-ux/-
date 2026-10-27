@@ -130,10 +130,10 @@ Remotes.get("MissionUpdate").OnClientEvent:Connect(function(view)
 	elseif view.State == "GameOver" then
 		local result = if view.Kind == "Escape"
 			then `Пройдено пути: {math.floor(view.Progress / math.max(view.Total, 1) * 100)}%`
-			elseif view.Kind == "Story" then "Время вышло"
+			elseif view.Kind == "Story" then "Задание провалено"
 			else `Продержались волн: {view.WavesCleared}`
 		local title = if view.Kind == "Escape" then "ВИРУС ДОГНАЛ ОТРЯД"
-			elseif view.Kind == "Story" then "НУЛЬ ПЕРЕЗАПИСАЛ СЕТЬ"
+			elseif view.Kind == "Story" then (view.FailTitle or "ЗАДАНИЕ ПРОВАЛЕНО")
 			else "ОТРЯД ПАЛ"
 		objectiveLabel.Text = result
 		bigLabel.TextColor3 = UI.Colors.Glitch

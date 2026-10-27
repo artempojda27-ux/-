@@ -19,7 +19,7 @@ local gui = UI.screen("StoryUI")
 gui.DisplayOrder = 8
 
 local NULL_COLOR = Color3.fromRGB(150, 210, 255)
-local SHARD_ORDER = { "Neon", "Mirror", "Temple", "Crystal", "Erased", "Monolith", "Core" }
+local LETTER_IDS = Config.letterIds() -- письма-зацепки: "Neon_1" … "Core_3"
 
 ---------------------------------------------------------------- Субтитры
 
@@ -134,7 +134,7 @@ CollectionService:GetInstanceAddedSignal("MemoryShard"):Connect(function(model)
 	task.wait() -- детали модели могут прийти чуть позже
 	refreshShard(model)
 end)
-for _, id in SHARD_ORDER do
+for _, id in LETTER_IDS do
 	player:GetAttributeChangedSignal(`Shard_{id}`):Connect(refreshAllShards)
 end
 refreshAllShards()
@@ -156,14 +156,14 @@ local journal = UI.panel({
 	Parent = gui,
 })
 UI.new("UISizeConstraint", { MaxSize = Vector2.new(460, 520), Parent = journal })
-UI.label({
+local journalTitle = UI.label({
 	Position = UDim2.fromOffset(16, 10),
 	Size = UDim2.new(1, -70, 0, 30),
 	Font = Enum.Font.GothamBlack,
 	TextSize = 22,
 	TextColor3 = UI.Colors.Accent,
 	TextXAlignment = Enum.TextXAlignment.Left,
-	Text = "Осколки памяти",
+	Text = "Письма и зацепки",
 	Parent = journal,
 })
 UI.button({
@@ -195,24 +195,43 @@ local function fillJournal()
 			child:Destroy()
 		end
 	end
-	for order, id in SHARD_ORDER do
-		local shard = Config.Story.Shards[id]
+	local count = 0
+	local lastWorld = ""
+	for order, id in LETTER_IDS do
+		local letter = Config.getLetter(id) :: any
+		local worldId, index = string.match(id, "^(%a+)_(%d+)$")
+		if worldId ~= lastWorld then
+			lastWorld = worldId :: string
+			UI.label({
+				LayoutOrder = order * 2 - 1,
+				Size = UDim2.new(1, -8, 0, 22),
+				Font = Enum.Font.GothamBold,
+				TextSize = 15,
+				TextColor3 = UI.Colors.Muted,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				Text = Config.getWorld(worldId).Name,
+				Parent = list,
+			})
+		end
 		local found = player:GetAttribute(`Shard_{id}`) == true
-		local world = Config.getWorld(id)
+		if found then
+			count += 1
+		end
 		UI.button({
-			LayoutOrder = order,
-			Size = UDim2.new(1, -8, 0, 48),
-			Text = if found then `{shard.Title} — {world.Name}` else `??? — {world.Name}`,
-			TextSize = 16,
+			LayoutOrder = order * 2,
+			Size = UDim2.new(1, -8, 0, 40),
+			Text = if found then `{letter.Title} · {letter.From}` else `??? · задание {index}`,
+			TextSize = 15,
 			BackgroundColor3 = if found then UI.Colors.Accent else UI.Colors.Muted,
 			AutoButtonColor = found,
 			Parent = list,
 		}, function()
 			if found then
-				showLore(shard.Title, shard.Text)
+				showLore(letter.Title, letter.Text .. "\n\n— " .. letter.From)
 			end
 		end)
 	end
+	journalTitle.Text = `Письма и зацепки · {count}/{#LETTER_IDS}`
 end
 
 UI.button({
@@ -220,7 +239,7 @@ UI.button({
 	AnchorPoint = Vector2.new(0, 0.5),
 	Position = UDim2.new(0, 20, 0.5, 108),
 	Size = UDim2.fromOffset(140, 44),
-	Text = "ПАМЯТЬ",
+	Text = "ПИСЬМА",
 	BackgroundColor3 = Color3.fromRGB(150, 210, 255),
 	Parent = gui,
 }, function()

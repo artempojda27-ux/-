@@ -1,7 +1,8 @@
 --!strict
 -- Сюжет (docs/Saga.md, тексты — Config.Commander и Config.Story). Работает и в Штабе, и в Миссии.
 -- Ставит игроку атрибуты прогресса для клиента: "WorldsDone" (сколько миров пройдено — по ним Вега
--- выбирает реплики) и "Shard_<мир>" (найден ли осколок памяти). Выдаёт осколки и показывает реплики.
+-- выбирает реплики), "Missions_<мир>" (сколько заданий мира пройдено) и "Shard_<мир>_<задание>"
+-- (найдено ли письмо-зацепка). Выдаёт письма и показывает реплики.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -28,24 +29,27 @@ function StoryService.refresh(player: Player)
 		end
 	end
 	player:SetAttribute("WorldsDone", done)
-	for worldId in Config.Story.Shards do
-		player:SetAttribute(`Shard_{worldId}`, data.ShardsFound[worldId] == true)
+	for _, id in Config.letterIds() do
+		player:SetAttribute(`Shard_{id}`, data.ShardsFound[id] == true)
+	end
+	for _, world in Config.Worlds do
+		player:SetAttribute(`Missions_{world.Id}`, data.WorldMissions[world.Id] or 0)
 	end
 end
 
--- Игрок подобрал осколок памяти мира worldId. true — если впервые
-function StoryService.collect(player: Player, worldId: string): boolean
-	local shard = Config.Story.Shards[worldId]
+-- Игрок подобрал письмо-зацепку id ("Neon_2"). true — если впервые
+function StoryService.collect(player: Player, id: string): boolean
+	local letter = Config.getLetter(id)
 	local data = DataService.get(player)
-	if not shard or not data then
+	if not letter or not data then
 		return false
 	end
-	lore:FireClient(player, shard.Title, shard.Text)
-	if data.ShardsFound[worldId] then
+	lore:FireClient(player, letter.Title, letter.Text .. "\n\n— " .. letter.From)
+	if data.ShardsFound[id] then
 		return false
 	end
-	data.ShardsFound[worldId] = true
-	player:SetAttribute(`Shard_{worldId}`, true)
+	data.ShardsFound[id] = true
+	player:SetAttribute(`Shard_{id}`, true)
 	return true
 end
 

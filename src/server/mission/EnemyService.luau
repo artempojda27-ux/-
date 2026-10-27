@@ -55,6 +55,7 @@ type Projectile = {
 local EnemyService = {}
 
 local enemies: { [Model]: Enemy } = {}
+local decoy: { Root: BasePart, Humanoid: Humanoid }? = nil
 local bodies: { [string]: BasePart | false } = {} -- загруженные модели врагов (false — не загрузилась)
 local projectiles: { Projectile } = {}
 local folder: Folder
@@ -84,6 +85,10 @@ local function livingPlayers(): { { Root: BasePart, Humanoid: Humanoid } }
 		if root and root:IsA("BasePart") and humanoid and humanoid.Health > 0 then
 			table.insert(list, { Root = root, Humanoid = humanoid })
 		end
+	end
+	-- приманка (клон Веги в задании «Удержать канал»): враги атакуют её наравне с игроками
+	if decoy and decoy.Humanoid.Health > 0 and decoy.Root.Parent then
+		table.insert(list, decoy)
 	end
 	return list
 end
@@ -454,7 +459,7 @@ local function updateProjectiles(dt: number)
 			done = true
 			local model = hit.Instance:FindFirstAncestorOfClass("Model")
 			local humanoid = model and model:FindFirstChildOfClass("Humanoid")
-			if model and humanoid and Players:GetPlayerFromCharacter(model) then
+			if model and humanoid and (Players:GetPlayerFromCharacter(model) or model:GetAttribute("Decoy")) then
 				humanoid:TakeDamage(projectile.Damage)
 			end
 		else
@@ -502,6 +507,13 @@ function EnemyService.spawn(kindId: string, position: Vector3, healthMultiplier:
 		end)
 	end)
 	return model
+end
+
+-- Цель-приманка для врагов (nil — убрать). Модель с Humanoid и атрибутом "Decoy"
+function EnemyService.setDecoy(model: Model?)
+	local root = model and model:FindFirstChild("HumanoidRootPart")
+	local humanoid = model and model:FindFirstChildOfClass("Humanoid")
+	decoy = if root and root:IsA("BasePart") and humanoid then { Root = root, Humanoid = humanoid } else nil
 end
 
 function EnemyService.aliveCount(): number

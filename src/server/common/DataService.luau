@@ -16,7 +16,8 @@ local TEMPLATE = {
 	MissionsCompleted = 0,
 	BestWave = 0, -- рекорд в Выживании: сколько волн отряд продержался
 	WorldsCompleted = {} :: { [string]: boolean }, -- в каких мирах отряд побеждал (открывает следующие)
-	ShardsFound = {} :: { [string]: boolean }, -- найденные осколки памяти (записи Кая) по мирам
+	ShardsFound = {} :: { [string]: boolean }, -- найденные письма-зацепки ("Neon_2" — мир и номер задания)
+	WorldMissions = {} :: { [string]: number }, -- сколько заданий пройдено в каждом мире
 	Purchases = {} :: { [string]: boolean }, -- PurchaseId выданных покупок, чтобы не выдать дважды
 }
 
@@ -110,14 +111,22 @@ function DataService.addBits(player: Player, amount: number): boolean
 	return true
 end
 
-function DataService.completeMission(player: Player, chapterId: number, reward: number, worldId: string?): boolean
+-- missionIndex — номер задания в мире (сюжетная глава); мир пройден после последнего задания.
+-- Выживание и Побег (missionIndex = nil) миры не открывают.
+function DataService.completeMission(player: Player, chapterId: number, reward: number, worldId: string?, missionIndex: number?, missionCount: number?): boolean
 	local data = DataService.get(player)
 	if not data then
 		return false
 	end
 	data.MissionsCompleted += 1
 	data.ChaptersCompleted[tostring(chapterId)] = true
-	data.WorldsCompleted[worldId or "Neon"] = true
+	if missionIndex then
+		local world = worldId or "Neon"
+		data.WorldMissions[world] = math.max(data.WorldMissions[world] or 0, missionIndex)
+		if missionIndex >= (missionCount or missionIndex) then
+			data.WorldsCompleted[world] = true
+		end
+	end
 	return DataService.addBits(player, reward)
 end
 

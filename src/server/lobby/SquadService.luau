@@ -29,6 +29,7 @@ type Squad = {
 	Difficulty: string,
 	Mode: Mode,
 	World: string,
+	Mission: number, -- номер задания в мире (Config.Missions)
 	LaunchAt: number?, -- когда стартует отсчёт до переноса
 	AutoStartAt: number?, -- когда открытый отряд стартует сам
 	LaunchingSince: number?, -- идёт перенос
@@ -66,6 +67,7 @@ local function resetSquad(squad: Squad)
 	squad.Difficulty = Config.Difficulties[1].Id
 	squad.Mode = "Open"
 	squad.World = Config.Worlds[1].Id
+	squad.Mission = 1
 	squad.LaunchAt = nil
 	squad.AutoStartAt = nil
 	squad.LaunchingSince = nil
@@ -157,6 +159,7 @@ local function launch(squad: Squad)
 				Difficulty = squad.Difficulty,
 				Members = userIds,
 				World = squad.World,
+				Mission = squad.Mission,
 			})
 		end
 
@@ -283,6 +286,11 @@ local function viewFor(player: Player, squad: Squad)
 		Mode = squad.Mode,
 		World = squad.World,
 		WorldName = Config.getWorld(squad.World).Name,
+		MissionName = (function()
+			local mission = Config.getMission(squad.World, squad.Mission)
+			return `Задание {mission.Index}/{#Config.Missions}: {mission.Name}`
+		end)(),
+		IsStory = (Config.getChapter(squad.Chapter) :: any).Kind == "Story",
 		Countdown = secondsLeft(squad.LaunchAt),
 		AutoStart = if squad.LaunchAt then nil else secondsLeft(squad.AutoStartAt),
 		Launching = squad.LaunchingSince ~= nil,
@@ -311,6 +319,23 @@ local function broadcast()
 			squadUpdate:FireClient(player, view)
 		end
 	end
+end
+
+-- Сколько заданий в мире открыто лидеру: пройденные + следующее (в Studio — все)
+local function openMissions(player: Player?, worldId: string): number
+	if RunService:IsStudio() then
+		return #Config.Missions
+	end
+	local data = player and DataService.get(player)
+	local done = if data then data.WorldMissions[worldId] or 0 else 0
+	return math.clamp(done + 1, 1, #Config.Missions)
+end
+
+-- Следующее непройденное задание мира (или последнее, если всё пройдено)
+local function nextMission(player: Player?, worldId: string): number
+	local data = player and DataService.get(player)
+	local done = if data then data.WorldMissions[worldId] or 0 else 0
+	return math.clamp(done + 1, 1, #Config.Missions)
 end
 
 local function cycle<T>(list: { T }, current: T, step: number): T
@@ -364,6 +389,16 @@ local function onAction(player: Player, action: unknown, value: unknown)
 			notify:FireClient(player, "Миры открываются по очереди: победи в последнем открытом мире, чтобы попасть в следующий.")
 		end
 		squad.World = cycle(ids, squad.World, step)
+		squad.Mission = nextMission(player, squad.World)
+	elseif action == "Mission" then
+		local ids = {}
+		for index = 1, openMissions(player, squad.World) do
+			table.insert(ids, index)
+		end
+		if #ids < #Config.Missions and step == 1 and squad.Mission == ids[#ids] then
+			notify:FireClient(player, "Задания открываются по очереди: пройди текущее, чтобы открыть следующее.")
+		end
+		squad.Mission = cycle(ids, squad.Mission, step)
 	elseif action == "Mode" then
 		squad.Mode = if squad.Mode == "Open" then "Friends" else "Open"
 		squad.AutoStartAt = if squad.Mode == "Open" then now + Config.OpenSquadAutoStart else nil
@@ -387,6 +422,7 @@ function SquadService.start(pads: { BasePart })
 			Difficulty = "",
 			Mode = "Open",
 			World = "",
+			Mission = 1,
 		}
 		resetSquad(squad)
 		table.insert(squads, squad)

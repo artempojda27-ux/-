@@ -1,5 +1,5 @@
 --!strict
--- Осколок памяти — запись Кая (Config.Story.Shards), спрятанная в городе: светящийся кристалл данных,
+-- Письмо-зацепка (Config.Story.Letters, номер вида "Neon_2"), спрятанное в городе: светящийся кристалл данных,
 -- над ним столб света, чтобы его было видно издалека. Каждый игрок подбирает свой: кнопка «Прочитать»
 -- открывает текст и сохраняет находку (StoryService). Тому, кто уже нашёл, клиент осколок прячет.
 -- В «Ядре» осколок (значок Кая) выпадает из Нуля после победы — BossService зовёт MemoryShards.place.
@@ -40,11 +40,12 @@ local function part(props: { [string]: any }): Part
 end
 
 -- Ставит осколок мира worldId в точку position (на земле)
-function MemoryShards.place(worldId: string, position: Vector3)
+function MemoryShards.place(id: string, position: Vector3)
+	local worldId = string.match(id, "^(%a+)") or "Neon"
 	local color = COLORS[worldId] or COLORS.Neon
 	local model = Instance.new("Model")
 	model.Name = "MemoryShard"
-	model:SetAttribute("ShardId", worldId)
+	model:SetAttribute("ShardId", id)
 
 	local gem = part({
 		Name = "Gem",
@@ -88,13 +89,13 @@ function MemoryShards.place(worldId: string, position: Vector3)
 
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ActionText = "Прочитать"
-	prompt.ObjectText = "Осколок памяти"
+	prompt.ObjectText = "Письмо"
 	prompt.HoldDuration = 0.5
 	prompt.MaxActivationDistance = 10
 	prompt.RequiresLineOfSight = false
 	prompt.Parent = gem
 	prompt.Triggered:Connect(function(player)
-		StoryService.collect(player, worldId)
+		StoryService.collect(player, id)
 	end)
 
 	model.PrimaryPart = gem
@@ -106,15 +107,15 @@ function MemoryShards.place(worldId: string, position: Vector3)
 	model.Parent = Workspace
 end
 
--- Прячет осколок мира в случайном месте на улицах, подальше от площади
-function MemoryShards.hide(worldId: string, groundAt: (number, number) -> Vector3)
+-- Прячет письмо в случайном месте на улицах, подальше от площади
+function MemoryShards.hide(id: string, groundAt: (number, number) -> Vector3)
 	local street = STREETS[random:NextInteger(1, #STREETS)]
 	local along = random:NextNumber(40, 110) * (if random:NextNumber() < 0.5 then -1 else 1)
 	local x, z = street + random:NextNumber(-4, 4), along
 	if random:NextNumber() < 0.5 then
 		x, z = z, x
 	end
-	MemoryShards.place(worldId, groundAt(x, z))
+	MemoryShards.place(id, groundAt(x, z))
 end
 
 return MemoryShards

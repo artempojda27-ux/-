@@ -13,6 +13,7 @@ export type MissionInfo = {
 	Difficulty: string,
 	Members: { number }, -- UserId участников отряда
 	World: string?, -- параллельный мир (nil — Неоновый город)
+	Mission: number?, -- номер задания в мире (Config.Missions), только для сюжетной главы
 }
 
 local map: MemoryStoreHashMap? = nil

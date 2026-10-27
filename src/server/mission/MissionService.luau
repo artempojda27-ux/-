@@ -26,6 +26,7 @@ local CitySkins = require(script.Parent.CitySkins)
 local CityLife = require(ServerScriptService.Common.CityLife)
 local CodeLeaks = require(script.Parent.CodeLeaks)
 local MemoryShards = require(script.Parent.MemoryShards)
+local VegaClone = require(script.Parent.VegaClone)
 local StoryService = require(ServerScriptService.Common.StoryService)
 local WorldDetails = require(script.Parent.WorldDetails)
 local WorldLook = require(script.Parent.WorldLook)
@@ -62,6 +63,9 @@ local wavesCleared = 0
 local course: EscapeMap.Course? = nil
 local escapeProgress = 0 -- сколько студов прошёл лучший из отряда
 local boss: { [string]: any }? = nil -- полоска здоровья Нуля в финальном бою (BossService)
+-- задача на экране для заданий «Удержать канал» и «Охота за данными» (nil — обычная)
+local objectiveView: { Text: string, Progress: number, Total: number }? = nil
+local failTitle: string? = nil -- заголовок поражения в сюжетной главе
 
 local MissionService = {}
 
@@ -86,6 +90,11 @@ local function closedCount(): number
 	return count
 end
 
+-- Текущее задание в мире (Config.Missions)
+local function currentMission(): Config.Mission
+	return Config.getMission(Config.getWorld(info.World).Id, info.Mission)
+end
+
 local function snapshot()
 	local chapter = Config.getChapter(info.Chapter)
 	local difficulty = Config.getDifficulty(info.Difficulty)
@@ -97,6 +106,8 @@ local function snapshot()
 		objective, progress, total = "Уйдите от вируса! Пройдено", escapeProgress, Config.Escape.Length
 	elseif boss and not boss.Shield then
 		objective, progress, total = "Победите Нуля", boss.Health, boss.MaxHealth
+	elseif objectiveView then
+		objective, progress, total = objectiveView.Text, objectiveView.Progress, objectiveView.Total
 	else
 		objective, progress, total = "Закройте все сбои", closedCount(), #nodes
 	end
@@ -104,7 +115,9 @@ local function snapshot()
 		State = state,
 		Kind = kind,
 		ChapterName = if chapter
-			then (if info.World and info.World ~= Config.Worlds[1].Id
+			then (if kind == "Story"
+				then `{Config.getWorld(info.World).Name} · Задание {currentMission().Index}/{#Config.Missions}: {currentMission().Name}`
+				elseif info.World and info.World ~= Config.Worlds[1].Id
 				then `{Config.chapterTitle(chapter)} · {Config.getWorld(info.World).Name}`
 				else Config.chapterTitle(chapter))
 			else "?",
@@ -116,6 +129,7 @@ local function snapshot()
 		WavesCleared = wavesCleared,
 		Timer = timer,
 		Boss = boss,
+		FailTitle = failTitle,
 	}
 end
 
@@ -158,6 +172,11 @@ local function loadInfo()
 		if typeof(testWorld) == "string" then
 			info.World = Config.getWorld(testWorld).Id
 		end
+		-- и какое задание — атрибут "TestMission" (1–3)
+		local testMission = game:GetService("ServerScriptService"):GetAttribute("TestMission")
+		if typeof(testMission) == "number" then
+			info.Mission = testMission
+		end
 		print(`Тестовый запуск миссии: {Config.chapterTitle(Config.getChapter(info.Chapter) :: any)}, обычная сложность`)
 		return
 	end
@@ -191,8 +210,10 @@ local function enemyMultipliers(): (number, number, number)
 	local difficulty = Config.getDifficulty(info.Difficulty)
 	local squad = Config.SquadScaling[math.clamp(#Players:GetPlayers(), 1, 4)]
 	local world = Config.getWorld(info.World)
-	local health = squad.Health * (if difficulty then difficulty.EnemyHealth else 1) * world.EnemyHealth
-	local damage = (if difficulty then difficulty.EnemyDamage else 1) * world.EnemyDamage
+	-- каждое следующее задание в мире тяжелее (Config.Missions[].Power)
+	local power = if chapterKind() == "Story" then currentMission().Power else 1
+	local health = squad.Health * (if difficulty then difficulty.EnemyHealth else 1) * world.EnemyHealth * power
+	local damage = (if difficulty then difficulty.EnemyDamage else 1) * world.EnemyDamage * power
 	return health, damage, squad.Count
 end
 
@@ -283,7 +304,7 @@ end
 
 -- Финал в мире «Ядро»: после сбоев — бой с Нулём. true — победа
 local function isBossFight(): boolean
-	return chapterKind() == "Story" and Config.getWorld(info.World).Id == "Core"
+	return chapterKind() == "Story" and currentMission().Kind == "Boss"
 end
 
 local function runBoss(): boolean
@@ -296,7 +317,7 @@ local function runBoss(): boolean
 		Notify = notifyAll,
 		Say = StoryService.say,
 		DropShard = function(position)
-			MemoryShards.place("Core", groundAt(position.X, position.Z))
+			MemoryShards.place(`Core_{currentMission().Index}`, groundAt(position.X, position.Z))
 		end,
 		Update = function(view)
 			boss = view
@@ -324,6 +345,165 @@ local function pickKind(waveNumber: number, random: Random): string
 		return "Shooter"
 	end
 	return "Pixel"
+end
+
+-- Задание «Удержать канал»: клон Веги в центре держит связь со Штабом, враги лезут волнами
+-- и атакуют её наравне с игроками. true — продержались, false — клон стёрт
+local function runDefend(): boolean
+	setState("Combat")
+	local healthMultiplier, damageMultiplier = enemyMultipliers()
+	local random = Random.new()
+	local clone = VegaClone.spawn(groundAt(0, 8), Vector3.new(0, 0, 40), Config.Story.CloneHints[2],
+		math.floor(Config.DefendCloneHealth * math.max(1, healthMultiplier)))
+	local humanoid = clone:FindFirstChildOfClass("Humanoid") :: Humanoid
+	EnemyService.setDecoy(clone)
+	notifyAll("Защищайте клона Веги, пока идёт передача!")
+
+	local total = Config.DefendTime
+	local started = os.clock()
+	local lastSpawn = 0
+	local doubled = false
+	local result = false
+	while true do
+		local elapsed = os.clock() - started
+		local health = math.max(0, math.ceil(humanoid.Health / humanoid.MaxHealth * 100))
+		objectiveView = { Text = `Удержите канал · клон {health}%`, Progress = math.floor(elapsed), Total = total }
+		if humanoid.Health <= 0 then
+			break
+		end
+		if elapsed >= total then
+			result = true
+			break
+		end
+		-- волна каждые 5 секунд, к концу передачи — всё злее
+		if os.clock() - lastSpawn >= 5 and EnemyService.aliveCount() < 14 then
+			lastSpawn = os.clock()
+			local wave = 2 + math.floor(elapsed / 25)
+			for _ = 1, wave do
+				EnemyService.spawn(pickKind(1 + math.floor(elapsed / 20), random), spawnPoint(random), healthMultiplier, damageMultiplier)
+			end
+		end
+		if not doubled and elapsed > total * 0.4 then
+			doubled = true
+			DoppelgangerService.spawn()
+		end
+		sendAll()
+		task.wait(0.5)
+	end
+	EnemyService.setDecoy(nil)
+	EnemyService.clear()
+	DoppelgangerService.clear()
+	objectiveView = nil
+	clone:Destroy()
+	if result then
+		notifyAll("Передача завершена! Клон Веги успел")
+	else
+		failTitle = "КЛОН ВЕГИ СТЁРТ"
+		notifyAll("Вирус стёр клона Веги. Канал потерян")
+	end
+	return result
+end
+
+-- Задание «Охота за данными»: по городу раскиданы осколки данных; каждый поднятый будит врагов рядом.
+-- Когда собраны все, на площадь приходит Страж данных — крепкий Блок. Победа — когда Страж пал
+local function runHunt()
+	setState("Combat")
+	local healthMultiplier, damageMultiplier = enemyMultipliers()
+	local random = Random.new()
+	local total = Config.HuntFragments
+	local found = 0
+	local folder = Instance.new("Folder")
+	folder.Name = "DataFragments"
+	folder.Parent = Workspace
+	local streets = { -90, -30, 30, 90 }
+	for i = 1, total do
+		local street = streets[random:NextInteger(1, #streets)]
+		local along = random:NextNumber(-110, 110)
+		local x, z = street + random:NextNumber(-4, 4), along
+		if i % 2 == 0 then
+			x, z = z, x
+		end
+		local spot = groundAt(x, z)
+		local cube = Instance.new("Part")
+		cube.Name = "DataFragment"
+		cube.Size = Vector3.one * 1.6
+		cube.CFrame = CFrame.new(spot + Vector3.new(0, 2.5, 0)) * CFrame.Angles(math.rad(45), 0, math.rad(45))
+		cube.Anchored = true
+		cube.CanCollide = false
+		cube.Material = Enum.Material.Neon
+		cube.Color = Color3.fromRGB(255, 200, 60)
+		cube:SetAttribute("Spin", Vector3.new(40, 80, 0))
+		cube:SetAttribute("Bob", 0.5)
+		game:GetService("CollectionService"):AddTag(cube, "Motion")
+		local beam = Instance.new("Part")
+		beam.Shape = Enum.PartType.Cylinder
+		beam.Size = Vector3.new(60, 0.8, 0.8)
+		beam.CFrame = CFrame.new(spot + Vector3.new(0, 30, 0)) * CFrame.Angles(0, 0, math.rad(90))
+		beam.Anchored = true
+		beam.CanCollide = false
+		beam.CanQuery = false
+		beam.Material = Enum.Material.Neon
+		beam.Color = cube.Color
+		beam.Transparency = 0.75
+		beam.Parent = cube
+		local prompt = Instance.new("ProximityPrompt")
+		prompt.ActionText = "Забрать данные"
+		prompt.ObjectText = "Осколок данных"
+		prompt.HoldDuration = 1.5
+		prompt.MaxActivationDistance = 10
+		prompt.RequiresLineOfSight = false
+		prompt.Parent = cube
+		prompt.Triggered:Connect(function(player)
+			if not cube.Parent then
+				return
+			end
+			cube:Destroy()
+			found += 1
+			notifyAll(`{player.DisplayName} забрал данные ({found}/{total}). Вирус проснулся рядом!`)
+			for _ = 1, 3 do
+				EnemyService.spawn(if random:NextNumber() < 0.3 then "Shooter" else "Pixel",
+					groundAt(spot.X + random:NextNumber(-12, 12), spot.Z + random:NextNumber(-12, 12)), healthMultiplier, damageMultiplier)
+			end
+		end)
+		cube.Parent = folder
+	end
+
+	local lastSpawn = 0
+	while found < total do
+		objectiveView = { Text = "Соберите данные", Progress = found, Total = total }
+		if os.clock() - lastSpawn >= 8 and EnemyService.aliveCount() < 10 then
+			lastSpawn = os.clock()
+			EnemyService.spawn(pickKind(2, random), spawnPoint(random), healthMultiplier, damageMultiplier)
+		end
+		sendAll()
+		task.wait(0.5)
+	end
+	folder:Destroy()
+
+	-- Страж данных: Блок-великан с красным контуром
+	notifyAll("Данные собраны! Их Страж идёт на площадь")
+	local guardian = EnemyService.spawn("Block", groundAt(0, 22), healthMultiplier * 8, damageMultiplier * 1.4)
+	if guardian then
+		local highlight = Instance.new("Highlight")
+		highlight.FillColor = Color3.fromRGB(255, 40, 40)
+		highlight.FillTransparency = 0.7
+		highlight.OutlineColor = Color3.fromRGB(255, 60, 60)
+		highlight.Parent = guardian
+		local guardianHumanoid = guardian:FindFirstChildOfClass("Humanoid") :: Humanoid
+		guardianHumanoid.DisplayName = "Страж данных"
+		while guardian.Parent and guardianHumanoid.Health > 0 do
+			objectiveView = {
+				Text = "Победите Стража данных",
+				Progress = math.max(0, math.ceil(guardianHumanoid.Health)),
+				Total = math.ceil(guardianHumanoid.MaxHealth),
+			}
+			sendAll()
+			task.wait(0.5)
+		end
+	end
+	objectiveView = nil
+	EnemyService.clear()
+	DoppelgangerService.clear()
 end
 
 -- Одна волна. false, если отряд пал
@@ -401,8 +581,10 @@ local function giveStoryRewards(bonus: number?)
 	for _, player in Players:GetPlayers() do
 		task.spawn(function()
 			local multiplier, vip = rewardMultiplier(player)
-			local reward = math.floor(Config.MissionReward * multiplier * (bonus or 1))
-			if DataService.waitFor(player, 10) and DataService.completeMission(player, info.Chapter, reward, info.World) then
+			local reward = math.floor(Config.MissionReward * multiplier * (bonus or 1) * currentMission().Power)
+			local mission = currentMission()
+			if DataService.waitFor(player, 10)
+				and DataService.completeMission(player, info.Chapter, reward, info.World, mission.Index, #Config.Missions) then
 				StoryService.refresh(player)
 				notify:FireClient(player, if vip then `Награда: +{reward} бит (x2 VIP)` else `Награда: +{reward} бит`)
 			end
@@ -649,9 +831,16 @@ function MissionService.start()
 		WorldLook.apply(worldId, map)
 		WorldDetails.apply(worldId, map)
 		CodeLeaks.apply(worldId, map)
-		-- осколок памяти (запись Кая); в Ядре он выпадает из Нуля после победы
-		if worldId ~= "Core" then
-			MemoryShards.hide(worldId, groundAt)
+		-- письмо-зацепка этого задания и клон Веги-подсказчица у площади
+		-- (в бою с Нулём письмо — значок Кая — выпадает из него; в «Удержать канал» клон появляется в бою)
+		local mission = currentMission()
+		if chapterKind() == "Story" then
+			if mission.Kind ~= "Boss" then
+				MemoryShards.hide(`{worldId}_{mission.Index}`, groundAt)
+			end
+			if mission.Kind ~= "Defend" then
+				VegaClone.spawn(groundAt(14, 14), Vector3.new(0, 0, 0), Config.Story.CloneHints[math.min(mission.Index, #Config.Story.CloneHints)])
+			end
 		end
 	end
 	for _, node in nodes do
@@ -674,9 +863,10 @@ function MissionService.start()
 
 			setState("Briefing")
 			local briefing = Config.Story.Briefings[Config.getWorld(info.World).Id]
-			if briefing and not MissionService.isEscape() then
-				StoryService.say("Вега (связь)", briefing)
+			if briefing and chapterKind() == "Story" then
+				StoryService.say("Вега (связь)", `{currentMission().Name}. {briefing}`)
 			end
+			failTitle = nil
 			countdown(Config.BriefingTime)
 
 			if MissionService.isEscape() then
@@ -695,11 +885,25 @@ function MissionService.start()
 				giveSurvivalRewards()
 			else
 				-- Тест в Studio: атрибут "TestBoss" у ServerScriptService — сразу к Нулю, без сбоев
-				local skipNodes = RunService:IsStudio() and ServerScriptService:GetAttribute("TestBoss") == true and isBossFight()
-				if not skipNodes then
-					runStory()
+				local kind = currentMission().Kind
+				local won = true
+				if kind == "Defend" then
+					won = runDefend()
+				elseif kind == "Hunt" then
+					runHunt()
+				else
+					local skipNodes = RunService:IsStudio() and ServerScriptService:GetAttribute("TestBoss") == true and isBossFight()
+					if not skipNodes then
+						runStory()
+					end
+					if isBossFight() then
+						won = runBoss()
+						if not won then
+							failTitle = "НУЛЬ ПЕРЕЗАПИСАЛ СЕТЬ"
+						end
+					end
 				end
-				if isBossFight() and not runBoss() then
+				if not won then
 					setState("GameOver")
 				else
 					setState("Victory")

@@ -46,7 +46,62 @@ local bigLabel = UI.label({
 	Parent = gui,
 })
 
+-- Полоска здоровья босса (Нуль в мире «Ядро»): внизу над оружием — сверху место для сообщений
+local bossPanel = UI.panel({
+	AnchorPoint = Vector2.new(0.5, 1),
+	Position = UDim2.new(0.5, 0, 1, -112),
+	Size = UDim2.new(0.5, 0, 0, 44),
+	Visible = false,
+	Parent = gui,
+})
+UI.new("UISizeConstraint", { MinSize = Vector2.new(320, 44), MaxSize = Vector2.new(720, 44), Parent = bossPanel })
+local bossName = UI.label({
+	Position = UDim2.fromOffset(12, 2),
+	Size = UDim2.new(1, -24, 0, 18),
+	Font = Enum.Font.GothamBlack,
+	TextSize = 15,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	TextColor3 = Color3.fromRGB(150, 210, 255),
+	Parent = bossPanel,
+})
+local bossTrack = UI.new("Frame", {
+	Position = UDim2.fromOffset(12, 24),
+	Size = UDim2.new(1, -24, 0, 12),
+	BackgroundColor3 = Color3.fromRGB(30, 34, 44),
+	BorderSizePixel = 0,
+	Parent = bossPanel,
+})
+UI.new("UICorner", { CornerRadius = UDim.new(0, 6), Parent = bossTrack })
+local bossFill = UI.new("Frame", {
+	Size = UDim2.fromScale(1, 1),
+	BackgroundColor3 = Color3.fromRGB(235, 245, 255),
+	BorderSizePixel = 0,
+	Parent = bossTrack,
+})
+UI.new("UICorner", { CornerRadius = UDim.new(0, 6), Parent = bossFill })
+
+local PHASE_COLORS = {
+	Color3.fromRGB(235, 245, 255),
+	Color3.fromRGB(120, 200, 255),
+	Color3.fromRGB(255, 50, 70),
+}
+
+local function showBoss(boss)
+	bossPanel.Visible = boss ~= nil
+	if not boss then
+		return
+	end
+	local share = boss.Health / math.max(boss.MaxHealth, 1)
+	bossFill.Size = UDim2.fromScale(math.clamp(share, 0, 1), 1)
+	bossFill.BackgroundColor3 = if boss.Shield then Color3.fromRGB(90, 140, 255) else PHASE_COLORS[boss.Phase] or PHASE_COLORS[1]
+	local minutes = math.floor(boss.TimeLeft / 60)
+	local seconds = boss.TimeLeft % 60
+	local status = if boss.Shield then " · ЩИТ — закройте сбои" elseif boss.Phase == 3 then " · ПЕРЕГРУЗКА" else ""
+	bossName.Text = string.format("%s%s   %d%%   %d:%02d", boss.Name, status, math.ceil(share * 100), minutes, seconds)
+end
+
 Remotes.get("MissionUpdate").OnClientEvent:Connect(function(view)
+	showBoss(view.Boss)
 	chapterLabel.Text = `{view.ChapterName} · {view.DifficultyName}`
 	bigLabel.Visible = true
 	bigLabel.TextColor3 = UI.Colors.Accent
@@ -64,7 +119,8 @@ Remotes.get("MissionUpdate").OnClientEvent:Connect(function(view)
 			bigLabel.Text = `СЕКТОР ПОВРЕЖДЁН\nСтарт через {view.Timer or 0}`
 		end
 	elseif view.State == "Combat" then
-		objectiveLabel.Text = if view.Kind == "Escape"
+		objectiveLabel.Text = if view.Boss then view.Objective
+			elseif view.Kind == "Escape"
 			then `{view.Objective}: {math.floor(view.Progress / math.max(view.Total, 1) * 100)}%`
 			else `{view.Objective}: {view.Progress}/{view.Total}`
 		bigLabel.Visible = false
@@ -74,8 +130,11 @@ Remotes.get("MissionUpdate").OnClientEvent:Connect(function(view)
 	elseif view.State == "GameOver" then
 		local result = if view.Kind == "Escape"
 			then `Пройдено пути: {math.floor(view.Progress / math.max(view.Total, 1) * 100)}%`
+			elseif view.Kind == "Story" then "Время вышло"
 			else `Продержались волн: {view.WavesCleared}`
-		local title = if view.Kind == "Escape" then "ВИРУС ДОГНАЛ ОТРЯД" else "ОТРЯД ПАЛ"
+		local title = if view.Kind == "Escape" then "ВИРУС ДОГНАЛ ОТРЯД"
+			elseif view.Kind == "Story" then "НУЛЬ ПЕРЕЗАПИСАЛ СЕТЬ"
+			else "ОТРЯД ПАЛ"
 		objectiveLabel.Text = result
 		bigLabel.TextColor3 = UI.Colors.Glitch
 		bigLabel.Text = if view.Timer

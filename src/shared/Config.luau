@@ -601,6 +601,9 @@ Config.StudioOwnsAllPasses = true
 
 Config.SpeedBoostMultiplier = 1.5
 
+-- Награда за победу над Нулём (финал в мире «Ядро») во столько раз больше обычной
+Config.BossRewardMultiplier = 3
+
 -- Множители врагов от числа игроков в отряде (пригодится в неделях 5–6)
 Config.SquadScaling = {
 	[1] = { Health = 0.7, Count = 0.6 },

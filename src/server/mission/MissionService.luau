@@ -21,6 +21,7 @@ local DoppelgangerService = require(script.Parent.DoppelgangerService)
 local EnemyService = require(script.Parent.EnemyService)
 local EscapeMap = require(script.Parent.EscapeMap)
 local VehicleService = require(ServerScriptService.Common.VehicleService)
+local BossService = require(script.Parent.BossService)
 local CitySkins = require(script.Parent.CitySkins)
 local CityLife = require(script.Parent.CityLife)
 local CodeLeaks = require(script.Parent.CodeLeaks)
@@ -58,6 +59,7 @@ local wavesCleared = 0
 -- Побег
 local course: EscapeMap.Course? = nil
 local escapeProgress = 0 -- сколько студов прошёл лучший из отряда
+local boss: { [string]: any }? = nil -- полоска здоровья Нуля в финальном бою (BossService)
 
 local MissionService = {}
 
@@ -91,6 +93,8 @@ local function snapshot()
 		objective, progress, total = `Волна {wave}`, waveKilled, waveSize
 	elseif kind == "Escape" then
 		objective, progress, total = "Уйдите от вируса! Пройдено", escapeProgress, Config.Escape.Length
+	elseif boss and not boss.Shield then
+		objective, progress, total = "Победите Нуля", boss.Health, boss.MaxHealth
 	else
 		objective, progress, total = "Закройте все сбои", closedCount(), #nodes
 	end
@@ -109,6 +113,7 @@ local function snapshot()
 		Wave = wave,
 		WavesCleared = wavesCleared,
 		Timer = timer,
+		Boss = boss,
 	}
 end
 
@@ -274,6 +279,36 @@ local function runStory()
 	DoppelgangerService.clear()
 end
 
+-- Финал в мире «Ядро»: после сбоев — бой с Нулём. true — победа
+local function isBossFight(): boolean
+	return chapterKind() == "Story" and Config.getWorld(info.World).Id == "Core"
+end
+
+local function runBoss(): boolean
+	setState("Combat") -- в тесте без сбоев бой начинается сразу с Нуля
+	local healthMultiplier, damageMultiplier = enemyMultipliers()
+	return BossService.run({
+		HealthMultiplier = healthMultiplier,
+		DamageMultiplier = damageMultiplier,
+		GroundAt = groundAt,
+		Notify = notifyAll,
+		Update = function(view)
+			boss = view
+			sendAll()
+		end,
+		OpenNodes = function()
+			closed = {}
+			for _, node in nodes do
+				MissionMap.setNodeActive(node, true)
+			end
+			sendAll()
+		end,
+		OpenNodeCount = function()
+			return #nodes - closedCount()
+		end,
+	})
+end
+
 -- Какой враг появится: сначала только Пиксели, потом Стрелки, потом Блоки
 local function pickKind(waveNumber: number, random: Random): string
 	local roll = random:NextNumber()
@@ -356,11 +391,11 @@ local function rewardMultiplier(player: Player): (number, boolean)
 	return if vip then multiplier * Config.VipRewardMultiplier else multiplier, vip
 end
 
-local function giveStoryRewards()
+local function giveStoryRewards(bonus: number?)
 	for _, player in Players:GetPlayers() do
 		task.spawn(function()
 			local multiplier, vip = rewardMultiplier(player)
-			local reward = math.floor(Config.MissionReward * multiplier)
+			local reward = math.floor(Config.MissionReward * multiplier * (bonus or 1))
 			if DataService.waitFor(player, 10) and DataService.completeMission(player, info.Chapter, reward, info.World) then
 				notify:FireClient(player, if vip then `Награда: +{reward} бит (x2 VIP)` else `Награда: +{reward} бит`)
 			end
@@ -644,10 +679,18 @@ function MissionService.start()
 				notifyAll(`Отряд пал. Пройдено волн: {wavesCleared}`)
 				giveSurvivalRewards()
 			else
-				runStory()
-				setState("Victory")
-				notifyAll("Сектор очищен!")
-				giveStoryRewards()
+				-- Тест в Studio: атрибут "TestBoss" у ServerScriptService — сразу к Нулю, без сбоев
+				local skipNodes = RunService:IsStudio() and ServerScriptService:GetAttribute("TestBoss") == true and isBossFight()
+				if not skipNodes then
+					runStory()
+				end
+				if isBossFight() and not runBoss() then
+					setState("GameOver")
+				else
+					setState("Victory")
+					notifyAll(if isBossFight() then "Ядро свободно. Сезон «Трещина» пройден!" else "Сектор очищен!")
+					giveStoryRewards(if isBossFight() then Config.BossRewardMultiplier else 1)
+				end
 			end
 			countdown(Config.ReturnDelay)
 

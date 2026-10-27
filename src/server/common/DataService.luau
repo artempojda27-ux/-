@@ -14,6 +14,7 @@ local TEMPLATE = {
 	ChaptersCompleted = {} :: { [string]: boolean }, -- ключ — номер главы строкой
 	MissionsCompleted = 0,
 	BestWave = 0, -- рекорд в Выживании: сколько волн отряд продержался
+	WorldsCompleted = {} :: { [string]: boolean }, -- в каких мирах отряд побеждал (открывает следующие)
 	Purchases = {} :: { [string]: boolean }, -- PurchaseId выданных покупок, чтобы не выдать дважды
 }
 
@@ -107,13 +108,14 @@ function DataService.addBits(player: Player, amount: number): boolean
 	return true
 end
 
-function DataService.completeMission(player: Player, chapterId: number, reward: number): boolean
+function DataService.completeMission(player: Player, chapterId: number, reward: number, worldId: string?): boolean
 	local data = DataService.get(player)
 	if not data then
 		return false
 	end
 	data.MissionsCompleted += 1
 	data.ChaptersCompleted[tostring(chapterId)] = true
+	data.WorldsCompleted[worldId or "Neon"] = true
 	return DataService.addBits(player, reward)
 end
 

@@ -351,14 +351,17 @@ local function onAction(player: Player, action: unknown, value: unknown)
 		local ids = {}
 		local data = DataService.get(player)
 		for _, world in Config.Worlds do
-			local unlocked = world.UnlockChapter == nil or RunService:IsStudio()
-				or (data ~= nil and data.ChaptersCompleted[tostring(world.UnlockChapter)] == true)
+			local after = world.UnlockAfter
+			local unlocked = after == nil or RunService:IsStudio()
+				or (data ~= nil and (data.WorldsCompleted[after] == true
+					-- победы до появления миров засчитываются Неоновому городу
+					or (after == "Neon" and data.ChaptersCompleted["1"] == true)))
 			if unlocked then
 				table.insert(ids, world.Id)
 			end
 		end
 		if #ids < #Config.Worlds then
-			notify:FireClient(player, "Новые миры открываются по очереди: пройди Главу 1, чтобы попасть в Зеркальный город.")
+			notify:FireClient(player, "Миры открываются по очереди: победи в последнем открытом мире, чтобы попасть в следующий.")
 		end
 		squad.World = cycle(ids, squad.World, step)
 	elseif action == "Mode" then

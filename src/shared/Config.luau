@@ -39,19 +39,21 @@ function Config.chapterTitle(chapter: Chapter): string
 end
 
 -- Параллельные миры: та же глава в другой версии симуляции.
--- UnlockChapter — какую главу нужно пройти, чтобы мир открылся (nil — открыт сразу).
+-- Открываются по очереди: UnlockAfter — в каком мире нужно победить, чтобы этот открылся (nil — открыт сразу).
 export type World = {
 	Id: string,
 	Name: string,
 	EnemyHealth: number,
 	EnemyDamage: number,
 	DoubleRate: number, -- во сколько раз чаще появляются двойники
-	UnlockChapter: number?,
+	UnlockAfter: string?,
 }
 
 Config.Worlds = {
-	{ Id = "Neon", Name = "Неоновый город", EnemyHealth = 1, EnemyDamage = 1, DoubleRate = 1, UnlockChapter = nil },
-	{ Id = "Mirror", Name = "Зеркальный город", EnemyHealth = 1.3, EnemyDamage = 1.2, DoubleRate = 2, UnlockChapter = 1 },
+	{ Id = "Neon", Name = "Неоновый город", EnemyHealth = 1, EnemyDamage = 1, DoubleRate = 1, UnlockAfter = nil },
+	{ Id = "Mirror", Name = "Зеркальный город", EnemyHealth = 1.3, EnemyDamage = 1.2, DoubleRate = 2, UnlockAfter = "Neon" },
+	{ Id = "Erased", Name = "Стёртый мир", EnemyHealth = 1.6, EnemyDamage = 1.4, DoubleRate = 2.5, UnlockAfter = "Mirror" },
+	{ Id = "Monolith", Name = "Монолит", EnemyHealth = 2, EnemyDamage = 1.7, DoubleRate = 3, UnlockAfter = "Erased" },
 } :: { World }
 
 function Config.getWorld(id: string?): World

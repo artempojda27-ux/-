@@ -357,7 +357,7 @@ local function giveStoryRewards()
 		task.spawn(function()
 			local multiplier, vip = rewardMultiplier(player)
 			local reward = math.floor(Config.MissionReward * multiplier)
-			if DataService.waitFor(player, 10) and DataService.completeMission(player, info.Chapter, reward) then
+			if DataService.waitFor(player, 10) and DataService.completeMission(player, info.Chapter, reward, info.World) then
 				notify:FireClient(player, if vip then `Награда: +{reward} бит (x2 VIP)` else `Награда: +{reward} бит`)
 			end
 		end)
@@ -537,7 +537,7 @@ local function giveEscapeRewards()
 		task.spawn(function()
 			local multiplier, vip = rewardMultiplier(player)
 			local reward = math.floor(Config.MissionReward * Config.Escape.RewardMultiplier * multiplier)
-			if DataService.waitFor(player, 10) and DataService.completeMission(player, info.Chapter, reward) then
+			if DataService.waitFor(player, 10) and DataService.completeMission(player, info.Chapter, reward, info.World) then
 				notify:FireClient(player, if vip then `Награда: +{reward} бит (x2 VIP)` else `Награда: +{reward} бит`)
 			end
 		end)

@@ -128,10 +128,17 @@ local function buildEffect(character: Model, skin: Config.Skin)
 	end
 	local accent = skin.Accent
 	if skin.Effect == "Visor" then
-		attach(neon({ Size = Vector3.new(head.Size.X * 0.9, head.Size.Y * 0.16, 0.1), Color = accent }), head,
-			CFrame.new(0, head.Size.Y * 0.08, -head.Size.Z / 2 - 0.02), character)
-		attach(neon({ Size = Vector3.new(0.18, torso.Size.Y * 0.9, 0.08), Color = accent }), torso,
-			CFrame.new(-torso.Size.X * 0.22, 0, -torso.Size.Z / 2 - 0.02), character)
+		-- визор и полоса уже есть на шлеме и нагруднике; от брони поднимаются редкие зелёные искры кода
+		particles(torso, {
+			Color = ColorSequence.new(accent),
+			LightEmission = 1,
+			Size = NumberSequence.new(0.1, 0),
+			Lifetime = NumberRange.new(0.8, 1.4),
+			Rate = 4,
+			Speed = NumberRange.new(0.5, 1.2),
+			EmissionDirection = Enum.NormalId.Top,
+			SpreadAngle = Vector2.new(30, 30),
+		})
 	elseif skin.Effect == "Glitch" then
 		particles(torso, {
 			Color = ColorSequence.new(accent),

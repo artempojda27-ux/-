@@ -5,9 +5,12 @@
 --   Стрелок — держит дистанцию и стреляет медленными снарядами (от них можно увернуться).
 -- Враг — модель с тегом "Enemy": по нему попадают оружие, дрон и «Код уничтожения».
 -- При гибели враг рассыпается на зелёные пиксели.
+-- Внешний вид — детальные модели, сгенерированные в Studio (Config.EnemyModels): коробка-«мишень» остаётся
+-- невидимой, по ней считаются движение и попадания, а на неё надето светящееся тело вируса.
 -- Если игрок виден, враг бежит к нему напрямую; если мешают дома — ищет путь по улицам.
 
 local CollectionService = game:GetService("CollectionService")
+local InsertService = game:GetService("InsertService")
 local PathfindingService = game:GetService("PathfindingService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -52,6 +55,7 @@ type Projectile = {
 local EnemyService = {}
 
 local enemies: { [Model]: Enemy } = {}
+local bodies: { [string]: BasePart | false } = {} -- загруженные модели врагов (false — не загрузилась)
 local projectiles: { Projectile } = {}
 local folder: Folder
 local pathJobs = 0
@@ -112,6 +116,72 @@ local function shatter(position: Vector3, size: Vector3)
 	end
 end
 
+-- Детальное тело врага из ассета (один раз на вид, дальше — копии)
+local function bodyTemplate(kindId: string): BasePart?
+	local cached = bodies[kindId]
+	if cached ~= nil then
+		return cached or nil
+	end
+	local assetId = Config.EnemyModels[kindId] or 0
+	local mesh: BasePart? = nil
+	if assetId ~= 0 then
+		local ok, container = pcall(InsertService.LoadAsset, InsertService, assetId)
+		if ok then
+			local found = container:FindFirstChildWhichIsA("BasePart", true)
+			if found then
+				found.Parent = nil
+				mesh = found
+			end
+			container:Destroy()
+		else
+			warn(`Не загрузилась модель врага {kindId}: {container}`)
+		end
+	end
+	bodies[kindId] = mesh or false
+	return mesh
+end
+
+-- Надевает детальное тело на коробку врага, добавляет свечение и шлейф осколков
+local function dress(kind: Config.EnemyKind, model: Model, root: BasePart, face: BasePart)
+	local source = bodyTemplate(kind.Id)
+	if source then
+		local body = source:Clone()
+		body.Name = "Body"
+		local longest = math.max(source.Size.X, source.Size.Y, source.Size.Z)
+		local target = math.max(kind.Size.X, kind.Size.Y, kind.Size.Z) * 1.3
+		body.Size = source.Size * (target / longest)
+		body.Anchored = false
+		body.CanCollide = false
+		body.CanQuery = true -- попадание в тело засчитывается так же, как в коробку
+		body.CanTouch = false
+		body.Massless = true
+		body.CFrame = root.CFrame
+		local weld = Instance.new("WeldConstraint")
+		weld.Part0 = root
+		weld.Part1 = body
+		weld.Parent = body
+		body.Parent = model
+		root.Transparency = 1
+		face.Transparency = 1
+	end
+	local light = Instance.new("PointLight")
+	light.Color = kind.Color
+	light.Range = math.max(kind.Size.X, kind.Size.Y) * 3
+	light.Brightness = 1.5
+	light.Parent = root
+	local trail = Instance.new("ParticleEmitter")
+	trail.Name = "Fragments"
+	trail.Color = ColorSequence.new(kind.Color, Color3.fromRGB(255, 60, 200))
+	trail.LightEmission = 1
+	trail.Size = NumberSequence.new(0.18, 0)
+	trail.Lifetime = NumberRange.new(0.4, 0.8)
+	trail.Rate = if kind.Id == "Block" then 14 else 7
+	trail.Speed = NumberRange.new(0.5, 1.5)
+	trail.SpreadAngle = Vector2.new(180, 180)
+	trail.Shape = Enum.ParticleEmitterShape.Box
+	trail.Parent = root
+end
+
 local function build(kind: Config.EnemyKind, position: Vector3, healthMultiplier: number): (Model, BasePart, Humanoid)
 	local model = Instance.new("Model")
 	model.Name = kind.Name
@@ -140,6 +210,7 @@ local function build(kind: Config.EnemyKind, position: Vector3, healthMultiplier
 	weld.Part1 = face
 	weld.Parent = face
 	model.PrimaryPart = root
+	dress(kind, model, root, face)
 
 	local humanoid = Instance.new("Humanoid")
 	humanoid.RigType = Enum.HumanoidRigType.R15 -- чтобы работала HipHeight у модели без ног
@@ -192,12 +263,26 @@ local function areaAttack(enemy: Enemy)
 	if face then
 		face.Color = FLASH
 	end
+	-- у детального тела замах видно по белой вспышке поверх модели
+	local warning: Highlight? = nil
+	if enemy.Model:FindFirstChild("Body") then
+		local highlight = Instance.new("Highlight")
+		highlight.FillColor = FLASH
+		highlight.FillTransparency = 0.35
+		highlight.OutlineColor = FLASH
+		highlight.DepthMode = Enum.HighlightDepthMode.Occluded
+		highlight.Parent = enemy.Model
+		warning = highlight
+	end
 	task.delay(kind.WindUp or 0.8, function()
 		if not enemies[enemy.Model] then
 			return
 		end
 		if face then
 			face.Color = kind.Color
+		end
+		if warning then
+			warning:Destroy()
 		end
 		local center = enemy.Root.Position
 		local wave = part({

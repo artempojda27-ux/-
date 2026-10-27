@@ -163,6 +163,13 @@ Config.Enemies = {
 	},
 } :: { [string]: EnemyKind }
 
+-- Детальные тела врагов (модели, сгенерированные в Studio; 0 — простая коробка со светящимся лицом)
+Config.EnemyModels = {
+	Pixel = 117136918311406, -- глитч-кубик с большим глазом
+	Block = 74354002161797, -- голем из битых кубов
+	Shooter = 97258077839938, -- страж-кристалл с глазом-пушкой
+} :: { [string]: number }
+
 -- Выживание: волны врагов
 Config.Survival = {
 	FirstWaveSize = 6, -- врагов в первой волне при 3 игроках
@@ -519,7 +526,10 @@ Config.Skins = {
 		Body = Color3.fromRGB(40, 44, 52),
 		Material = Enum.Material.SmoothPlastic,
 		Accent = Color3.fromRGB(0, 255, 140),
-		Pieces = {},
+		Pieces = {
+			{ Asset = 72595263215233, Attach = "Head", Fit = 1.45, Offset = Vector3.new(0, 0.12, 0) },
+			{ Asset = 103311878139308, Attach = "UpperTorso", Fit = 1.45, Offset = Vector3.new(0, 0.05, 0) },
+		},
 		Effect = "Visor",
 	},
 	{
@@ -534,6 +544,10 @@ Config.Skins = {
 		Pieces = {
 			{ Asset = 101409906455656, Attach = "Head", Fit = 1.45, Offset = Vector3.new(0, 0.12, 0) },
 			{ Asset = 92296990915532, Attach = "UpperTorso", Fit = 1.45, Offset = Vector3.new(0, 0.05, 0) },
+			{ Asset = 73055183611485, Attach = "LeftLowerArm", Fit = 1.25 },
+			{ Asset = 73055183611485, Attach = "RightLowerArm", Fit = 1.25 },
+			{ Asset = 121858509574330, Attach = "LeftLowerLeg", Fit = 1.35, Offset = Vector3.new(0, -0.25, 0) },
+			{ Asset = 121858509574330, Attach = "RightLowerLeg", Fit = 1.35, Offset = Vector3.new(0, -0.25, 0) },
 		},
 		Effect = "Glitch",
 	},

@@ -186,10 +186,10 @@ local function buildEffect(character: Model, skin: Config.Skin)
 			local limb = character:FindFirstChild(name)
 			if limb and limb:IsA("BasePart") then
 				particles(limb, {
-					Color = ColorSequence.new(accent, Color3.fromRGB(20, 0, 0)),
-					LightEmission = 0.6,
-					Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(1, 0) }),
-					Transparency = NumberSequence.new(0.2, 1),
+					Color = ColorSequence.new(Color3.fromRGB(255, 60, 20), Color3.fromRGB(120, 0, 0)),
+					LightEmission = 1,
+					Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(1, 0.2) }),
+					Transparency = NumberSequence.new(0.1, 1),
 					Lifetime = NumberRange.new(0.4, 0.7),
 					Rate = if name == "UpperTorso" then 30 else 14,
 					Speed = NumberRange.new(1.5, 3),

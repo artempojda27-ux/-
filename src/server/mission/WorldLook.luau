@@ -9,6 +9,7 @@
 --     обломки кварталов висят в воздухе, над площадью парит огромная разломанная колонна.
 --   «Монолит»: чёрная пустота; дома — глянцевые чёрные монолиты с белыми линиями,
 --     пол светится белой сеткой, в небе висит гигантский красный механический глаз.
+--   «Ядро»: сердце Сети — синяя ночь, графитовые башни, бело-голубой ток (ядро и схемы — WorldDetails).
 
 local AssetService = game:GetService("AssetService")
 local InsertService = game:GetService("InsertService")
@@ -735,7 +736,7 @@ local SEVEN_WORLDS = {
 	Color3.fromRGB(190, 150, 255), -- Кристалл семи миров
 	Color3.fromRGB(245, 245, 250), -- Стёртый мир
 	Color3.fromRGB(20, 20, 24), -- Монолит
-	Color3.fromRGB(90, 255, 90), -- Ядро (впереди)
+	Color3.fromRGB(150, 220, 255), -- Ядро
 }
 
 local function applyCrystal(map: Instance?)
@@ -853,6 +854,55 @@ local function applyCrystal(map: Instance?)
 	orbit(big :: Model, center, 0, 0, 0, 4, 0.3)
 end
 
+---------------------------------------------------------------- Ядро
+
+-- Сердце Сети: глубокая синяя ночь, дома — чёрный графит, неон — бело-голубой ток.
+-- Само ядро, лучи и схемы строит WorldDetails.
+local function applyCore(map: Instance?)
+	setLighting({
+		ClockTime = 0,
+		Brightness = 2,
+		Ambient = Color3.new(0.28, 0.34, 0.5),
+		OutdoorAmbient = Color3.new(0.42, 0.52, 0.78),
+		ExposureCompensation = 0.8,
+	}, {
+		Color = Color3.new(0.3, 0.5, 0.8),
+		Decay = Color3.new(0.1, 0.2, 0.45),
+		Density = 0.36,
+		Offset = 0.15,
+		Haze = 1.4,
+		Glare = 0.5,
+	}, {
+		Saturation = 0.1,
+		Contrast = 0.25,
+		TintColor = Color3.new(0.9, 0.96, 1),
+	})
+	local sky = Lighting:FindFirstChildOfClass("Sky")
+	if sky then
+		sky.StarCount = 1500
+	end
+	if not map then
+		return
+	end
+	eachPart(map, function(p)
+		if p.Material == Enum.Material.Neon and p.Name ~= "Beacon" then
+			p.Color = if random:NextNumber() < 0.7 then Color3.fromRGB(120, 200, 255) else Color3.fromRGB(235, 245, 255)
+		elseif p.Name == "Body" then
+			p.Color = Color3.fromRGB(22, 24, 30)
+			p.Material = Enum.Material.Metal
+		elseif p.Name == "Sidewalk" then
+			p.Color = Color3.fromRGB(26, 32, 44)
+		end
+	end)
+	for _, descendant in map:GetDescendants() do
+		if descendant:IsA("PointLight") or descendant:IsA("SurfaceLight") then
+			descendant.Color = Color3.fromRGB(150, 210, 255)
+		elseif descendant:IsA("TextLabel") then
+			descendant.TextColor3 = Color3.fromRGB(150, 210, 255)
+		end
+	end
+end
+
 -- Применяет вид мира (map может быть nil, например в Побеге меняется только свет)
 function WorldLook.apply(worldId: string, map: Instance?)
 	if worldId == "Mirror" then
@@ -865,6 +915,8 @@ function WorldLook.apply(worldId: string, map: Instance?)
 		applyErased(map)
 	elseif worldId == "Monolith" then
 		applyMonolith(map)
+	elseif worldId == "Core" then
+		applyCore(map)
 	end
 end
 

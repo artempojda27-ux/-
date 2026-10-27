@@ -15,6 +15,7 @@ local PALETTE: { [string]: { Color3 } } = {
 	Crystal = { Color3.fromRGB(190, 150, 255), Color3.fromRGB(120, 230, 255) },
 	Erased = { Color3.fromRGB(255, 255, 255), Color3.fromRGB(200, 200, 210) },
 	Monolith = { Color3.fromRGB(255, 40, 50), Color3.fromRGB(255, 255, 255) },
+	Core = { Color3.fromRGB(235, 245, 255), Color3.fromRGB(120, 200, 255) },
 }
 local MAX_LEAKS = 22
 local CRACK_COLOR = Color3.fromRGB(4, 4, 7)

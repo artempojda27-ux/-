@@ -22,6 +22,7 @@ local STYLES: { [string]: Style } = {
 	Mirror = { Set = "Neon" },
 	Temple = { Set = "Temple" },
 	Crystal = { Set = "Crystal" },
+	Core = { Set = "Core" },
 	Erased = { Set = "Neon", Color = Color3.fromRGB(232, 232, 236), Material = Enum.Material.Plaster },
 	-- графитовый металл: в чёрной пустоте совсем чёрные дома не видно, а так силуэты ловят отблески
 	Monolith = { Set = "Neon", Color = Color3.fromRGB(70, 70, 80), Material = Enum.Material.Metal, Reflectance = 0.6 },
@@ -93,9 +94,11 @@ local function skinBuilding(building: Model, templates: { BasePart }, style: Sty
 	local source = pick(templates, size.Y / math.max(size.X, size.Z))
 	local skin = source:Clone()
 	skin.Name = "Skin"
-	-- по высоте — точно как дом, по ширине — с запасом, но без сильного растягивания
+	-- по высоте — точно как дом, по ширине — не шире участка (иначе модель залезает на тротуар
+	-- и в соседние дома); высокий дом из-за этого становится стройнее — так даже лучше
 	local scale = size.Y / source.Size.Y
-	local width = math.clamp(math.max(size.X, size.Z) / math.max(source.Size.X, source.Size.Z), scale * 0.75, scale * 1.35)
+	local lot = math.max(size.X, size.Z) * 1.08 / math.max(source.Size.X, source.Size.Z)
+	local width = math.clamp(lot, scale * 0.35, scale * 1.35)
 	skin.Size = Vector3.new(source.Size.X * width, size.Y, source.Size.Z * width)
 	skin.CFrame = CFrame.new(body.Position) * CFrame.Angles(0, math.rad(90 * random:NextInteger(0, 3)), 0)
 	dress(skin, style, true, false)

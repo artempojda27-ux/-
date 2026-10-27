@@ -24,6 +24,7 @@ local VehicleService = require(ServerScriptService.Common.VehicleService)
 local CitySkins = require(script.Parent.CitySkins)
 local CityLife = require(script.Parent.CityLife)
 local CodeLeaks = require(script.Parent.CodeLeaks)
+local WorldDetails = require(script.Parent.WorldDetails)
 local WorldLook = require(script.Parent.WorldLook)
 local MissionMap = require(script.Parent.MissionMap)
 
@@ -604,6 +605,7 @@ function MissionService.start()
 			CityLife.apply(map)
 		end
 		WorldLook.apply(worldId, map)
+		WorldDetails.apply(worldId, map)
 		CodeLeaks.apply(worldId, map)
 	end
 	for _, node in nodes do

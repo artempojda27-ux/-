@@ -56,6 +56,8 @@ Config.Worlds = {
 	{ Id = "Crystal", Name = "Кристалл семи миров", EnemyHealth = 1.5, EnemyDamage = 1.3, DoubleRate = 2.2, UnlockAfter = "Temple" },
 	{ Id = "Erased", Name = "Стёртый мир", EnemyHealth = 1.6, EnemyDamage = 1.4, DoubleRate = 2.5, UnlockAfter = "Crystal" },
 	{ Id = "Monolith", Name = "Монолит", EnemyHealth = 2, EnemyDamage = 1.7, DoubleRate = 3, UnlockAfter = "Erased" },
+	-- седьмой мир — сердце Сети, где проснулся Нуль (docs/Saga.md)
+	{ Id = "Core", Name = "Ядро", EnemyHealth = 2.4, EnemyDamage = 2, DoubleRate = 3.5, UnlockAfter = "Monolith" },
 } :: { World }
 
 -- Детальные модели для миров, сгенерированные в Studio (лежат в инвентаре владельца игры).
@@ -65,6 +67,9 @@ export type PropSpec = { Asset: number?, Mesh: number?, Texture: number? }
 Config.WorldProps = {
 	Dragon = { Mesh = 83301505869394, Texture = 125573193894382 }, -- крылатый дракон над «Храмом ветра»
 	BigCrystal = { Asset = 110030899354077 }, -- большой Кристалл над площадью «Кристалла семи миров»
+	Torii = { Asset = 91095988254496 }, -- ворота у площади «Храма ветра»
+	StoneLantern = { Asset = 110536070250278 }, -- каменные фонари вдоль улиц «Храма ветра»
+	CrystalIsland = { Asset = 110446111143040 }, -- парящие острова «Кристалла семи миров»
 } :: { [string]: PropSpec }
 
 -- Детальные здания по наборам (модели-ассеты, надеваются на дома города — CitySkins).
@@ -73,6 +78,7 @@ Config.BuildingSets = {
 	Neon = { 94096090697242, 76796274916740, 90208541309645 }, -- жилой блок, техно-башня, небоскрёб
 	Temple = { 103280961104061, 97921744113705 }, -- пагода, зал монастыря
 	Crystal = { 71692760958193, 125411848251603 }, -- кристальная башня, кристальный дом
+	Core = { 73706310770798, 71793523895856 }, -- башня-сервер, узел обработки данных
 } :: { [string]: { number } }
 
 -- Монумент на краю площади (0 — без монумента)
@@ -80,6 +86,7 @@ Config.Monuments = {
 	Neon = 117185050142167, -- герой с энергоклинком
 	Temple = 113200354495453, -- лев-страж
 	Crystal = 0, -- у Кристалла свой большой Кристалл
+	Core = 75237786712990, -- Нуль — злодей саги
 } :: { [string]: number }
 
 function Config.getWorld(id: string?): World

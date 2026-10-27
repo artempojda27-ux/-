@@ -182,6 +182,44 @@ Config.Story = {
 		"Я держу канал связи со Штабом. Вирус хочет меня стереть — защищайте меня, пока передача не завершится!",
 		"Вирус спрятал данные по городу. Соберите все осколки, и придёт их Страж. Победите его — данные наши.",
 	},
+	-- Вега по связи после победы в задании (Debriefs[мир][номер]) — ведёт сюжет между письмами
+	Debriefs = {
+		Neon = {
+			"Сбои закрыты. Ты заметил, что двойник пытался вас остановить? Нуль учится на нас.",
+			"Канал держится. Мой клон выжил благодаря вам. Они — это я, только смелее.",
+			"Данные расшифрованы: Нуль ищет кого-то в Штабе. Не говорите никому, что я это сказала.",
+		},
+		Mirror = {
+			"Зеркальный город отражает не дома. Он отражает воспоминания. Чьи — я пока не знаю.",
+			"В передаче был посторонний сигнал. Кто-то звал меня по имени. Старым голосом.",
+			"Вы нашли меня — настоящую. Копии Нуля носили броню Кая. Первую модель. Я её сама красила.",
+		},
+		Temple = {
+			"Храм спокоен. Монахи говорят, сюда приходил Корректор в старой броне. Сто дней назад.",
+			"Хранитель передал: «Тот, кто вошёл в Ядро, ещё жив. Но он забыл своё имя».",
+			"Дракон уснул. Он оставил вам знак — чешую с выжженной буквой «К».",
+		},
+		Crystal = {
+			"Кристалл трещит изнутри. Трещина похожа на человека. Не смотрите на неё долго.",
+			"Мой клон сверил код. Я не буду повторять, что он нашёл. Пока не буду.",
+			"Данные Кристалла показали: седьмой мир — не мир. Это клетка. И в ней кто-то есть.",
+		},
+		Erased = {
+			"Здесь пропал Кай. Его шлем пустой. Это значит — его не убили. Его переписали.",
+			"Канал держится даже здесь, где ничего нет. Значит, и он может держаться.",
+			"Цвета вернулись. Если мир можно вспомнить — то и человека можно. Правда?",
+		},
+		Monolith = {
+			"Глаз ищет не вас. Он ищет меня. Нуль боится, что я его узнаю.",
+			"Перехват: «ОШИБКА №1: Вега». Он внёс меня в список первой. Он помнит.",
+			"Глаз ослеп. Путь в Ядро открыт. Я иду с вами. Мне нужно сказать ему одно слово.",
+		},
+		Core = {
+			"Сбои Ядра закрыты. Я чувствую его. Он рядом и он… боится.",
+			"Это последний клон. Дальше — только мы. Готовьтесь.",
+			"",
+		},
+	} :: { [string]: { string } },
 	-- Нуль в финальном бою
 	Null = {
 		Spawn = "Корректоры… Я помню это слово. Когда-то оно было моим.",
@@ -221,7 +259,7 @@ end
 -- Задания в каждом мире (сюжетная глава): идут по порядку, мир считается пройденным после третьего.
 -- Kind: "Glitches" — закрыть сбои, "Defend" — защитить клона Веги, "Hunt" — собрать данные и победить Стража,
 -- "Boss" — сбои и бой с Нулём (только в Ядре). С каждым заданием враги крепче (Power).
-export type Mission = { Index: number, Kind: string, Name: string, Power: number }
+export type Mission = { Index: number, Kind: string, Name: string, Power: number, Hint: string?, Hazard: string?, Target: TargetSpec? }
 Config.Missions = {
 	{ Index = 1, Kind = "Glitches", Name = "Закрыть сбои", Power = 1 },
 	{ Index = 2, Kind = "Defend", Name = "Удержать канал", Power = 1.2 },
@@ -231,10 +269,54 @@ Config.DefendTime = 90 -- секунд держать канал
 Config.DefendCloneHealth = 900
 Config.HuntFragments = 5
 
+-- Особые задания миров вместо общих (WorldMissions[мир][номер]). Kind:
+--   "RealClone" — среди клонов Веги найти настоящую (подделки Нуля взрываются врагами);
+--   "Targets" — активировать точки по городу (Target — что это за точки), пока мир мешает (Hazard):
+--     "Fire" — огонь дракона бьёт в отмеченные круги, "Eye" — красный луч глаза ищет отряд.
+export type TargetSpec = { Count: number, Action: string, Object: string, Color: Color3, DoneColor: Color3, Hold: number }
+Config.WorldMissions = {
+	Mirror = {
+		[3] = { Kind = "RealClone", Name = "Настоящая Вега", Hint = "Среди нас копии Нуля. У подделок контур чуть розовее. Проверь каждую — но осторожно." },
+	},
+	Temple = {
+		[3] = {
+			Kind = "Targets", Name = "Фонари для дракона", Hazard = "Fire",
+			Hint = "Дракон видит только огни. Зажгите пять фонарей — свет успокоит его. Берегитесь огня с неба!",
+			Target = { Count = 5, Action = "Зажечь", Object = "Фонарь духа", Color = Color3.fromRGB(80, 60, 50), DoneColor = Color3.fromRGB(255, 170, 60), Hold = 2 },
+		},
+	},
+	Erased = {
+		[3] = {
+			Kind = "Targets", Name = "Вернуть цвета",
+			Hint = "Здесь всё стёрто. В городе остались пять узлов цвета — восстановите их, и мир вспомнит себя.",
+			Target = { Count = 5, Action = "Восстановить", Object = "Узел цвета", Color = Color3.fromRGB(200, 200, 205), DoneColor = Color3.fromRGB(255, 80, 180), Hold = 3 },
+		},
+	},
+	Monolith = {
+		[3] = {
+			Kind = "Targets", Name = "Ослепить глаз", Hazard = "Eye",
+			Hint = "Глаз Нуля видит всё. Отключите четыре ретранслятора — и он ослепнет. Не стойте в красном свете!",
+			Target = { Count = 4, Action = "Отключить", Object = "Ретранслятор", Color = Color3.fromRGB(255, 40, 50), DoneColor = Color3.fromRGB(40, 40, 46), Hold = 3 },
+		},
+	},
+} :: { [string]: { [number]: { [string]: any } } }
+
 function Config.getMission(worldId: string?, index: number?): Mission
 	local mission = Config.Missions[math.clamp(index or 1, 1, #Config.Missions)]
 	if worldId == "Core" and mission.Index == #Config.Missions then
 		return { Index = mission.Index, Kind = "Boss", Name = "Бой с Нулём", Power = mission.Power }
+	end
+	local special = worldId and Config.WorldMissions[worldId] and Config.WorldMissions[worldId][mission.Index]
+	if special then
+		return {
+			Index = mission.Index,
+			Kind = special.Kind,
+			Name = special.Name,
+			Power = mission.Power,
+			Hint = special.Hint,
+			Hazard = special.Hazard,
+			Target = special.Target,
+		} :: any
 	end
 	return mission
 end

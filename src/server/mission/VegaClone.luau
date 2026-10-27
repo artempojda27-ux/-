@@ -16,8 +16,11 @@ local HOLO = Color3.fromRGB(110, 230, 255)
 
 local VegaClone = {}
 
--- Ставит клона в position лицом к look. health — если задано, клон можно ранить
-function VegaClone.spawn(position: Vector3, look: Vector3, hint: string, health: number?): Model
+-- Ставит клона в position лицом к look. health — если задано, клон можно ранить.
+-- options: Outline — цвет контура (подделки Нуля чуть другого цвета), Action/Hold/OnTalk — своя кнопка вместо «Поговорить»
+type Options = { Outline: Color3?, Action: string?, Hold: number?, OnTalk: ((Player, Model) -> ())? }
+
+function VegaClone.spawn(position: Vector3, look: Vector3, hint: string, health: number?, options: Options?): Model
 	local model = Instance.new("Model")
 	model.Name = "VegaClone"
 	local root = Instance.new("Part")
@@ -46,7 +49,7 @@ function VegaClone.spawn(position: Vector3, look: Vector3, hint: string, health:
 	local highlight = Instance.new("Highlight")
 	highlight.FillColor = HOLO
 	highlight.FillTransparency = 0.55
-	highlight.OutlineColor = HOLO
+	highlight.OutlineColor = if options and options.Outline then options.Outline else HOLO
 	highlight.DepthMode = Enum.HighlightDepthMode.Occluded
 	highlight.Parent = model
 	-- голопроектор под ногами и мерцающие искры
@@ -92,13 +95,18 @@ function VegaClone.spawn(position: Vector3, look: Vector3, hint: string, health:
 	end
 
 	local prompt = Instance.new("ProximityPrompt")
-	prompt.ActionText = "Поговорить"
+	prompt.ActionText = if options and options.Action then options.Action else "Поговорить"
 	prompt.ObjectText = "Клон Веги"
+	prompt.HoldDuration = if options and options.Hold then options.Hold else 0
 	prompt.MaxActivationDistance = 12
 	prompt.RequiresLineOfSight = false
 	prompt.Parent = root
 	prompt.Triggered:Connect(function(player)
-		StoryService.say("Клон Веги", hint, player)
+		if options and options.OnTalk then
+			options.OnTalk(player, model)
+		else
+			StoryService.say("Клон Веги", hint, player)
+		end
 	end)
 
 	model.PrimaryPart = root

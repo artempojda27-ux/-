@@ -506,6 +506,262 @@ local function runHunt()
 	DoppelgangerService.clear()
 end
 
+-- Случайная точка на улицах подальше от площади (для особых заданий)
+local function streetSpot(random: Random): Vector3
+	local streets = { -90, -30, 30, 90 }
+	local street = streets[random:NextInteger(1, #streets)]
+	local along = random:NextNumber(40, 110) * (if random:NextNumber() < 0.5 then -1 else 1)
+	local x, z = street + random:NextNumber(-4, 4), along
+	if random:NextNumber() < 0.5 then
+		x, z = z, x
+	end
+	return groundAt(x, z)
+end
+
+local function hazardPart(props: { [string]: any }): Part
+	local p = Instance.new("Part")
+	p.Anchored = true
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	p.CastShadow = false
+	p.Material = Enum.Material.Neon
+	for key, value in props do
+		(p :: any)[key] = value
+	end
+	if not p.Parent then
+		p.Parent = Workspace
+	end
+	return p
+end
+
+local function livingRoots(): { { Root: BasePart, Humanoid: Humanoid } }
+	local list = {}
+	for _, player in Players:GetPlayers() do
+		local character = player.Character
+		local root = character and character:FindFirstChild("HumanoidRootPart")
+		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+		if root and root:IsA("BasePart") and humanoid and humanoid.Health > 0 then
+			table.insert(list, { Root = root, Humanoid = humanoid })
+		end
+	end
+	return list
+end
+
+-- Помеха мира в особом задании (раз в несколько секунд):
+--   "Fire" — дракон дышит огнём: под игроком красный круг, через секунду туда бьёт пламя;
+--   "Eye" — красный луч глаза Нуля: кто остался в круге, поднимает тревогу (враги рядом)
+local function hazardStrike(kind: string, damageMultiplier: number, healthMultiplier: number, random: Random)
+	local targets = livingRoots()
+	if #targets == 0 then
+		return
+	end
+	local target = targets[random:NextInteger(1, #targets)]
+	local spot = groundAt(target.Root.Position.X, target.Root.Position.Z)
+	local color = if kind == "Fire" then Color3.fromRGB(255, 120, 30) else Color3.fromRGB(255, 30, 40)
+	local radius = if kind == "Fire" then 7 else 9
+	local marker = hazardPart({
+		Shape = Enum.PartType.Cylinder,
+		Size = Vector3.new(0.12, radius * 2, radius * 2),
+		CFrame = CFrame.new(spot + Vector3.new(0, 0.1, 0)) * CFrame.Angles(0, 0, math.rad(90)),
+		Color = color,
+		Transparency = 0.5,
+	})
+	local ray: Part? = nil
+	if kind == "Eye" then
+		local eye = Vector3.new(0, 210, -300)
+		ray = hazardPart({
+			Size = Vector3.new(1.5, 1.5, (spot - eye).Magnitude),
+			CFrame = CFrame.lookAt((spot + eye) / 2, spot),
+			Color = color,
+			Transparency = 0.3,
+		})
+	end
+	task.wait(1.3)
+	marker:Destroy()
+	local hit = false
+	for _, other in livingRoots() do
+		local offset = other.Root.Position - spot
+		if Vector3.new(offset.X, 0, offset.Z).Magnitude < radius then
+			hit = true
+			if kind == "Fire" then
+				other.Humanoid:TakeDamage(30 * damageMultiplier)
+			end
+		end
+	end
+	if kind == "Fire" then
+		local flame = hazardPart({
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(80, radius * 1.6, radius * 1.6),
+			CFrame = CFrame.new(spot + Vector3.new(0, 40, 0)) * CFrame.Angles(0, 0, math.rad(90)),
+			Color = color,
+			Transparency = 0.2,
+		})
+		task.delay(0.35, function()
+			flame:Destroy()
+		end)
+	elseif hit then
+		notifyAll("Глаз Нуля заметил отряд! Тревога!")
+		for _ = 1, 4 do
+			EnemyService.spawn(pickKind(3, random), groundAt(spot.X + random:NextNumber(-14, 14), spot.Z + random:NextNumber(-14, 14)),
+				healthMultiplier, damageMultiplier)
+		end
+	end
+	if ray then
+		ray:Destroy()
+	end
+end
+
+-- Особое задание «Targets»: активировать точки по городу (фонари, узлы цвета, ретрансляторы),
+-- пока мешают враги и помеха мира. Каждая точка будит врагов рядом
+local function runTargets(mission: Config.Mission)
+	setState("Combat")
+	local spec = mission.Target :: Config.TargetSpec
+	local healthMultiplier, damageMultiplier = enemyMultipliers()
+	local random = Random.new()
+	local done = 0
+	local folder = Instance.new("Folder")
+	folder.Name = "MissionTargets"
+	folder.Parent = Workspace
+	for _ = 1, spec.Count do
+		local spot = streetSpot(random)
+		local pillar = hazardPart({
+			Name = "Target",
+			Size = Vector3.new(2, 6, 2),
+			CFrame = CFrame.new(spot + Vector3.new(0, 3, 0)),
+			Color = spec.Color,
+			Material = Enum.Material.SmoothPlastic,
+			CanQuery = true,
+			Parent = folder,
+		})
+		local cap = hazardPart({
+			Shape = Enum.PartType.Ball,
+			Size = Vector3.one * 2.6,
+			Position = spot + Vector3.new(0, 7, 0),
+			Color = spec.Color,
+			Parent = pillar,
+		})
+		local beam = hazardPart({
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(70, 1, 1),
+			CFrame = CFrame.new(spot + Vector3.new(0, 42, 0)) * CFrame.Angles(0, 0, math.rad(90)),
+			Color = spec.DoneColor,
+			Transparency = 0.75,
+			Parent = pillar,
+		})
+		local prompt = Instance.new("ProximityPrompt")
+		prompt.ActionText = spec.Action
+		prompt.ObjectText = spec.Object
+		prompt.HoldDuration = spec.Hold
+		prompt.MaxActivationDistance = 10
+		prompt.RequiresLineOfSight = false
+		prompt.Parent = pillar
+		prompt.Triggered:Connect(function(player)
+			if not prompt.Enabled then
+				return
+			end
+			prompt.Enabled = false
+			done += 1
+			cap.Color = spec.DoneColor
+			pillar.Color = spec.DoneColor
+			pillar.Material = Enum.Material.Neon
+			beam:Destroy()
+			local light = Instance.new("PointLight")
+			light.Color = spec.DoneColor
+			light.Range = 20
+			light.Brightness = 3
+			light.Parent = cap
+			notifyAll(`{player.DisplayName}: {spec.Object} ({done}/{spec.Count})`)
+			for _ = 1, 3 do
+				EnemyService.spawn(pickKind(2, random), groundAt(spot.X + random:NextNumber(-12, 12), spot.Z + random:NextNumber(-12, 12)),
+					healthMultiplier, damageMultiplier)
+			end
+		end)
+	end
+
+	local lastSpawn, lastHazard = 0, os.clock()
+	while done < spec.Count do
+		objectiveView = { Text = mission.Name, Progress = done, Total = spec.Count }
+		if os.clock() - lastSpawn >= 7 and EnemyService.aliveCount() < 12 then
+			lastSpawn = os.clock()
+			EnemyService.spawn(pickKind(2, random), spawnPoint(random), healthMultiplier, damageMultiplier)
+		end
+		if mission.Hazard and os.clock() - lastHazard >= 6 then
+			lastHazard = os.clock()
+			task.spawn(hazardStrike, mission.Hazard, damageMultiplier, healthMultiplier, random)
+		end
+		sendAll()
+		task.wait(0.5)
+	end
+	task.wait(2)
+	folder:Destroy()
+	objectiveView = nil
+	EnemyService.clear()
+	DoppelgangerService.clear()
+end
+
+-- Особое задание «Настоящая Вега» (Зеркальный город): четыре клона, настоящий один.
+-- У подделок контур чуть розовее; проверенная подделка рассыпается врагами
+local function runRealClone()
+	setState("Combat")
+	local healthMultiplier, damageMultiplier = enemyMultipliers()
+	local random = Random.new()
+	local count = 4
+	local real = random:NextInteger(1, count)
+	local found = false
+	local checked = 0
+	local clones = {}
+	for i = 1, count do
+		local spot = streetSpot(random)
+		local isReal = i == real
+		clones[i] = VegaClone.spawn(spot, Vector3.new(0, spot.Y, 0), "", nil, {
+			Outline = if isReal then nil else Color3.fromRGB(200, 190, 255),
+			Action = "Проверить",
+			Hold = 1,
+			OnTalk = function(player, model)
+				if found or not model.Parent then
+					return
+				end
+				if isReal then
+					found = true
+					StoryService.say("Вега", "Это я. Настоящая. Спасибо, что не поверили отражениям.")
+					notifyAll(`{player.DisplayName} нашёл настоящую Вегу!`)
+				else
+					checked += 1
+					local position = model:GetPivot().Position
+					model:Destroy()
+					notifyAll("Подделка! Копия Нуля рассыпалась на вирус")
+					StoryService.say("Нуль", "Ты почти поверил. Почти.")
+					for _ = 1, 4 do
+						EnemyService.spawn(pickKind(3, random), groundAt(position.X + random:NextNumber(-8, 8), position.Z + random:NextNumber(-8, 8)),
+							healthMultiplier, damageMultiplier)
+					end
+				end
+			end,
+		})
+	end
+	local lastSpawn = 0
+	DoppelgangerService.spawn()
+	while not found do
+		objectiveView = { Text = "Найдите настоящую Вегу · подделок раскрыто", Progress = checked, Total = count - 1 }
+		if os.clock() - lastSpawn >= 7 and EnemyService.aliveCount() < 12 then
+			lastSpawn = os.clock()
+			EnemyService.spawn(pickKind(3, random), spawnPoint(random), healthMultiplier, damageMultiplier)
+		end
+		sendAll()
+		task.wait(0.5)
+	end
+	task.wait(2)
+	for _, model in clones do
+		if model.Parent then
+			model:Destroy()
+		end
+	end
+	objectiveView = nil
+	EnemyService.clear()
+	DoppelgangerService.clear()
+end
+
 -- Одна волна. false, если отряд пал
 local function runWave(random: Random): boolean
 	local healthMultiplier, damageMultiplier, countMultiplier = enemyMultipliers()
@@ -838,8 +1094,9 @@ function MissionService.start()
 			if mission.Kind ~= "Boss" then
 				MemoryShards.hide(`{worldId}_{mission.Index}`, groundAt)
 			end
-			if mission.Kind ~= "Defend" then
-				VegaClone.spawn(groundAt(14, 14), Vector3.new(0, 0, 0), Config.Story.CloneHints[math.min(mission.Index, #Config.Story.CloneHints)])
+			if mission.Kind ~= "Defend" and mission.Kind ~= "RealClone" then
+				VegaClone.spawn(groundAt(14, 14), Vector3.new(0, 0, 0),
+					mission.Hint or Config.Story.CloneHints[math.min(mission.Index, #Config.Story.CloneHints)])
 			end
 		end
 	end
@@ -891,6 +1148,10 @@ function MissionService.start()
 					won = runDefend()
 				elseif kind == "Hunt" then
 					runHunt()
+				elseif kind == "Targets" then
+					runTargets(currentMission())
+				elseif kind == "RealClone" then
+					runRealClone()
 				else
 					local skipNodes = RunService:IsStudio() and ServerScriptService:GetAttribute("TestBoss") == true and isBossFight()
 					if not skipNodes then
@@ -908,6 +1169,12 @@ function MissionService.start()
 				else
 					setState("Victory")
 					notifyAll(if isBossFight() then "Ядро свободно. Сезон «Трещина» пройден!" else "Сектор очищен!")
+					-- Вега выходит на связь после задания и двигает сюжет дальше
+					local debriefs = Config.Story.Debriefs[Config.getWorld(info.World).Id]
+					local debrief = debriefs and debriefs[currentMission().Index]
+					if debrief and debrief ~= "" then
+						task.delay(2, StoryService.say, "Вега (связь)", debrief)
+					end
 					giveStoryRewards(if isBossFight() then Config.BossRewardMultiplier else 1)
 				end
 			end

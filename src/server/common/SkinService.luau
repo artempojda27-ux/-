@@ -180,6 +180,40 @@ local function buildEffect(character: Model, skin: Config.Skin)
 			EmissionDirection = Enum.NormalId.Bottom,
 			SpreadAngle = Vector2.new(10, 10),
 		})
+	elseif skin.Effect == "Rage" then
+		-- чёрно-красное пламя от плеч и рук, вверх летят угли, глаза под шлемом горят
+		for _, name in { "UpperTorso", "LeftLowerArm", "RightLowerArm" } do
+			local limb = character:FindFirstChild(name)
+			if limb and limb:IsA("BasePart") then
+				particles(limb, {
+					Color = ColorSequence.new(accent, Color3.fromRGB(20, 0, 0)),
+					LightEmission = 0.6,
+					Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(1, 0) }),
+					Transparency = NumberSequence.new(0.2, 1),
+					Lifetime = NumberRange.new(0.4, 0.7),
+					Rate = if name == "UpperTorso" then 30 else 14,
+					Speed = NumberRange.new(1.5, 3),
+					EmissionDirection = Enum.NormalId.Top,
+					SpreadAngle = Vector2.new(20, 20),
+					Texture = "rbxasset://textures/particles/fire_main.dds",
+				})
+			end
+		end
+		particles(torso, {
+			Color = ColorSequence.new(Color3.fromRGB(255, 120, 40), accent),
+			LightEmission = 1,
+			Size = NumberSequence.new(0.12, 0),
+			Lifetime = NumberRange.new(1, 1.8),
+			Rate = 12,
+			Speed = NumberRange.new(2, 4),
+			EmissionDirection = Enum.NormalId.Top,
+			SpreadAngle = Vector2.new(40, 40),
+		})
+		local eyes = Instance.new("PointLight")
+		eyes.Color = accent
+		eyes.Range = 8
+		eyes.Brightness = 3
+		eyes.Parent = head
 	elseif skin.Effect == "Horizon" then
 		-- кольцо, как свет вокруг чёрной дыры: медленно вращается за спиной
 		local hub = neon({ Size = Vector3.new(0.3, 0.3, 0.3), Color = Color3.new(0, 0, 0), Shape = Enum.PartType.Ball })
@@ -244,9 +278,15 @@ function SkinService.apply(character: Model, skin: Config.Skin)
 		if to and to:IsA("BasePart") and source then
 			local part = source:Clone()
 			part.Name = "SkinPiece"
-			local longest = math.max(source.Size.X, source.Size.Y, source.Size.Z)
-			local target = math.max(to.Size.X, to.Size.Y, to.Size.Z) * piece.Fit
-			part.Size = source.Size * (target / longest)
+			local scale
+			if piece.Wrap then
+				-- обхват: деталь шире руки/ноги по обеим сторонам, иначе она прячется внутри толстого аватара
+				scale = math.max(to.Size.X / source.Size.X, to.Size.Z / source.Size.Z) * piece.Fit
+			else
+				local longest = math.max(source.Size.X, source.Size.Y, source.Size.Z)
+				scale = math.max(to.Size.X, to.Size.Y, to.Size.Z) * piece.Fit / longest
+			end
+			part.Size = source.Size * scale
 			local offset = piece.Offset or Vector3.zero
 			local turn = piece.Turn or Vector3.zero
 			attach(part, to, CFrame.new(offset * to.Size)

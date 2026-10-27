@@ -501,8 +501,10 @@ Config.Doppelganger = {
 -- этой части тела, Offset — сдвиг в размерах части тела (0, 0.1, 0 — на 10% её высоты вверх),
 -- Turn — поворот в градусах.
 -- Effect — что строится кодом: "Visor" (полоса-визор и полоса на груди), "Glitch" (глитч-искры),
--- "Halo" (кольцо над головой), "Stars" (звёзды вокруг), "Horizon" (огненное кольцо за спиной).
-export type SkinPiece = { Asset: number, Attach: string, Fit: number, Offset: Vector3?, Turn: Vector3? }
+-- "Halo" (кольцо над головой), "Stars" (звёзды вокруг), "Horizon" (огненное кольцо за спиной),
+-- "Rage" (чёрно-красное пламя, искры и горящие глаза).
+-- Wrap = true — Fit считается по ширине части тела: наручи и ботинки обхватывают руку/ногу любой толщины.
+export type SkinPiece = { Asset: number, Attach: string, Fit: number, Wrap: boolean?, Offset: Vector3?, Turn: Vector3? }
 export type Skin = {
 	Key: string,
 	Id: number,
@@ -544,10 +546,10 @@ Config.Skins = {
 		Pieces = {
 			{ Asset = 101409906455656, Attach = "Head", Fit = 1.45, Offset = Vector3.new(0, 0.12, 0) },
 			{ Asset = 92296990915532, Attach = "UpperTorso", Fit = 1.45, Offset = Vector3.new(0, 0.05, 0) },
-			{ Asset = 73055183611485, Attach = "LeftLowerArm", Fit = 1.25 },
-			{ Asset = 73055183611485, Attach = "RightLowerArm", Fit = 1.25 },
-			{ Asset = 121858509574330, Attach = "LeftLowerLeg", Fit = 1.35, Offset = Vector3.new(0, -0.25, 0) },
-			{ Asset = 121858509574330, Attach = "RightLowerLeg", Fit = 1.35, Offset = Vector3.new(0, -0.25, 0) },
+			{ Asset = 73055183611485, Attach = "LeftLowerArm", Fit = 1.2, Wrap = true },
+			{ Asset = 73055183611485, Attach = "RightLowerArm", Fit = 1.2, Wrap = true },
+			{ Asset = 121858509574330, Attach = "LeftLowerLeg", Fit = 1.15, Wrap = true, Offset = Vector3.new(0, -0.2, 0) },
+			{ Asset = 121858509574330, Attach = "RightLowerLeg", Fit = 1.15, Wrap = true, Offset = Vector3.new(0, -0.2, 0) },
 		},
 		Effect = "Glitch",
 	},
@@ -563,6 +565,10 @@ Config.Skins = {
 		Pieces = {
 			{ Asset = 123663528462870, Attach = "Head", Fit = 1.5, Offset = Vector3.new(0, 0.15, 0) },
 			{ Asset = 81487080630836, Attach = "UpperTorso", Fit = 1.6, Offset = Vector3.new(0, 0.1, 0) },
+			{ Asset = 119258755611818, Attach = "LeftLowerArm", Fit = 1.2, Wrap = true },
+			{ Asset = 119258755611818, Attach = "RightLowerArm", Fit = 1.2, Wrap = true },
+			{ Asset = 111099078951892, Attach = "LeftLowerLeg", Fit = 1.15, Wrap = true, Offset = Vector3.new(0, -0.2, 0) },
+			{ Asset = 111099078951892, Attach = "RightLowerLeg", Fit = 1.15, Wrap = true, Offset = Vector3.new(0, -0.2, 0) },
 		},
 		Effect = "Halo",
 	},
@@ -579,6 +585,10 @@ Config.Skins = {
 			{ Asset = 128011042274358, Attach = "Head", Fit = 1.6, Offset = Vector3.new(0, 0.15, 0) },
 			{ Asset = 121103953746782, Attach = "UpperTorso", Fit = 1.5, Offset = Vector3.new(0, 0.05, 0) },
 			{ Asset = 73692264592335, Attach = "UpperTorso", Fit = 1.1, Offset = Vector3.new(0, 0, 0.9) },
+			{ Asset = 113375150771630, Attach = "LeftLowerArm", Fit = 1.2, Wrap = true },
+			{ Asset = 113375150771630, Attach = "RightLowerArm", Fit = 1.2, Wrap = true },
+			{ Asset = 74047916579618, Attach = "LeftLowerLeg", Fit = 1.15, Wrap = true, Offset = Vector3.new(0, -0.2, 0) },
+			{ Asset = 74047916579618, Attach = "RightLowerLeg", Fit = 1.15, Wrap = true, Offset = Vector3.new(0, -0.2, 0) },
 		},
 		Effect = "Stars",
 	},
@@ -595,8 +605,31 @@ Config.Skins = {
 		Pieces = {
 			{ Asset = 74165910550599, Attach = "Head", Fit = 1.45, Offset = Vector3.new(0, 0.12, 0) },
 			{ Asset = 128652350667306, Attach = "UpperTorso", Fit = 1.5, Offset = Vector3.new(0, 0.05, 0) },
+			{ Asset = 89332774121080, Attach = "LeftLowerArm", Fit = 1.2, Wrap = true },
+			{ Asset = 89332774121080, Attach = "RightLowerArm", Fit = 1.2, Wrap = true },
+			{ Asset = 95747768995932, Attach = "LeftLowerLeg", Fit = 1.15, Wrap = true, Offset = Vector3.new(0, -0.2, 0) },
+			{ Asset = 95747768995932, Attach = "RightLowerLeg", Fit = 1.15, Wrap = true, Offset = Vector3.new(0, -0.2, 0) },
 		},
 		Effect = "Horizon",
+	},
+	{
+		Key = "Berserker",
+		Id = 0,
+		Name = "Берсерк Ядра",
+		Description = "Самый страшный орден: поглотил осколок Нуля. Рогатый шлем, шипастая броня, чёрно-красное пламя",
+		Price = 799,
+		Body = Color3.fromRGB(26, 22, 24),
+		Material = Enum.Material.Metal,
+		Accent = Color3.fromRGB(255, 20, 30),
+		Pieces = {
+			{ Asset = 78867892221995, Attach = "Head", Fit = 1.6, Offset = Vector3.new(0, 0.15, 0) },
+			{ Asset = 81163601190150, Attach = "UpperTorso", Fit = 1.75, Offset = Vector3.new(0, 0.1, 0) },
+			{ Asset = 85961292843497, Attach = "LeftLowerArm", Fit = 1.3, Wrap = true },
+			{ Asset = 85961292843497, Attach = "RightLowerArm", Fit = 1.3, Wrap = true },
+			{ Asset = 99796752825258, Attach = "LeftLowerLeg", Fit = 1.2, Wrap = true, Offset = Vector3.new(0, -0.2, 0) },
+			{ Asset = 99796752825258, Attach = "RightLowerLeg", Fit = 1.2, Wrap = true, Offset = Vector3.new(0, -0.2, 0) },
+		},
+		Effect = "Rage",
 	},
 } :: { Skin }
 

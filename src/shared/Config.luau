@@ -52,9 +52,20 @@ export type World = {
 Config.Worlds = {
 	{ Id = "Neon", Name = "Неоновый город", EnemyHealth = 1, EnemyDamage = 1, DoubleRate = 1, UnlockAfter = nil },
 	{ Id = "Mirror", Name = "Зеркальный город", EnemyHealth = 1.3, EnemyDamage = 1.2, DoubleRate = 2, UnlockAfter = "Neon" },
-	{ Id = "Erased", Name = "Стёртый мир", EnemyHealth = 1.6, EnemyDamage = 1.4, DoubleRate = 2.5, UnlockAfter = "Mirror" },
+	{ Id = "Temple", Name = "Храм ветра", EnemyHealth = 1.4, EnemyDamage = 1.25, DoubleRate = 2, UnlockAfter = "Mirror" },
+	{ Id = "Crystal", Name = "Кристалл семи миров", EnemyHealth = 1.5, EnemyDamage = 1.3, DoubleRate = 2.2, UnlockAfter = "Temple" },
+	{ Id = "Erased", Name = "Стёртый мир", EnemyHealth = 1.6, EnemyDamage = 1.4, DoubleRate = 2.5, UnlockAfter = "Crystal" },
 	{ Id = "Monolith", Name = "Монолит", EnemyHealth = 2, EnemyDamage = 1.7, DoubleRate = 3, UnlockAfter = "Erased" },
 } :: { World }
+
+-- Детальные модели для миров, сгенерированные в Studio (лежат в инвентаре владельца игры).
+-- Asset — номер модели; или Mesh + Texture — номера сетки и текстуры. Пусто — собрать из деталей.
+export type PropSpec = { Asset: number?, Mesh: number?, Texture: number? }
+
+Config.WorldProps = {
+	Dragon = { Mesh = 83301505869394, Texture = 125573193894382 }, -- крылатый дракон над «Храмом ветра»
+	BigCrystal = { Asset = 110030899354077 }, -- большой Кристалл над площадью «Кристалла семи миров»
+} :: { [string]: PropSpec }
 
 function Config.getWorld(id: string?): World
 	for _, world in Config.Worlds do

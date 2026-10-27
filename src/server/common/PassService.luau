@@ -85,8 +85,22 @@ local function grant(player: Player, key: string)
 	end
 end
 
-local function checkOwnership(player: Player)
+-- Все пропуски: бусты и платные скины (у скина ключ "Skin_<Key>")
+local function allPasses(): { { Key: string, Id: number } }
+	local list = {}
 	for _, pass in Config.GamePasses do
+		table.insert(list, { Key = pass.Key, Id = pass.Id })
+	end
+	for _, skin in Config.Skins do
+		if skin.Price > 0 then
+			table.insert(list, { Key = `Skin_{skin.Key}`, Id = skin.Id })
+		end
+	end
+	return list
+end
+
+local function checkOwnership(player: Player)
+	for _, pass in allPasses() do
 		if RunService:IsStudio() and Config.StudioOwnsAllPasses then
 			grant(player, pass.Key)
 		elseif pass.Id ~= 0 then
@@ -122,7 +136,7 @@ function PassService.start()
 		if not purchased then
 			return
 		end
-		for _, pass in Config.GamePasses do
+		for _, pass in allPasses() do
 			if pass.Id == passId and pass.Id ~= 0 then
 				grant(player, pass.Key)
 			end

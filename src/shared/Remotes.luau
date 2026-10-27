@@ -16,6 +16,7 @@ local NAMES = {
 	"ShotFx", -- сервер → клиенты: нарисовать чужой выстрел (shooter, weaponId, origin, endpoints)
 	"HitConfirm", -- сервер → клиент: попадание (killed)
 	"TestPurchase", -- клиент → сервер: бесплатная «покупка» разового буста, только в Studio (productKey)
+	"SkinAction", -- клиент → сервер: "Equip" (ключ скина или "None") — только в Штабе
 	"VehicleAction", -- клиент → сервер: действие водителя: "Flip" (прыжок), "Nitro", "Color" (сменить цвет тюнинга)
 }
 

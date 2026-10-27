@@ -54,6 +54,22 @@
           "Threshold": 0.85
         }
       },
+      "DepthOfField": {
+        "$className": "DepthOfFieldEffect",
+        "$properties": {
+          "FarIntensity": 0.18,
+          "FocusDistance": 40,
+          "InFocusRadius": 70,
+          "NearIntensity": 0
+        }
+      },
+      "SunRays": {
+        "$className": "SunRaysEffect",
+        "$properties": {
+          "Intensity": 0.05,
+          "Spread": 0.6
+        }
+      },
       "ColorCorrection": {
         "$className": "ColorCorrectionEffect",
         "$properties": {

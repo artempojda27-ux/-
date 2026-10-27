@@ -480,6 +480,114 @@ Config.Doppelganger = {
 	KillReward = 15, -- бит всему отряду, если двойника уничтожили до предательства
 }
 
+-- Скины — ордены борцов с Искажением (история — docs/Saga.md). Платные — это Game Pass:
+-- Id из Creator Hub (0 — ещё не создан), сервер ставит атрибут "Pass_Skin_<Key>".
+-- Pieces — детальные части брони, сгенерированные в Studio (ассеты в инвентаре владельца):
+-- Attach — к какой части тела крепится, Fit — длинная сторона детали относительно длинной стороны
+-- этой части тела, Offset — сдвиг в размерах части тела (0, 0.1, 0 — на 10% её высоты вверх),
+-- Turn — поворот в градусах.
+-- Effect — что строится кодом: "Visor" (полоса-визор и полоса на груди), "Glitch" (глитч-искры),
+-- "Halo" (кольцо над головой), "Stars" (звёзды вокруг), "Horizon" (огненное кольцо за спиной).
+export type SkinPiece = { Asset: number, Attach: string, Fit: number, Offset: Vector3?, Turn: Vector3? }
+export type Skin = {
+	Key: string,
+	Id: number,
+	Name: string,
+	Description: string,
+	Price: number, -- 0 — бесплатно
+	Body: Color3, -- цвет рук, ног и тела
+	Material: Enum.Material,
+	Accent: Color3, -- цвет свечения
+	Pieces: { SkinPiece },
+	Effect: string?,
+}
+
+Config.Skins = {
+	{
+		Key = "Corrector",
+		Id = 0,
+		Name = "Корректор",
+		Description = "Броня новичка Штаба: тёмный костюм и зелёная полоса кода",
+		Price = 0,
+		Body = Color3.fromRGB(40, 44, 52),
+		Material = Enum.Material.SmoothPlastic,
+		Accent = Color3.fromRGB(0, 255, 140),
+		Pieces = {},
+		Effect = "Visor",
+	},
+	{
+		Key = "Hunter",
+		Id = 0,
+		Name = "Охотник за сбоями",
+		Description = "Разведчик: чёрная тактическая броня с голубыми линиями, вокруг искрит глитч",
+		Price = 149,
+		Body = Color3.fromRGB(44, 47, 56),
+		Material = Enum.Material.Fabric,
+		Accent = Color3.fromRGB(0, 230, 255),
+		Pieces = {
+			{ Asset = 101409906455656, Attach = "Head", Fit = 1.45, Offset = Vector3.new(0, 0.12, 0) },
+			{ Asset = 92296990915532, Attach = "UpperTorso", Fit = 1.45, Offset = Vector3.new(0, 0.05, 0) },
+		},
+		Effect = "Glitch",
+	},
+	{
+		Key = "Guardian",
+		Id = 0,
+		Name = "Страж Протокола",
+		Description = "Хранитель Кристалла: бело-золотая тяжёлая броня и кольцо из кода над головой",
+		Price = 249,
+		Body = Color3.fromRGB(236, 232, 222),
+		Material = Enum.Material.SmoothPlastic,
+		Accent = Color3.fromRGB(255, 200, 70),
+		Pieces = {
+			{ Asset = 123663528462870, Attach = "Head", Fit = 1.5, Offset = Vector3.new(0, 0.15, 0) },
+			{ Asset = 81487080630836, Attach = "UpperTorso", Fit = 1.6, Offset = Vector3.new(0, 0.1, 0) },
+		},
+		Effect = "Halo",
+	},
+	{
+		Key = "Wanderer",
+		Id = 0,
+		Name = "Звёздный странник",
+		Description = "Пришелец из космоса за краем Сети: скафандр с туманностью, ранец и звёзды вокруг",
+		Price = 399,
+		Body = Color3.fromRGB(30, 34, 80),
+		Material = Enum.Material.SmoothPlastic,
+		Accent = Color3.fromRGB(170, 120, 255),
+		Pieces = {
+			{ Asset = 128011042274358, Attach = "Head", Fit = 1.6, Offset = Vector3.new(0, 0.15, 0) },
+			{ Asset = 121103953746782, Attach = "UpperTorso", Fit = 1.5, Offset = Vector3.new(0, 0.05, 0) },
+			{ Asset = 73692264592335, Attach = "UpperTorso", Fit = 1.1, Offset = Vector3.new(0, 0, 0.9) },
+		},
+		Effect = "Stars",
+	},
+	{
+		Key = "Horizon",
+		Id = 0,
+		Name = "Горизонт событий",
+		Description = "Вернулся из пустоты Ядра: обсидиановая броня, за спиной вращается огненное кольцо",
+		Price = 599,
+		Body = Color3.fromRGB(14, 12, 14),
+		Material = Enum.Material.Glass,
+		Accent = Color3.fromRGB(255, 80, 10), -- неон в свечении светлеет, поэтому берём темнее
+
+		Pieces = {
+			{ Asset = 74165910550599, Attach = "Head", Fit = 1.45, Offset = Vector3.new(0, 0.12, 0) },
+			{ Asset = 128652350667306, Attach = "UpperTorso", Fit = 1.5, Offset = Vector3.new(0, 0.05, 0) },
+		},
+		Effect = "Horizon",
+	},
+} :: { Skin }
+
+function Config.getSkin(key: string?): Skin?
+	for _, skin in Config.Skins do
+		if skin.Key == key then
+			return skin
+		end
+	end
+	return nil
+end
+
 -- В Studio считаем, что все бусты куплены, а разовые выдаются бесплатно:
 -- так их можно проверить до публикации. В опубликованной игре это не работает.
 Config.StudioOwnsAllPasses = true

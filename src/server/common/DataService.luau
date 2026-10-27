@@ -11,6 +11,7 @@ local TEMPLATE = {
 	Bits = 0,
 	SelectedHero = "Guard",
 	UnlockedHeroes = { Guard = true, Bolt = true },
+	SelectedSkin = "None", -- скин из Config.Skins или "None" — свой облик
 	ChaptersCompleted = {} :: { [string]: boolean }, -- ключ — номер главы строкой
 	MissionsCompleted = 0,
 	BestWave = 0, -- рекорд в Выживании: сколько волн отряд продержался

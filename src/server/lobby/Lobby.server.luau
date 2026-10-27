@@ -9,6 +9,7 @@ local ProductService = require(ServerScriptService.Common.ProductService)
 local SkinService = require(ServerScriptService.Common.SkinService)
 local VehicleService = require(ServerScriptService.Common.VehicleService)
 local Garage = require(script.Parent.Garage)
+local LobbyLook = require(script.Parent.LobbyLook)
 local LobbyMap = require(script.Parent.LobbyMap)
 local SquadService = require(script.Parent.SquadService)
 
@@ -19,6 +20,7 @@ SkinService.start()
 ProductService.start({}) -- разовые бусты действуют только в Миссии
 VehicleService.start()
 SquadService.start(LobbyMap.setup())
+LobbyLook.apply(Workspace:FindFirstChild("LobbyMap") :: Instance)
 Garage.start(LobbyMap.garage())
 
 print("Штаб запущен")

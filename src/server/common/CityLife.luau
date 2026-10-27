@@ -102,11 +102,11 @@ local function car(parent: Instance, glow: Color3): Model
 end
 
 -- Голограмма на стене дома: светящаяся панель с надписью, видна с обеих сторон
-local function holo(parent: Instance, cf: CFrame, text: string, color: Color3)
-	local width = math.max(10, #text * 0.75)
+local function holo(parent: Instance, cf: CFrame, text: string, color: Color3, scale: number?)
+	local width = math.max(10, #text * 0.75) * (scale or 1)
 	local panel = part({
 		Name = "Holo",
-		Size = Vector3.new(width, 3.2, 0.1),
+		Size = Vector3.new(width, 3.2 * (scale or 1), 0.1),
 		CFrame = cf,
 		Transparency = 1,
 		Parent = parent,
@@ -156,20 +156,27 @@ local function holo(parent: Instance, cf: CFrame, text: string, color: Color3)
 	CollectionService:AddTag(panel, "Holo")
 end
 
-function CityLife.apply(map: Instance)
-	local folder = Instance.new("Folder")
-	folder.Name = "CityLife"
-
-	-- Транспорт: кольцевые «воздушные трассы» над крышами на разной высоте, в обе стороны
-	for i = 1, CAR_COUNT do
-		local model = car(folder, HOLO_COLORS[(i % #HOLO_COLORS) + 1])
-		model:SetAttribute("Radius", random:NextNumber(70, 190))
-		model:SetAttribute("Height", random:NextNumber(48, 95))
+-- Транспорт: кольцевые «воздушные трассы» на разной высоте, в обе стороны (Штаб тоже этим пользуется)
+function CityLife.traffic(parent: Instance, count: number, minRadius: number, maxRadius: number, minHeight: number, maxHeight: number)
+	for i = 1, count do
+		local model = car(parent, HOLO_COLORS[(i % #HOLO_COLORS) + 1])
+		model:SetAttribute("Radius", random:NextNumber(minRadius, maxRadius))
+		model:SetAttribute("Height", random:NextNumber(minHeight, maxHeight))
 		model:SetAttribute("Speed", (if i % 2 == 0 then 1 else -1) * random:NextNumber(18, 32)) -- студов в секунду
 		model:SetAttribute("Phase", random:NextNumber(0, math.pi * 2))
 		model:SetAttribute("Bob", random:NextNumber(0.5, 2))
 		CollectionService:AddTag(model, "SkyCar")
 	end
+end
+
+-- Голограмма-вывеска (Штаб использует для названия игры)
+CityLife.holo = holo
+
+function CityLife.apply(map: Instance)
+	local folder = Instance.new("Folder")
+	folder.Name = "CityLife"
+
+	CityLife.traffic(folder, CAR_COUNT, 70, 190, 48, 95)
 
 	-- Голограммы — на верхней части самых высоких домов, с наружной стороны
 	local tall = {}

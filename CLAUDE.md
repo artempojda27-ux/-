@@ -122,14 +122,14 @@ WorldLook пропускает крыши пагод и самоцветы у д
 в Штабе (персонаж пересоздаётся на месте). Броня проверена в Studio на манекенах; гардероб в Штабе проверен (2026-10-27): окно, прокрутка, «Надеть»,
 персонаж пересоздаётся на месте. Пламя Берсерка на снимках MCP почти не видно — глазами в игре не проверено.
 Графика (2026-10-27): «утекающий код» — чёрные трещины на стенах домов, по ним бегут символы, снизу капают пиксели
-(`src/server/mission/CodeLeaks.luau` + `src/client/mission/CodeLeaks.client.luau`, свой стиль, не «зелёный дождь» из фильма);
-живой город в Неоновом и Зеркальном мирах — летающий транспорт и мигающие голограммы (`CityLife.luau` +
-`src/client/mission/Ambience.client.luau`, там же светящаяся пыль данных цвета мира — атрибут Workspace `WorldAccent`);
+(`src/server/mission/CodeLeaks.luau` + `src/client/common/CodeLeaks.client.luau`, свой стиль, не «зелёный дождь» из фильма);
+живой город в Неоновом и Зеркальном мирах — летающий транспорт и мигающие голограммы (`src/server/common/CityLife.luau` +
+`src/client/common/Ambience.client.luau`, там же светящаяся пыль данных цвета мира — атрибут Workspace `WorldAccent`);
 в свет Миссии добавлены DepthOfField и SunRays. Проверено в Studio в Неоновом мире.
 Семь миров (2026-10-27): добавлен седьмой — «Ядро» (`Id = "Core"`, после Монолита): графитовые башни-серверы,
 над площадью пульсирующее ядро Сети с кольцами, лучи к башням, дорожки схем на улицах, столбы света, статуя Нуля.
 Второй слой деталей всех миров — `src/server/mission/WorldDetails.luau` (сервер строит, двигает клиент
-`src/client/mission/WorldMotion.client.luau` по тегу "Motion": атрибуты Spin/Bob/Sway/Pulse). Погода и молнии —
+`src/client/common/WorldMotion.client.luau` по тегу "Motion": атрибуты Spin/Bob/Sway/Pulse). Погода и молнии —
 атрибуты Workspace "Weather" (Rain/Lanterns/Paper/Ash/Sparks) и "Lightning", их рисует `Ambience.client.luau`.
 Неон: дождь, мокрый асфальт, прожекторы; Зеркальный: парящие осколки зеркала, дождь, красные молнии; Храм: тории,
 каменные фонари, туман, небесные фонарики; Кристалл: парящие острова, северное сияние, искры; Стёртый: дома-каркасы
@@ -144,6 +144,10 @@ CitySkins теперь не даёт модели вылезать за учас
 (`Config.BossRewardMultiplier`). Полоска босса — `Boss` в MissionUpdate, рисует `Mission.client.luau` внизу экрана.
 Тест: `TestWorld` = "Core" и `TestBoss` = true у ServerScriptService — сразу к Нулю, без сбоев.
 Не проверено: бой вчетвером, урон по-настоящему (в тесте был включён «Бессмертие»), баланс по времени.
+Штаб (2026-10-27, проверено в Studio): `src/server/lobby/LobbyLook.luau` поверх LobbyMap — кольцо из 30 детальных
+небоскрёбов (наборы Neon и Core), летающий транспорт, светящаяся сетка пола, голостол с Кристаллом семи миров,
+арки над порталами, голограмма «ИСКАЖЕНИЕ», Командор Вега (`Config.Commander`, разговор — `src/client/lobby/Commander.client.luau`).
+Модели — `Config.LobbyProps`. Клиентские WorldMotion/Ambience/CodeLeaks перенесены в `src/client/common` (работают в обоих местах).
 Важно: generate_mesh кладёт каждую модель в Workspace Studio — после генерации удаляй модели с атрибутом
 `RBX_AI_GENERATED`, иначе они попадут в тест. Мир выбирают на портале (строка «Мир»), передаётся в `MissionInfo.World`. Зеркальный город
 (`src/server/mission/WorldLook.luau`): красный свет и цвета, перевёрнутая копия кварталов в небе, враги x1.3

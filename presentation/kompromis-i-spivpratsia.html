@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Компроміс і співпраця як способи вирішення конфліктів</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400..800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#000;height:100%;overflow:hidden}
+h1,h2,h3,p{font-weight:inherit}
+[style*="background-clip:text"]{-webkit-background-clip:text;background-clip:text}
+h1{font-weight:600}h2{font-weight:600}h3{font-weight:600}
+#stage{position:fixed;left:50%;top:50%;width:1920px;height:1080px;transform-origin:0 0}
+section{position:absolute;inset:0;width:1920px;height:1080px;overflow:hidden;opacity:0;visibility:hidden;transition:opacity .6s ease,visibility 0s .6s}
+section.on{opacity:1;visibility:visible;transition:opacity .6s ease}
+section [data-build-in]{opacity:0}
+section.on [data-build-in]{animation:var(--anim) .8s cubic-bezier(.2,.8,.2,1) forwards;animation-delay:var(--d)}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes rise{from{opacity:0;translate:0 40px}to{opacity:1;translate:0 0}}
+@keyframes scale{from{opacity:0;scale:.94}to{opacity:1;scale:1}}
+@keyframes pop{0%{opacity:0;scale:.6}70%{opacity:1;scale:1.05}100%{opacity:1;scale:1}}
+@keyframes left{from{opacity:0;translate:-80px 0}to{opacity:1;translate:0 0}}
+@keyframes right{from{opacity:0;translate:80px 0}to{opacity:1;translate:0 0}}
+#bar{position:fixed;left:0;bottom:0;height:3px;background:linear-gradient(90deg,#FF9F0A,#FFD60A,#64D2FF,#0A84FF);transition:width .5s ease;z-index:9}
+#hint{position:fixed;right:20px;bottom:14px;font:13px Inter,Arial,sans-serif;color:#6E6E73;z-index:9}
+@media print{
+  @page{size:1920px 1080px;margin:0}
+  html,body{height:auto;overflow:visible;background:#050506}
+  #stage{position:static;transform:none!important;width:auto;height:auto}
+  section{position:relative;opacity:1;visibility:visible;page-break-after:always;break-after:page}
+  section [data-build-in]{opacity:1!important;animation:none!important}
+  #bar,#hint{display:none}
+}</style>
+</head>
+<body>
+<div id="stage">
+<section id="cover" data-transition="fade" style="background:#050506;color:#F5F5F7;font-family:'Inter', Arial, sans-serif;padding:128px;display:flex;flex-direction:column">
+<div style="position:absolute;left:0px;top:0px;width:1920px;height:1080px;background:radial-gradient(ellipse at 50% 30%, rgba(255,255,255,0.07) 0%, rgba(0,0,0,0) 55%)"></div>
+<iframe class="emb" sandbox="allow-scripts" scrolling="no" style="position:absolute;left:510px;top:150px;width:900px;height:380px;border:0;background:transparent" srcdoc="<!doctype html><html><head><meta charset=&quot;utf-8&quot;><style>html,body{margin:0;height:100%;background:transparent;overflow:hidden}svg{width:100%;height:100%;display:block}
+.a{animation:l 4.5s cubic-bezier(.65,0,.35,1) infinite alternate}.b{animation:r 4.5s cubic-bezier(.65,0,.35,1) infinite alternate;mix-blend-mode:screen}
+@keyframes l{from{transform:translateX(-110px)}to{transform:translateX(0)}}@keyframes r{from{transform:translateX(110px)}to{transform:translateX(0)}}
+.o{transform-origin:450px 190px;animation:s 14s linear infinite}@keyframes s{to{transform:rotate(360deg)}}
+.p{transform-origin:450px 190px;animation:p 4.5s ease-in-out infinite alternate}@keyframes p{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}</style></head><body><svg viewBox=&quot;0 0 900 380&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;><defs><linearGradient id=&quot;ga&quot; x1=&quot;0&quot; y1=&quot;0&quot; x2=&quot;1&quot; y2=&quot;1&quot;><stop offset=&quot;0&quot; stop-color=&quot;#FFD60A&quot;/><stop offset=&quot;1&quot; stop-color=&quot;#FF9F0A&quot;/></linearGradient><linearGradient id=&quot;gb&quot; x1=&quot;0&quot; y1=&quot;0&quot; x2=&quot;1&quot; y2=&quot;1&quot;><stop offset=&quot;0&quot; stop-color=&quot;#64D2FF&quot;/><stop offset=&quot;1&quot; stop-color=&quot;#0A84FF&quot;/></linearGradient><radialGradient id=&quot;gw&quot;><stop offset=&quot;0&quot; stop-color=&quot;#FFFFFF&quot; stop-opacity=&quot;.55&quot;/><stop offset=&quot;1&quot; stop-color=&quot;#FFFFFF&quot; stop-opacity=&quot;0&quot;/></radialGradient><filter id=&quot;gl&quot; x=&quot;-50%&quot; y=&quot;-50%&quot; width=&quot;200%&quot; height=&quot;200%&quot;><feGaussianBlur stdDeviation=&quot;16&quot;/></filter></defs>
+<circle cx=&quot;450&quot; cy=&quot;190&quot; r=&quot;178&quot; fill=&quot;none&quot; stroke=&quot;#FFFFFF&quot; stroke-opacity=&quot;.08&quot;/>
+<g class=&quot;o&quot;><circle cx=&quot;450&quot; cy=&quot;12&quot; r=&quot;4&quot; fill=&quot;#F5F5F7&quot;/></g>
+<circle class=&quot;p&quot; cx=&quot;450&quot; cy=&quot;190&quot; r=&quot;70&quot; fill=&quot;url(#gw)&quot;/>
+<g class=&quot;a&quot;><circle cx=&quot;380&quot; cy=&quot;190&quot; r=&quot;130&quot; fill=&quot;none&quot; stroke=&quot;url(#ga)&quot; stroke-width=&quot;20&quot; filter=&quot;url(#gl)&quot; opacity=&quot;.55&quot;/><circle cx=&quot;380&quot; cy=&quot;190&quot; r=&quot;130&quot; fill=&quot;none&quot; stroke=&quot;url(#ga)&quot; stroke-width=&quot;8&quot;/></g>
+<g class=&quot;b&quot;><circle cx=&quot;520&quot; cy=&quot;190&quot; r=&quot;130&quot; fill=&quot;none&quot; stroke=&quot;url(#gb)&quot; stroke-width=&quot;20&quot; filter=&quot;url(#gl)&quot; opacity=&quot;.55&quot;/><circle cx=&quot;520&quot; cy=&quot;190&quot; r=&quot;130&quot; fill=&quot;none&quot; stroke=&quot;url(#gb)&quot; stroke-width=&quot;8&quot;/></g>
+</svg></body></html>"></iframe>
+<p data-build-in="fade 1 auto" style="position:absolute;left:128px;top:560px;width:1664px;font-size:28px;font-weight:600;color:#A1A1A6;text-align:center">Презентація</p>
+<h1 data-build-in="rise 2 auto" style="position:absolute;left:128px;top:604px;width:1664px;font-family:'Inter Tight', Arial, sans-serif;font-size:120px;font-weight:700;line-height:1.05;letter-spacing:-5px;color:#F5F5F7;text-align:center;background:linear-gradient(180deg, #FFFFFF 0%, #F5F5F7 45%, #9A9AA0 100%);background-clip:text;-webkit-text-fill-color:transparent">Компроміс і співпраця</h1>
+<p data-build-in="rise 3 auto" style="position:absolute;left:128px;top:752px;width:1664px;font-family:'Inter Tight', Arial, sans-serif;font-size:44px;font-weight:600;letter-spacing:-1px;color:#FFD60A;text-align:center;background:linear-gradient(90deg, #FF9F0A 0%, #FFD60A 32%, #64D2FF 68%, #0A84FF 100%);background-clip:text;-webkit-text-fill-color:transparent">як способи вирішення конфліктів</p>
+<p data-build-in="fade 4 auto" style="position:absolute;left:128px;top:850px;width:1664px;font-size:30px;font-weight:600;color:#F5F5F7;text-align:center">Дар’я Перепелиця</p>
+
+</section>
+<section id="conflict" data-transition="fade" style="background:#050506;color:#F5F5F7;font-family:'Inter', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column">
+<div style="position:absolute;left:0px;top:0px;width:1920px;height:1080px;background:radial-gradient(ellipse at 50% -10%, rgba(255,255,255,0.07) 0%, rgba(0,0,0,0) 55%)"></div>
+<p data-build-in="fade 1 auto" style="position:absolute;left:128px;top:120px;width:900px;font-size:28px;font-weight:600;color:#A1A1A6">Основи</p>
+<h2 data-build-in="rise 2 auto" style="position:absolute;left:128px;top:164px;width:1664px;font-family:'Inter Tight', Arial, sans-serif;font-size:80px;font-weight:700;line-height:1.08;letter-spacing:-3px;color:#F5F5F7">Що таке конфлікт</h2>
+<div data-build-in="scale 3 auto" style="position:absolute;left:128px;top:300px;width:1000px;height:580px;background:linear-gradient(180deg, #1C1C1F 0%, #121214 100%);border:1px solid rgba(255,255,255,0.07);border-radius:32px"></div>
+<iframe class="emb" sandbox="allow-scripts" scrolling="no" style="position:absolute;left:160px;top:320px;width:936px;height:340px;border:0;background:transparent" srcdoc="<!doctype html><html><head><meta charset=&quot;utf-8&quot;><style>html,body{margin:0;height:100%;background:transparent;overflow:hidden}svg{width:100%;height:100%;display:block}
+.la{animation:la 3.2s ease-in-out infinite}.ra{animation:ra 3.2s ease-in-out infinite}
+@keyframes la{0%{transform:translateX(-140px)}40%{transform:translateX(44px)}50%{transform:translateX(22px)}100%{transform:translateX(-140px)}}
+@keyframes ra{0%{transform:translateX(140px)}40%{transform:translateX(-44px)}50%{transform:translateX(-22px)}100%{transform:translateX(140px)}}
+.q{transform-origin:468px 170px;opacity:0;animation:q 3.2s ease-out infinite}.q2{animation-delay:.18s}
+@keyframes q{0%,38%{opacity:0;transform:scale(.3)}41%{opacity:1;transform:scale(.5)}80%,100%{opacity:0;transform:scale(2.6)}}
+.f{transform-origin:468px 170px;opacity:0;animation:f 3.2s ease-out infinite}@keyframes f{0%,38%{opacity:0}42%{opacity:1}65%,100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}</style></head><body><svg viewBox=&quot;0 0 936 340&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;><defs><linearGradient id=&quot;ga&quot; gradientUnits=&quot;userSpaceOnUse&quot; x1=&quot;60&quot; y1=&quot;0&quot; x2=&quot;400&quot; y2=&quot;0&quot;><stop offset=&quot;0&quot; stop-color=&quot;#FF9F0A&quot; stop-opacity=&quot;0&quot;/><stop offset=&quot;.5&quot; stop-color=&quot;#FF9F0A&quot;/><stop offset=&quot;1&quot; stop-color=&quot;#FFD60A&quot;/></linearGradient><linearGradient id=&quot;gb&quot; gradientUnits=&quot;userSpaceOnUse&quot; x1=&quot;876&quot; y1=&quot;0&quot; x2=&quot;536&quot; y2=&quot;0&quot;><stop offset=&quot;0&quot; stop-color=&quot;#0A84FF&quot; stop-opacity=&quot;0&quot;/><stop offset=&quot;.5&quot; stop-color=&quot;#0A84FF&quot;/><stop offset=&quot;1&quot; stop-color=&quot;#64D2FF&quot;/></linearGradient><radialGradient id=&quot;gw&quot;><stop offset=&quot;0&quot; stop-color=&quot;#FFFFFF&quot; stop-opacity=&quot;.9&quot;/><stop offset=&quot;1&quot; stop-color=&quot;#FFFFFF&quot; stop-opacity=&quot;0&quot;/></radialGradient><filter id=&quot;bl&quot; x=&quot;-20%&quot; y=&quot;-50%&quot; width=&quot;140%&quot; height=&quot;200%&quot;><feGaussianBlur stdDeviation=&quot;10&quot;/></filter></defs>
+<g class=&quot;la&quot;><path d=&quot;M60 170H400&quot; stroke=&quot;url(#ga)&quot; stroke-width=&quot;22&quot; stroke-linecap=&quot;round&quot; filter=&quot;url(#bl)&quot; opacity=&quot;.6&quot;/><path d=&quot;M60 170H400&quot; stroke=&quot;url(#ga)&quot; stroke-width=&quot;12&quot; stroke-linecap=&quot;round&quot;/><path d=&quot;M370 138L408 170L370 202&quot; fill=&quot;none&quot; stroke=&quot;#FFD60A&quot; stroke-width=&quot;12&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;/></g>
+<g class=&quot;ra&quot;><path d=&quot;M876 170H536&quot; stroke=&quot;url(#gb)&quot; stroke-width=&quot;22&quot; stroke-linecap=&quot;round&quot; filter=&quot;url(#bl)&quot; opacity=&quot;.6&quot;/><path d=&quot;M876 170H536&quot; stroke=&quot;url(#gb)&quot; stroke-width=&quot;12&quot; stroke-linecap=&quot;round&quot;/><path d=&quot;M566 138L528 170L566 202&quot; fill=&quot;none&quot; stroke=&quot;#64D2FF&quot; stroke-width=&quot;12&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;/></g>
+<circle class=&quot;f&quot; cx=&quot;468&quot; cy=&quot;170&quot; r=&quot;60&quot; fill=&quot;url(#gw)&quot;/>
+<circle class=&quot;q&quot; cx=&quot;468&quot; cy=&quot;170&quot; r=&quot;34&quot; fill=&quot;none&quot; stroke=&quot;#F5F5F7&quot; stroke-width=&quot;3&quot;/>
+<circle class=&quot;q q2&quot; cx=&quot;468&quot; cy=&quot;170&quot; r=&quot;34&quot; fill=&quot;none&quot; stroke=&quot;#F5F5F7&quot; stroke-width=&quot;2&quot; stroke-opacity=&quot;.6&quot;/>
+</svg></body></html>"></iframe>
+<p data-build-in="rise 4 auto" style="position:absolute;left:176px;top:690px;width:900px;font-family:'Inter Tight', Arial, sans-serif;font-size:38px;font-weight:600;line-height:1.25;letter-spacing:-1px;color:#F5F5F7">Зіткнення протилежних інтересів, цілей або поглядів людей.</p>
+<p data-build-in="fade 5 auto" style="position:absolute;left:176px;top:804px;width:900px;font-size:26px;line-height:1.4;color:#A1A1A6">Сам по собі конфлікт не є злом. Важливо, як його розв’язують.</p>
+<div data-build-in="rise 6 auto" style="position:absolute;left:1152px;top:300px;width:640px;height:180px;display:flex;flex-direction:row;gap:28px;align-items:center;padding:0px 40px;background:linear-gradient(180deg, #1C1C1F 0%, #121214 100%);border:1px solid rgba(255,255,255,0.07);border-radius:32px">
+<svg aria-label="Двоє людей" width="56" height="56" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="width:56px;height:56px"><g fill="none" stroke="#FF9F0A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="16" r="6"/><path d="M6 38c0-7 5-12 12-12s12 5 12 12"/><circle cx="33" cy="18" r="5"/><path d="M31 27c6 0 11 4 11 11"/></g></svg>
+<div style="flex:1;display:flex;flex-direction:column;gap:6px"><h3 style="font-size:30px;font-weight:600;color:#F5F5F7">Різні інтереси</h3><p style="font-size:24px;line-height:1.4;color:#A1A1A6">Кожна сторона прагне свого.</p></div>
+</div>
+<div data-build-in="rise 7 auto" style="position:absolute;left:1152px;top:500px;width:640px;height:180px;display:flex;flex-direction:row;gap:28px;align-items:center;padding:0px 40px;background:linear-gradient(180deg, #1C1C1F 0%, #121214 100%);border:1px solid rgba(255,255,255,0.07);border-radius:32px">
+<svg aria-label="Майже розряджена батарея" width="56" height="56" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="width:56px;height:56px"><g fill="none" stroke="#FFD60A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="15" width="33" height="18" rx="5"/><path d="M42 21v6"/><rect x="9" y="19" width="7" height="10" rx="2" fill="#FFD60A"/></g></svg>
+<div style="flex:1;display:flex;flex-direction:column;gap:6px"><h3 style="font-size:30px;font-weight:600;color:#F5F5F7">Обмежені ресурси</h3><p style="font-size:24px;line-height:1.4;color:#A1A1A6">Часу, грошей чи уваги не вистачає.</p></div>
+</div>
+<div data-build-in="rise 8 auto" style="position:absolute;left:1152px;top:700px;width:640px;height:180px;display:flex;flex-direction:row;gap:28px;align-items:center;padding:0px 40px;background:linear-gradient(180deg, #1C1C1F 0%, #121214 100%);border:1px solid rgba(255,255,255,0.07);border-radius:32px">
+<svg aria-label="Компас" width="56" height="56" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="width:56px;height:56px"><g fill="none" stroke="#64D2FF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="24" r="18"/><path d="M31 17l-4.5 9.5L17 31l4.5-9.5z"/></g></svg>
+<div style="flex:1;display:flex;flex-direction:column;gap:6px"><h3 style="font-size:30px;font-weight:600;color:#F5F5F7">Різні цінності</h3><p style="font-size:24px;line-height:1.4;color:#A1A1A6">Люди по-різному бачать, що правильно.</p></div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:800px;font-size:24px;color:#86868B">Компроміс і співпраця</p>
+<p style="position:absolute;right:128px;bottom:64px;width:240px;font-size:24px;color:#86868B;text-align:right;font-variant-numeric:tabular-nums">2 / 10</p>
+
+</section>
+<section id="model" data-transition="fade" style="background:#050506;color:#F5F5F7;font-family:'Inter', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column">
+<div style="position:absolute;left:0px;top:0px;width:1920px;height:1080px;background:radial-gradient(ellipse at 70% 50%, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0) 55%)"></div>
+<svg aria-label="Координатна сітка" width="1920" height="1080" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg" style="position:absolute;left:0px;top:0px;width:1920px;height:1080px"><g fill="#FFFFFF" fill-opacity="0.12"><circle cx="890" cy="400" r="2"/><circle cx="1020" cy="400" r="2"/><circle cx="1150" cy="400" r="2"/><circle cx="1280" cy="400" r="2"/><circle cx="1410" cy="400" r="2"/><circle cx="1540" cy="400" r="2"/><circle cx="1670" cy="400" r="2"/><circle cx="890" cy="530" r="2"/><circle cx="1020" cy="530" r="2"/><circle cx="1150" cy="530" r="2"/><circle cx="1280" cy="530" r="2"/><circle cx="1410" cy="530" r="2"/><circle cx="1540" cy="530" r="2"/><circle cx="1670" cy="530" r="2"/><circle cx="890" cy="660" r="2"/><circle cx="1020" cy="660" r="2"/><circle cx="1150" cy="660" r="2"/><circle cx="1280" cy="660" r="2"/><circle cx="1410" cy="660" r="2"/><circle cx="1540" cy="660" r="2"/><circle cx="1670" cy="660" r="2"/><circle cx="890" cy="790" r="2"/><circle cx="1020" cy="790" r="2"/><circle cx="1150" cy="790" r="2"/><circle cx="1280" cy="790" r="2"/><circle cx="1410" cy="790" r="2"/><circle cx="1540" cy="790" r="2"/><circle cx="1670" cy="790" r="2"/></g></svg>
+<p data-build-in="fade 1 auto" style="position:absolute;left:128px;top:120px;width:900px;font-size:28px;font-weight:600;color:#A1A1A6">Модель Томаса — Кілманна</p>
+<h2 data-build-in="rise 2 auto" style="position:absolute;left:128px;top:164px;width:1664px;font-family:'Inter Tight', Arial, sans-serif;font-size:80px;font-weight:700;line-height:1.08;letter-spacing:-3px;color:#F5F5F7">П’ять стратегій поведінки</h2>
+<p data-build-in="fade 3 auto" style="position:absolute;left:128px;top:320px;width:560px;font-size:28px;line-height:1.5;color:#A1A1A6">Кеннет Томас і Ральф Кілманн описали поведінку в конфлікті через два виміри: наскільки людина відстоює своє і наскільки зважає на іншого.</p>
+<p data-build-in="fade 10 auto" style="position:absolute;left:128px;top:640px;width:560px;font-size:28px;line-height:1.5;color:#F5F5F7"><span style="color:#FF9F0A">●</span>  Компроміс — середина</p>
+<p data-build-in="fade 10 auto" style="position:absolute;left:128px;top:696px;width:560px;font-size:28px;line-height:1.5;color:#F5F5F7"><span style="color:#0A84FF">●</span>  Співпраця — максимум для обох</p>
+<svg data-build-in="fade 4 auto" style="position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:none" viewBox="0 0 1920 1080"><g fill="none" stroke="#48484A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M760 860L760 300"/><path d="M753.2880424595412,312.2861558664652 L760,300 L766.7119575404588,312.2861558664652"/></g></svg>
+<svg data-build-in="fade 4 auto" style="position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:none" viewBox="0 0 1920 1080"><g fill="none" stroke="#48484A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M760 860L1800 860"/><path d="M1787.7138441335348,853.2880424595412 L1800,860 L1787.7138441335348,866.7119575404588"/></g></svg>
+<p data-build-in="fade 4 auto" style="position:absolute;left:780px;top:288px;width:360px;font-size:24px;color:#86868B">Наполегливість ↑</p>
+<p data-build-in="fade 4 auto" style="position:absolute;left:1240px;top:872px;width:560px;font-size:24px;color:#86868B;text-align:right">Увага до інтересів іншого →</p>
+<div data-build-in="scale 5 auto" style="position:absolute;left:800px;top:336px;width:290px;display:flex;flex-direction:column;gap:10px;padding:24px;background:#161618;border:1px solid rgba(255,255,255,0.08);border-radius:24px">
+<svg aria-label="Схрещені мечі" width="44" height="44" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="width:44px;height:44px"><g fill="none" stroke="#A1A1A6" stroke-width="2.5" stroke-linecap="round"><path d="M8 8L34 34M26 34L34 26M34 34L40 40M40 8L14 34M14 26L22 34M14 34L8 40"/></g></svg>
+<p style="font-size:28px;font-weight:600;color:#F5F5F7">Суперництво</p>
+<p style="font-size:24px;line-height:1.35;color:#A1A1A6">«Або я, або ти»</p>
+</div>
+<div data-build-in="scale 6 auto" style="position:absolute;left:800px;top:630px;width:290px;display:flex;flex-direction:column;gap:10px;padding:24px;background:#161618;border:1px solid rgba(255,255,255,0.08);border-radius:24px">
+<svg aria-label="Зачинені двері" width="44" height="44" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="width:44px;height:44px"><g fill="none" stroke="#A1A1A6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="13" y="6" width="22" height="36" rx="2"/><path d="M6 42H42"/><circle cx="29" cy="25" r="1.8" fill="#A1A1A6"/></g></svg>
+<p style="font-size:28px;font-weight:600;color:#F5F5F7">Уникнення</p>
+<p style="font-size:24px;line-height:1.35;color:#A1A1A6">«Краще промовчу»</p>
+</div>
+<div data-build-in="scale 7 auto" style="position:absolute;left:1500px;top:630px;width:290px;display:flex;flex-direction:column;gap:10px;padding:24px;background:#161618;border:1px solid rgba(255,255,255,0.08);border-radius:24px">
+<svg aria-label="Білий прапор" width="44" height="44" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="width:44px;height:44px"><g fill="none" stroke="#A1A1A6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 43V5"/><path d="M12 8C19 4 26 12 37 8V24C26 28 19 20 12 24"/></g></svg>
+<p style="font-size:28px;font-weight:600;color:#F5F5F7">Пристосування</p>
+<p style="font-size:24px;line-height:1.35;color:#A1A1A6">«Нехай буде по-твоєму»</p>
+</div>
+<div data-build-in="scale 8 auto" style="position:absolute;left:1150px;top:500px;width:290px;display:flex;flex-direction:column;gap:10px;padding:24px;background:linear-gradient(180deg, #2A2112 0%, #17140E 100%);border:1px solid rgba(255,159,10,0.55);border-radius:24px;box-shadow:0 0 60px rgba(255,159,10,0.18)">
+<svg aria-label="Терези" width="44" height="44" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="width:44px;height:44px"><g fill="none" stroke="#FF9F0A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M24 7V40M15 42H33M9 12H39"/><circle cx="24" cy="6" r="2"/><path d="M9 12L4 26M9 12L14 26M2 26A7 4 0 0 0 16 26Z"/><path d="M39 12L34 26M39 12L44 26M32 26A7 4 0 0 0 46 26Z"/></g></svg>
+<p style="font-size:28px;font-weight:600;color:#FF9F0A">Компроміс</p>
+<p style="font-size:24px;line-height:1.35;color:#F5F5F7">«Ділимо навпіл»</p>
+</div>
+<div data-build-in="scale 9 auto" style="position:absolute;left:1500px;top:310px;width:290px;display:flex;flex-direction:column;gap:10px;padding:24px;background:linear-gradient(180deg, #0F2033 0%, #0C1520 100%);border:1px solid rgba(10,132,255,0.6);border-radius:24px;box-shadow:0 0 60px rgba(10,132,255,0.2)">
+<svg aria-label="Два зчеплені кільця" width="44" height="44" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="width:44px;height:44px"><g fill="none" stroke="#64D2FF" stroke-width="2.5"><circle cx="18" cy="24" r="11"/><circle cx="30" cy="24" r="11"/></g></svg>
+<p style="font-size:28px;font-weight:600;color:#64D2FF">Співпраця</p>
+<p style="font-size:24px;line-height:1.35;color:#F5F5F7">«Шукаємо разом»</p>
+</div>
+<iframe class="emb" sandbox="allow-scripts" scrolling="no" style="position:absolute;left:1440px;top:486px;width:220px;height:130px;border:0;background:transparent" srcdoc="<!doctype html><html><head><meta charset=&quot;utf-8&quot;><style>html,body{margin:0;height:100%;background:transparent;overflow:hidden}svg{width:100%;height:100%;display:block}</style></head><body><svg viewBox=&quot;0 0 220 130&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;><defs><linearGradient id=&quot;g&quot; x1=&quot;0&quot; y1=&quot;1&quot; x2=&quot;1&quot; y2=&quot;0&quot;><stop offset=&quot;0&quot; stop-color=&quot;#FF9F0A&quot;/><stop offset=&quot;1&quot; stop-color=&quot;#64D2FF&quot;/></linearGradient></defs><path d=&quot;M2 100C120 100 205 90 205 14&quot; fill=&quot;none&quot; stroke=&quot;url(#g)&quot; stroke-width=&quot;3&quot; stroke-dasharray=&quot;6 9&quot; stroke-linecap=&quot;round&quot;/><path d=&quot;M194 26L205 10L216 26&quot; fill=&quot;none&quot; stroke=&quot;#64D2FF&quot; stroke-width=&quot;3&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;/><circle r=&quot;7&quot; fill=&quot;#FFFFFF&quot;><animateMotion dur=&quot;2.4s&quot; repeatCount=&quot;indefinite&quot; path=&quot;M2 100C120 100 205 90 205 14&quot; calcMode=&quot;spline&quot; keyTimes=&quot;0;1&quot; keySplines=&quot;.65 0 .35 1&quot;/><animate attributeName=&quot;opacity&quot; dur=&quot;2.4s&quot; repeatCount=&quot;indefinite&quot; values=&quot;0;1;1;0&quot; keyTimes=&quot;0;.15;.85;1&quot;/></circle></svg></body></html>"></iframe>
+<p style="position:absolute;left:128px;bottom:64px;width:600px;font-size:24px;color:#86868B">Компроміс і співпраця</p>
+<p style="position:absolute;right:128px;bottom:64px;width:240px;font-size:24px;color:#86868B;text-align:right;font-variant-numeric:tabular-nums">3 / 10</p>
+
+</section>
+<section id="compromise" data-transition="push" style="background:#050506;color:#F5F5F7;font-family:'Inter', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column">
+<div style="position:absolute;left:0px;top:0px;width:1920px;height:1080px;background:radial-gradient(ellipse at 28% 55%, rgba(255,159,10,0.09) 0%, rgba(0,0,0,0) 45%)"></div>
+<p data-build-in="fade 1 auto" style="position:absolute;left:128px;top:120px;width:900px;font-size:28px;font-weight:600;color:#FF9F0A">Компроміс</p>
+<h2 data-build-in="rise 2 auto" style="position:absolute;left:128px;top:164px;width:1664px;font-family:'Inter Tight', Arial, sans-serif;font-size:80px;font-weight:700;line-height:1.08;letter-spacing:-3px;color:#F5F5F7">Кожен поступається частиною</h2>
+<div data-build-in="scale 3 auto" style="position:absolute;left:128px;top:300px;width:820px;height:580px;background:linear-gradient(180deg, #1F1A12 0%, #121214 70%);border:1px solid rgba(255,159,10,0.18);border-radius:32px"></div>
+<iframe class="emb" sandbox="allow-scripts" scrolling="no" style="position:absolute;left:160px;top:316px;width:756px;height:400px;border:0;background:transparent" srcdoc="<!doctype html><html><head><meta charset=&quot;utf-8&quot;><style>html,body{margin:0;height:100%;background:transparent;overflow:hidden}svg{width:100%;height:100%;display:block}
+.bm{transform-origin:378px 80px;animation:bm 5s ease-in-out infinite alternate}
+@keyframes bm{0%{transform:rotate(7deg)}30%{transform:rotate(-5deg)}55%{transform:rotate(3deg)}75%{transform:rotate(-1deg)}85%,100%{transform:rotate(0deg)}}
+.lp{animation:lp 5s ease-in-out infinite alternate}@keyframes lp{0%{transform:translateY(-27px)}30%{transform:translateY(19px)}55%{transform:translateY(-11.5px)}75%{transform:translateY(3.8px)}85%,100%{transform:translateY(0)}}
+.rp{animation:rp 5s ease-in-out infinite alternate}@keyframes rp{0%{transform:translateY(27px)}30%{transform:translateY(-19px)}55%{transform:translateY(11.5px)}75%{transform:translateY(-3.8px)}85%,100%{transform:translateY(0)}}
+.gl{animation:gl 5s ease-in-out infinite alternate}@keyframes gl{0%,70%{opacity:.25}100%{opacity:.9}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}</style></head><body><svg viewBox=&quot;0 0 756 400&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;><defs><linearGradient id=&quot;am&quot; gradientUnits=&quot;userSpaceOnUse&quot; x1=&quot;158&quot; y1=&quot;0&quot; x2=&quot;598&quot; y2=&quot;0&quot;><stop offset=&quot;0&quot; stop-color=&quot;#FF9F0A&quot;/><stop offset=&quot;.5&quot; stop-color=&quot;#FFD60A&quot;/><stop offset=&quot;1&quot; stop-color=&quot;#FF9F0A&quot;/></linearGradient><linearGradient id=&quot;ti&quot; gradientUnits=&quot;userSpaceOnUse&quot; x1=&quot;0&quot; y1=&quot;80&quot; x2=&quot;0&quot; y2=&quot;340&quot;><stop offset=&quot;0&quot; stop-color=&quot;#F5F5F7&quot;/><stop offset=&quot;1&quot; stop-color=&quot;#6E6E73&quot;/></linearGradient><linearGradient id=&quot;pa&quot; x1=&quot;0&quot; y1=&quot;0&quot; x2=&quot;0&quot; y2=&quot;1&quot;><stop offset=&quot;0&quot; stop-color=&quot;#FFD60A&quot;/><stop offset=&quot;1&quot; stop-color=&quot;#FF9F0A&quot;/></linearGradient><linearGradient id=&quot;pb&quot; x1=&quot;0&quot; y1=&quot;0&quot; x2=&quot;0&quot; y2=&quot;1&quot;><stop offset=&quot;0&quot; stop-color=&quot;#64D2FF&quot;/><stop offset=&quot;1&quot; stop-color=&quot;#0A84FF&quot;/></linearGradient><radialGradient id=&quot;sp&quot; cx=&quot;.35&quot; cy=&quot;.3&quot;><stop offset=&quot;0&quot; stop-color=&quot;#E5F6FF&quot;/><stop offset=&quot;.5&quot; stop-color=&quot;#64D2FF&quot;/><stop offset=&quot;1&quot; stop-color=&quot;#0A60C0&quot;/></radialGradient><radialGradient id=&quot;fl&quot;><stop offset=&quot;0&quot; stop-color=&quot;#FF9F0A&quot; stop-opacity=&quot;.45&quot;/><stop offset=&quot;1&quot; stop-color=&quot;#FF9F0A&quot; stop-opacity=&quot;0&quot;/></radialGradient></defs>
+<ellipse class=&quot;gl&quot; cx=&quot;378&quot; cy=&quot;352&quot; rx=&quot;200&quot; ry=&quot;26&quot; fill=&quot;url(#fl)&quot;/>
+<path d=&quot;M378 80V340&quot; stroke=&quot;url(#ti)&quot; stroke-width=&quot;8&quot; stroke-linecap=&quot;round&quot;/>
+<rect x=&quot;288&quot; y=&quot;336&quot; width=&quot;180&quot; height=&quot;14&quot; rx=&quot;7&quot; fill=&quot;#3A3A3C&quot;/>
+<g class=&quot;bm&quot;><path d=&quot;M158 80H598&quot; stroke=&quot;url(#am)&quot; stroke-width=&quot;8&quot; stroke-linecap=&quot;round&quot;/><circle cx=&quot;158&quot; cy=&quot;80&quot; r=&quot;7&quot; fill=&quot;#FFD60A&quot;/><circle cx=&quot;598&quot; cy=&quot;80&quot; r=&quot;7&quot; fill=&quot;#FFD60A&quot;/></g>
+<circle cx=&quot;378&quot; cy=&quot;80&quot; r=&quot;12&quot; fill=&quot;#F5F5F7&quot;/><circle cx=&quot;378&quot; cy=&quot;80&quot; r=&quot;5&quot; fill=&quot;#FF9F0A&quot;/>
+<g class=&quot;lp&quot;><path d=&quot;M158 80L112 214M158 80L204 214&quot; stroke=&quot;#8E8E93&quot; stroke-width=&quot;2&quot;/><rect x=&quot;134&quot; y=&quot;168&quot; width=&quot;48&quot; height=&quot;44&quot; rx=&quot;8&quot; fill=&quot;url(#pa)&quot;/><path d=&quot;M92 214H224Q158 266 92 214Z&quot; fill=&quot;#2C2C2E&quot; stroke=&quot;#FF9F0A&quot; stroke-width=&quot;3&quot;/></g>
+<g class=&quot;rp&quot;><path d=&quot;M598 80L552 214M598 80L644 214&quot; stroke=&quot;#8E8E93&quot; stroke-width=&quot;2&quot;/><circle cx=&quot;598&quot; cy=&quot;188&quot; r=&quot;25&quot; fill=&quot;url(#sp)&quot;/><path d=&quot;M532 214H664Q598 266 532 214Z&quot; fill=&quot;#2C2C2E&quot; stroke=&quot;#0A84FF&quot; stroke-width=&quot;3&quot;/></g>
+</svg></body></html>"></iframe>
+<p data-build-in="rise 4 auto" style="position:absolute;left:176px;top:726px;width:500px;font-family:'Inter Tight', Arial, sans-serif;font-size:64px;font-weight:700;line-height:1.05;letter-spacing:-2px;color:#FF9F0A;background:linear-gradient(90deg, #FF9F0A 0%, #FFD60A 60%);background-clip:text;-webkit-text-fill-color:transparent">50 / 50</p>
+<p data-build-in="fade 5 auto" style="position:absolute;left:176px;top:810px;width:740px;font-size:26px;line-height:1.4;color:#A1A1A6">Кожен віддає частину, і кожен щось отримує.</p>
+<div data-build-in="rise 6 auto" style="position:absolute;left:976px;top:300px;width:816px;height:270px;display:flex;flex-direction:column;gap:14px;padding:40px 48px;background:linear-gradient(180deg, #1C1C1F 0%, #121214 100%);border:1px solid rgba(255,255,255,0.07);border-radius:32px">
+<p style="font-size:24px;font-weight:600;color:#86868B">Визначення</p>
+<p style="font-family:'Inter Tight', Arial, sans-serif;font-size:34px;font-weight:600;line-height:1.3;letter-spacing:-0.5px;color:#F5F5F7">Спосіб розв’язати конфлікт, коли кожна сторона відмовляється від частини вимог заради спільного рішення.</p>
+</div>
+<div data-build-in="rise 7 auto" style="position:absolute;left:976px;top:594px;width:256px;height:286px;display:flex;flex-direction:column;justify-content:space-between;padding:32px;background:linear-gradient(180deg, #1C1C1F 0%, #121214 100%);border:1px solid rgba(255,255,255,0.07);border-radius:32px">
+<svg aria-label="Дві рівні смуги" width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="width:48px;height:48px"><g fill="#FF9F0A"><rect x="8" y="15" width="32" height="6" rx="3"/><rect x="8" y="27" width="32" height="6" rx="3"/></g></svg>
+<div style="display:flex;flex-direction:column;gap:8px"><h3 style="font-size:30px;font-weight:600;line-height:1.2;color:#F5F5F7">Рівні сили</h3><p style="font-size:24px;line-height:1.35;color:#A1A1A6">Ніхто не домінує.</p></div>
+</div>
+<div data-build-in="rise 8 auto" style="position:absolute;left:1256px;top:594px;width:256px;height:286px;display:flex;flex-direction:column;justify-content:space-between;padding:32px;background:linear-gradient(180deg, #1C1C1F 0%, #121214 100%);border:1px solid rgba(255,255,255,0.07);border-radius:32px">
+<svg aria-label="Секундомір" width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="width:48px;height:48px"><g fill="none" stroke="#FFD60A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="27" r="15"/><path d="M24 27V19M19 5h10M24 5v7M36 14l3-3"/></g></svg>
+<div style="display:flex;flex-direction:column;gap:8px"><h3 style="font-size:30px;font-weight:600;line-height:1.2;color:#F5F5F7">Брак часу</h3><p style="font-size:24px;line-height:1.35;color:#A1A1A6">Рішення потрібне зараз.</p></div>
+</div>
+<div data-build-in="rise 9 auto" style="position:absolute;left:1536px;top:594px;width:256px;height:286px;display:flex;flex-direction:column;justify-content:space-between;padding:32px;background:linear-gradient(180deg, #1C1C1F 0%, #121214 100%);border:1px solid rgba(255,255,255,0.07);border-radius:32px">
+<svg aria-label="Пісочний годинник" width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="width:48px;height:48px"><g fill="none" stroke="#FF9F0A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 5h22M13 43h22M16 5c0 10 16 12 16 19S16 32 16 43M32 5c0 10-16 12-16 19s16 8 16 19"/></g></svg>
+<div style="display:flex;flex-direction:column;gap:8px"><h3 style="font-size:30px;font-weight:600;line-height:1.2;color:#F5F5F7">Тимчасове рішення</h3><p style="font-size:24px;line-height:1.35;color:#A1A1A6">Щоб зняти напругу.</p></div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:800px;font-size:24px;color:#86868B">Компроміс і співпраця</p>
+<p style="position:absolute;right:128px;bottom:64px;width:240px;font-size:24px;color:#86868B;text-align:right;font-variant-numeric:tabular-nums">4 / 10</p>
+
+</section>
+<section id="pros-cons" data-transition="fade" style="background:#050506;color:#F5F5F7;font-family:'Inter', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column">
+<div style="position:absolute;left:0px;top:0px;width:1920px;height:1080px;background:radial-gradient(ellipse at 50% -10%, rgba(255,255,255,0.07) 0%, rgba(0,0,0,0) 55%)"></div>
+<p data-build-in="fade 1 auto" style="position:absolute;left:128px;top:120px;width:900px;font-size:28px;font-weight:600;color:#FF9F0A">Компроміс</p>
+<h2 data-build-in="rise 2 auto" style="position:absolute;left:128px;top:164px;width:1664px;font-family:'Inter Tight', Arial, sans-serif;font-size:80px;font-weight:700;line-height:1.08;letter-spacing:-3px;color:#F5F5F7">Переваги й ризики</h2>
+<iframe class="emb" sandbox="allow-scripts" scrolling="no" style="position:absolute;left:128px;top:290px;width:56px;height:56px;border:0;background:transparent" srcdoc="<!doctype html><html><head><meta charset=&quot;utf-8&quot;><style>html,body{margin:0;height:100%;background:transparent;overflow:hidden}svg{width:100%;height:100%;display:block}
+.b{transform-origin:24px 12px;animation:t 2.6s ease-in-out infinite alternate}@keyframes t{from{transform:rotate(-8deg)}to{transform:rotate(8deg)}}
+.l{animation:l 2.6s ease-in-out infinite alternate}@keyframes l{from{transform:translateY(2px)}to{transform:translateY(-2px)}}
+.r{animation:r 2.6s ease-in-out infinite alternate}@keyframes r{from{transform:translateY(-2px)}to{transform:translateY(2px)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}</style></head><body><svg viewBox=&quot;0 0 48 48&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;><g fill=&quot;none&quot; stroke=&quot;#FF9F0A&quot; stroke-width=&quot;2.5&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;><path d=&quot;M24 7V40M15 42H33&quot;/><g class=&quot;b&quot;><path d=&quot;M9 12H39&quot;/></g><circle cx=&quot;24&quot; cy=&quot;12&quot; r=&quot;2.2&quot; fill=&quot;#FF9F0A&quot;/><g class=&quot;l&quot;><path d=&quot;M9 12L4 26M9 12L14 26M2 26A7 4 0 0 0 16 26Z&quot;/></g><g class=&quot;r&quot;><path d=&quot;M39 12L34 26M39 12L44 26M32 26A7 4 0 0 0 46 26Z&quot;/></g></g></svg></body></html>"></iframe>
+<h3 data-build-in="fade 3 auto" style="position:absolute;left:204px;top:294px;width:700px;font-family:'Inter Tight', Arial, sans-serif;font-size:40px;font-weight:700;letter-spacing:-1px;color:#FF9F0A">Переваги</h3>
+<iframe class="emb" sandbox="allow-scripts" scrolling="no" style="position:absolute;left:984px;top:290px;width:56px;height:56px;border:0;background:transparent" srcdoc="<!doctype html><html><head><meta charset=&quot;utf-8&quot;><style>html,body{margin:0;height:100%;background:transparent;overflow:hidden}svg{width:100%;height:100%;display:block}
+.e{animation:e 1.6s ease-in-out infinite}@keyframes e{0%,100%{opacity:1}50%{opacity:.25}}
+.t{transform-origin:24px 26px;animation:s 1.6s ease-in-out infinite}@keyframes s{0%,100%{transform:scale(1)}50%{transform:scale(.92)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}</style></head><body><svg viewBox=&quot;0 0 48 48&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;><g class=&quot;t&quot; fill=&quot;none&quot; stroke=&quot;#A1A1A6&quot; stroke-width=&quot;2.5&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;><path d=&quot;M24 6L44 41H4Z&quot;/></g><g class=&quot;e&quot;><path d=&quot;M24 18V29&quot; stroke=&quot;#F5F5F7&quot; stroke-width=&quot;3&quot; stroke-linecap=&quot;round&quot;/><circle cx=&quot;24&quot; cy=&quot;35&quot; r=&quot;2&quot; fill=&quot;#F5F5F7&quot;/></g></svg></body></html>"></iframe>
+<h3 data-build-in="fade 3 auto" style="position:absolute;left:1060px;top:294px;width:700px;font-family:'Inter Tight', Arial, sans-serif;font-size:40px;font-weight:700;letter-spacing:-1px;color:#A1A1A6">Ризики</h3>
+<div data-build-in="rise 4 auto" style="position:absolute;left:128px;top:376px;width:392px;height:240px;display:flex;flex-direction:column;justify-content:space-between;padding:32px;background:linear-gradient(180deg, #221B10 0%, #141210 100%);border:1px solid rgba(255,159,10,0.22);border-radius:28px">
+<svg aria-label="Блискавка" width="44" height="44" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="width:44px;height:44px"><g fill="none" stroke="#FF9F0A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M27 4L10 27h12l-3 17 17-23H24z"/></g></svg>
+<div style="display:flex;flex-direction:column;gap:6px"><h3 style="font-size:30px;font-weight:600;color:#F5F5F7">Швидкість</h3><p style="font-size:24px;line-height:1.35;color:#A1A1A6">Рішення можна знайти за одну розмову.</p></div>
+</div>
+<div data-build-in="rise 5 auto" style="position:absolute;left:544px;top:376px;width:392px;height:240px;display:flex;flex-direction:column;justify-content:space-between;padding:32px;background:linear-gradient(180deg, #221B10 0%, #141210 100%);border:1px solid rgba(255,159,10,0.22);border-radius:28px">
+<svg aria-label="Щит" width="44" height="44" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="width:44px;height:44px"><g fill="none" stroke="#FF9F0A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M24 5l15 6v11c0 10-6.5 17-15 21-8.5-4-15-11-15-21V11z"/><path d="M17 24l5 5 9-10"/></g></svg>
+<div style="display:flex;flex-direction:column;gap:6px"><h3 style="font-size:30px;font-weight:600;color:#F5F5F7">Мир</h3><p style="font-size:24px;line-height:1.35;color:#A1A1A6">Напруга спадає, стосунки зберігаються.</p></div>
+</div>
+<div data-build-in="rise 6 auto" style="position:absolute;left:128px;top:640px;width:392px;height:240px;display:flex;flex-direction:column;justify-content:space-between;padding:32px;background:linear-gradient(180deg, #221B10 0%, #141210 100%);border:1px solid rgba(255,159,10,0.22);border-radius:28px">
+<svg aria-label="Дві рівні смуги" width="44" height="44" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="width:44px;height:44px"><g fill="#FF9F0A"><rect x="8" y="15" width="32" height="6" rx="3"/><rect x="8" y="27" width="32" height="6" rx="3"/></g></svg>
+<div style="display:flex;flex-direction:column;gap:6px"><h3 style="font-size:30px;font-weight:600;color:#F5F5F7">Справедливість</h3><p style="font-size:24px;line-height:1.35;color:#A1A1A6">Поступаються обидві сторони.</p></div>
+</div>
+<div data-build-in="rise 7 auto" style="position:absolute;left:544px;top:640px;width:392px;height:240px;display:flex;flex-direction:column;justify-content:space-between;padding:32px;background:linear-gradient(180deg, #221B10 0%, #141210 100%);border:1px solid rgba(255,159,10,0.22);border-radius:28px">
+<svg aria-label="Листок" width="44" height="44" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="width:44px;height:44px"><g fill="none" stroke="#FF9F0A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 39C9 21 21 9 40 9c0 19-12 30-31 30z"/><path d="M9 39l17-17"/></g></svg>
+<div style="display:flex;flex-direction:column;gap:6px"><h3 style="font-size:30px;font-weight:600;color:#F5F5F7">Простота</h3><p style="font-size:24px;line-height:1.35;color:#A1A1A6">Не потрібна довга підготовка.</p></div>
+</div>
+<div data-build-in="rise 8 auto" style="position:absolute;left:984px;top:376px;width:392px;height:240px;display:flex;flex-direction:column;justify-content:space-between;padding:32px;background:linear-gradient(180deg, #1C1C1F 0%, #121214 100%);border:1px solid rgba(255,255,255,0.07);border-radius:28px">
+<svg aria-label="Половина кола" width="44" height="44" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="width:44px;height:44px"><g stroke="#A1A1A6" stroke-width="2.5"><circle cx="24" cy="24" r="17" fill="none"/><path d="M24 7v34a17 17 0 0 1 0-34z" fill="#A1A1A6"/></g></svg>
+<div style="display:flex;flex-direction:column;gap:6px"><h3 style="font-size:30px;font-weight:600;color:#F5F5F7">Неповнота</h3><p style="font-size:24px;line-height:1.35;color:#A1A1A6">Ніхто не отримує всього, що хотів.</p></div>
+</div>
+<div data-build-in="rise 9 auto" style="position:absolute;left:1400px;top:376px;width:392px;height:240px;display:flex;flex-direction:column;justify-content:space-between;padding:32px;background:linear-gradient(180deg, #1C1C1F 0%, #121214 100%);border:1px solid rgba(255,255,255,0.07);border-radius:28px">
+<svg aria-label="Стрілки повтору" width="44" height="44" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="width:44px;height:44px"><g fill="none" stroke="#A1A1A6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M38 18a15 15 0 0 0-27-3M10 30a15 15 0 0 0 27 3"/><path d="M38 8v10H28M10 40V30h10"/></g></svg>
+<div style="display:flex;flex-direction:column;gap:6px"><h3 style="font-size:30px;font-weight:600;color:#F5F5F7">Нестійкість</h3><p style="font-size:24px;line-height:1.35;color:#A1A1A6">Конфлікт може повернутися.</p></div>
+</div>
+<div data-build-in="rise 10 auto" style="position:absolute;left:984px;top:640px;width:392px;height:240px;display:flex;flex-direction:column;justify-content:space-between;padding:32px;background:linear-gradient(180deg, #1C1C1F 0%, #121214 100%);border:1px solid rgba(255,255,255,0.07);border-radius:28px">
+<svg aria-label="Цінник" width="44" height="44" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="width:44px;height:44px"><g fill="none" stroke="#A1A1A6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 24V8a2 2 0 0 1 2-2h16l18 18-18 18z"/><circle cx="15" cy="15" r="3"/></g></svg>
+<div style="display:flex;flex-direction:column;gap:6px"><h3 style="font-size:30px;font-weight:600;color:#F5F5F7">Торг</h3><p style="font-size:24px;line-height:1.35;color:#A1A1A6">Вимоги завищують заздалегідь.</p></div>
+</div>
+<div data-build-in="rise 11 auto" style="position:absolute;left:1400px;top:640px;width:392px;height:240px;display:flex;flex-direction:column;justify-content:space-between;padding:32px;background:linear-gradient(180deg, #1C1C1F 0%, #121214 100%);border:1px solid rgba(255,255,255,0.07);border-radius:28px">
+<svg aria-label="Перекреслене око" width="44" height="44" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="width:44px;height:44px"><g fill="none" stroke="#A1A1A6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 24s7-12 20-12 20 12 20 12-7 12-20 12S4 24 4 24z"/><circle cx="24" cy="24" r="5"/><path d="M9 39L39 9"/></g></svg>
+<div style="display:flex;flex-direction:column;gap:6px"><h3 style="font-size:30px;font-weight:600;color:#F5F5F7">Втрачений шанс</h3><p style="font-size:24px;line-height:1.35;color:#A1A1A6">Краще рішення лишається непоміченим.</p></div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:800px;font-size:24px;color:#86868B">Компроміс і співпраця</p>
+<p style="position:absolute;right:128px;bottom:64px;width:240px;font-size:24px;color:#86868B;text-align:right;font-variant-numeric:tabular-nums">5 / 10</p>
+
+</section>
+<section id="cooperation" data-transition="push" style="background:#050506;color:#F5F5F7;font-family:'Inter', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column">
+<div style="position:absolute;left:0px;top:0px;width:1920px;height:1080px;background:radial-gradient(ellipse at 28% 55%, rgba(10,132,255,0.11) 0%, rgba(0,0,0,0) 45%)"></div>
+<p data-build-in="fade 1 auto" style="position:absolute;left:128px;top:120px;width:900px;font-size:28px;font-weight:600;color:#64D2FF">Співпраця</p>
+<h2 data-build-in="rise 2 auto" style="position:absolute;left:128px;top:164px;width:1664px;font-family:'Inter Tight', Arial, sans-serif;font-size:80px;font-weight:700;line-height:1.08;letter-spacing:-3px;color:#F5F5F7">Разом шукаємо краще рішення</h2>
+<div data-build-in="scale 3 auto" style="position:absolute;left:128px;top:300px;width:820px;height:580px;background:linear-gradient(180deg, #0F1A28 0%, #121214 70%);border:1px solid rgba(10,132,255,0.22);border-radius:32px"></div>
+<iframe class="emb" sandbox="allow-scripts" scrolling="no" style="position:absolute;left:160px;top:316px;width:756px;height:400px;border:0;background:transparent" srcdoc="<!doctype html><html><head><meta charset=&quot;utf-8&quot;><style>html,body{margin:0;height:100%;background:transparent;overflow:hidden}svg{width:100%;height:100%;display:block}
+.g{transform-origin:378px 200px;animation:g 6s ease-in-out infinite alternate}@keyframes g{from{transform:rotate(-10deg)}to{transform:rotate(10deg)}}
+.s1{transform-origin:298px 200px;animation:s 7s linear infinite}.s2{transform-origin:458px 200px;animation:s 7s linear infinite reverse}@keyframes s{to{transform:rotate(360deg)}}
+.c{animation:c 3s ease-in-out infinite alternate}@keyframes c{from{opacity:.15}to{opacity:.6}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}</style></head><body><svg viewBox=&quot;0 0 756 400&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;><defs><linearGradient id=&quot;ga&quot; x1=&quot;0&quot; y1=&quot;0&quot; x2=&quot;1&quot; y2=&quot;1&quot;><stop offset=&quot;0&quot; stop-color=&quot;#FFD60A&quot;/><stop offset=&quot;1&quot; stop-color=&quot;#FF9F0A&quot;/></linearGradient><linearGradient id=&quot;gb&quot; x1=&quot;0&quot; y1=&quot;0&quot; x2=&quot;1&quot; y2=&quot;1&quot;><stop offset=&quot;0&quot; stop-color=&quot;#64D2FF&quot;/><stop offset=&quot;1&quot; stop-color=&quot;#0A84FF&quot;/></linearGradient><radialGradient id=&quot;gw&quot;><stop offset=&quot;0&quot; stop-color=&quot;#FFFFFF&quot; stop-opacity=&quot;.8&quot;/><stop offset=&quot;1&quot; stop-color=&quot;#FFFFFF&quot; stop-opacity=&quot;0&quot;/></radialGradient><filter id=&quot;bl&quot; x=&quot;-50%&quot; y=&quot;-50%&quot; width=&quot;200%&quot; height=&quot;200%&quot;><feGaussianBlur stdDeviation=&quot;14&quot;/></filter></defs>
+<g class=&quot;g&quot;>
+<circle cx=&quot;298&quot; cy=&quot;200&quot; r=&quot;120&quot; fill=&quot;none&quot; stroke=&quot;url(#ga)&quot; stroke-width=&quot;24&quot; filter=&quot;url(#bl)&quot; opacity=&quot;.45&quot;/>
+<circle cx=&quot;458&quot; cy=&quot;200&quot; r=&quot;120&quot; fill=&quot;none&quot; stroke=&quot;url(#gb)&quot; stroke-width=&quot;24&quot; filter=&quot;url(#bl)&quot; opacity=&quot;.45&quot;/>
+<ellipse class=&quot;c&quot; cx=&quot;378&quot; cy=&quot;200&quot; rx=&quot;34&quot; ry=&quot;80&quot; fill=&quot;url(#gw)&quot;/>
+<circle cx=&quot;298&quot; cy=&quot;200&quot; r=&quot;120&quot; fill=&quot;none&quot; stroke=&quot;url(#ga)&quot; stroke-width=&quot;14&quot;/>
+<circle cx=&quot;458&quot; cy=&quot;200&quot; r=&quot;120&quot; fill=&quot;none&quot; stroke=&quot;url(#gb)&quot; stroke-width=&quot;14&quot;/>
+<path d=&quot;M358 96.1A120 120 0 0 1 395.1 129.5&quot; fill=&quot;none&quot; stroke=&quot;#141820&quot; stroke-width=&quot;28&quot;/>
+<path d=&quot;M358 96.1A120 120 0 0 1 395.1 129.5&quot; fill=&quot;none&quot; stroke=&quot;url(#ga)&quot; stroke-width=&quot;14&quot;/>
+<g class=&quot;s1&quot;><circle cx=&quot;298&quot; cy=&quot;80&quot; r=&quot;6&quot; fill=&quot;#FFFFFF&quot;/></g>
+<g class=&quot;s2&quot;><circle cx=&quot;458&quot; cy=&quot;320&quot; r=&quot;6&quot; fill=&quot;#FFFFFF&quot;/></g>
+</g></svg></body></html>"></iframe>
+<p data-build-in="rise 4 auto" style="position:absolute;left:176px;top:726px;width:740px;font-family:'Inter Tight', Arial, sans-serif;font-size:64px;font-weight:700;line-height:1.05;letter-spacing:-2px;color:#64D2FF;background:linear-gradient(90deg, #0A84FF 0%, #64D2FF 55%);background-clip:text;-webkit-text-fill-color:transparent">Виграш — виграш</p>
+<p data-build-in="fade 5 auto" style="position:absolute;left:176px;top:810px;width:740px;font-size:26px;line-height:1.4;color:#A1A1A6">Кожна сторона отримує все важливе для себе.</p>
+<div data-build-in="rise 6 auto" style="position:absolute;left:976px;top:300px;width:816px;height:270px;display:flex;flex-direction:column;gap:14px;padding:40px 48px;background:linear-gradient(180deg, #1C1C1F 0%, #121214 100%);border:1px solid rgba(255,255,255,0.07);border-radius:32px">
+<p style="font-size:24px;font-weight:600;color:#86868B">Визначення</p>
+<p style="font-family:'Inter Tight', Arial, sans-serif;font-size:34px;font-weight:600;line-height:1.3;letter-spacing:-0.5px;color:#F5F5F7">Спосіб розв’язати конфлікт, коли сторони разом шукають рішення, що повністю влаштовує кожну.</p>
+</div>
+<div data-build-in="rise 7 auto" style="position:absolute;left:976px;top:594px;width:256px;height:286px;display:flex;flex-direction:column;justify-content:space-between;padding:32px;background:linear-gradient(180deg, #1C1C1F 0%, #121214 100%);border:1px solid rgba(255,255,255,0.07);border-radius:32px">
+<svg aria-label="Зірка" width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="width:48px;height:48px"><g fill="none" stroke="#64D2FF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M24 6l5.3 11.6 12.7 1.4-9.5 8.6 2.7 12.5L24 33.8 12.8 40.1l2.7-12.5L6 19l12.7-1.4z"/></g></svg>
+<div style="display:flex;flex-direction:column;gap:8px"><h3 style="font-size:30px;font-weight:600;line-height:1.2;color:#F5F5F7">Важливі інтереси</h3><p style="font-size:24px;line-height:1.35;color:#A1A1A6">Поступатися не можна.</p></div>
+</div>
+<div data-build-in="rise 8 auto" style="position:absolute;left:1256px;top:594px;width:256px;height:286px;display:flex;flex-direction:column;justify-content:space-between;padding:32px;background:linear-gradient(180deg, #1C1C1F 0%, #121214 100%);border:1px solid rgba(255,255,255,0.07);border-radius:32px">
+<svg aria-label="Серце" width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="width:48px;height:48px"><g fill="none" stroke="#0A84FF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M24 40S7 29.5 7 18.5A8.5 8.5 0 0 1 24 14a8.5 8.5 0 0 1 17 4.5C41 29.5 24 40 24 40z"/></g></svg>
+<div style="display:flex;flex-direction:column;gap:8px"><h3 style="font-size:30px;font-weight:600;line-height:1.2;color:#F5F5F7">Цінні стосунки</h3><p style="font-size:24px;line-height:1.35;color:#A1A1A6">Важливе майбутнє.</p></div>
+</div>
+<div data-build-in="rise 9 auto" style="position:absolute;left:1536px;top:594px;width:256px;height:286px;display:flex;flex-direction:column;justify-content:space-between;padding:32px;background:linear-gradient(180deg, #1C1C1F 0%, #121214 100%);border:1px solid rgba(255,255,255,0.07);border-radius:32px">
+<svg aria-label="Хмаринка розмови" width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="width:48px;height:48px"><g fill="none" stroke="#64D2FF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9h32a4 4 0 0 1 4 4v16a4 4 0 0 1-4 4H20l-9 7v-7H8a4 4 0 0 1-4-4V13a4 4 0 0 1 4-4z"/></g></svg>
+<div style="display:flex;flex-direction:column;gap:8px"><h3 style="font-size:30px;font-weight:600;line-height:1.2;color:#F5F5F7">Є час</h3><p style="font-size:24px;line-height:1.35;color:#A1A1A6">На відверту розмову.</p></div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:800px;font-size:24px;color:#86868B">Компроміс і співпраця</p>
+<p style="position:absolute;right:128px;bottom:64px;width:240px;font-size:24px;color:#86868B;text-align:right;font-variant-numeric:tabular-nums">6 / 10</p>
+
+</section>
+<section id="steps" data-transition="fade" style="background:#050506;color:#F5F5F7;font-family:'Inter', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column">
+<div style="position:absolute;left:0px;top:0px;width:1920px;height:1080px;background:radial-gradient(ellipse at 50% -10%, rgba(10,132,255,0.10) 0%, rgba(0,0,0,0) 55%)"></div>
+<p data-build-in="fade 1 auto" style="position:absolute;left:128px;top:120px;width:900px;font-size:28px;font-weight:600;color:#64D2FF">Співпраця</p>
+<h2 data-build-in="rise 2 auto" style="position:absolute;left:128px;top:164px;width:1664px;font-family:'Inter Tight', Arial, sans-serif;font-size:80px;font-weight:700;line-height:1.08;letter-spacing:-3px;color:#F5F5F7">П’ять кроків до співпраці</h2>
+<iframe class="emb" sandbox="allow-scripts" scrolling="no" style="position:absolute;left:128px;top:300px;width:1664px;height:60px;border:0;background:transparent" srcdoc="<!doctype html><html><head><meta charset=&quot;utf-8&quot;><style>html,body{margin:0;height:100%;background:transparent;overflow:hidden}svg{width:100%;height:100%;display:block}
+.ln{stroke-dasharray:1624;animation:ln 6s linear infinite}@keyframes ln{0%{stroke-dashoffset:1624;opacity:1}80%{stroke-dashoffset:0;opacity:1}92%{opacity:1}100%{stroke-dashoffset:0;opacity:0}}
+.d{opacity:0}.d1{animation:d1 6s infinite}.d2{animation:d2 6s infinite}.d3{animation:d3 6s infinite}.d4{animation:d4 6s infinite}.d5{animation:d5 6s infinite}
+@keyframes d1{0%,6.6%{opacity:0}8%,92%{opacity:1}100%{opacity:0}}
+@keyframes d2{0%,23.3%{opacity:0}24.7%,92%{opacity:1}100%{opacity:0}}
+@keyframes d3{0%,40%{opacity:0}41.4%,92%{opacity:1}100%{opacity:0}}
+@keyframes d4{0%,56.6%{opacity:0}58%,92%{opacity:1}100%{opacity:0}}
+@keyframes d5{0%,73.3%{opacity:0}74.7%,92%{opacity:1}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}.d{opacity:1}}</style></head><body><svg viewBox=&quot;0 0 1664 60&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;><defs><linearGradient id=&quot;g&quot; gradientUnits=&quot;userSpaceOnUse&quot; x1=&quot;20&quot; y1=&quot;0&quot; x2=&quot;1644&quot; y2=&quot;0&quot;><stop offset=&quot;0&quot; stop-color=&quot;#0A84FF&quot;/><stop offset=&quot;.7&quot; stop-color=&quot;#64D2FF&quot;/><stop offset=&quot;1&quot; stop-color=&quot;#FFD60A&quot;/></linearGradient><filter id=&quot;b&quot; x=&quot;-50%&quot; y=&quot;-200%&quot; width=&quot;200%&quot; height=&quot;500%&quot;><feGaussianBlur stdDeviation=&quot;5&quot;/></filter></defs>
+<path d=&quot;M20 30H1644&quot; stroke=&quot;#2C2C2E&quot; stroke-width=&quot;4&quot; stroke-linecap=&quot;round&quot;/>
+<path class=&quot;ln&quot; d=&quot;M20 30H1644&quot; stroke=&quot;url(#g)&quot; stroke-width=&quot;10&quot; stroke-linecap=&quot;round&quot; filter=&quot;url(#b)&quot; opacity=&quot;.7&quot;/>
+<path class=&quot;ln&quot; d=&quot;M20 30H1644&quot; stroke=&quot;url(#g)&quot; stroke-width=&quot;4&quot; stroke-linecap=&quot;round&quot;/>
+<g fill=&quot;#2C2C2E&quot;><circle cx=&quot;156&quot; cy=&quot;30&quot; r=&quot;11&quot;/><circle cx=&quot;494&quot; cy=&quot;30&quot; r=&quot;11&quot;/><circle cx=&quot;832&quot; cy=&quot;30&quot; r=&quot;11&quot;/><circle cx=&quot;1170&quot; cy=&quot;30&quot; r=&quot;11&quot;/><circle cx=&quot;1508&quot; cy=&quot;30&quot; r=&quot;11&quot;/></g>
+<circle class=&quot;d d1&quot; cx=&quot;156&quot; cy=&quot;30&quot; r=&quot;11&quot; fill=&quot;#0A84FF&quot;/><circle class=&quot;d d2&quot; cx=&quot;494&quot; cy=&quot;30&quot; r=&quot;11&quot; fill=&quot;#2F9BFF&quot;/><circle class=&quot;d d3&quot; cx=&quot;832&quot; cy=&quot;30&quot; r=&quot;11&quot; fill=&quot;#4AB6FF&quot;/><circle class=&quot;d d4&quot; cx=&quot;1170&quot; cy=&quot;30&quot; r=&quot;11&quot; fill=&quot;#64D2FF&quot;/><circle class=&quot;d d5&quot; cx=&quot;1508&quot; cy=&quot;30&quot; r=&quot;11&quot; fill=&quot;#FFD60A&quot;/>
+</svg></body></html>"></iframe>
+<div data-build-in="rise 3 auto" style="position:absolute;left:128px;top:384px;width:312px;height:430px;display:flex;flex-direction:column;gap:14px;padding:36px 32px;background:linear-gradient(180deg, #1C1C1F 0%, #121214 100%);border:1px solid rgba(255,255,255,0.07);border-radius:32px">
+<svg aria-label="Лупа" width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="width:48px;height:48px"><g fill="none" stroke="#0A84FF" stroke-width="2.5" stroke-linecap="round"><circle cx="21" cy="21" r="13"/><path d="M31 31l11 11"/></g></svg>
+<p style="font-size:24px;font-weight:600;color:#86868B">Крок 1</p>
+<h3 style="font-size:30px;font-weight:600;line-height:1.2;color:#F5F5F7">Визначити проблему</h3>
+<p style="font-size:24px;line-height:1.4;color:#A1A1A6">Назвати суть конфлікту без звинувачень.</p>
+</div>
+<div data-build-in="rise 4 auto" style="position:absolute;left:466px;top:384px;width:312px;height:430px;display:flex;flex-direction:column;gap:14px;padding:36px 32px;background:linear-gradient(180deg, #1C1C1F 0%, #121214 100%);border:1px solid rgba(255,255,255,0.07);border-radius:32px">
+<svg aria-label="Дві хмаринки розмови" width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="width:48px;height:48px"><g fill="none" stroke="#2F9BFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h22a3 3 0 0 1 3 3v11a3 3 0 0 1-3 3H15l-7 6v-6H6a3 3 0 0 1-3-3V11a3 3 0 0 1 3-3z"/><path d="M35 17h7a3 3 0 0 1 3 3v11a3 3 0 0 1-3 3h-1v6l-7-6H24a3 3 0 0 1-3-3v-3"/></g></svg>
+<p style="font-size:24px;font-weight:600;color:#86868B">Крок 2</p>
+<h3 style="font-size:30px;font-weight:600;line-height:1.2;color:#F5F5F7">З’ясувати інтереси</h3>
+<p style="font-size:24px;line-height:1.4;color:#A1A1A6">Почути, чого насправді прагне кожна сторона.</p>
+</div>
+<div data-build-in="rise 5 auto" style="position:absolute;left:804px;top:384px;width:312px;height:430px;display:flex;flex-direction:column;gap:14px;padding:36px 32px;background:linear-gradient(180deg, #1C1C1F 0%, #121214 100%);border:1px solid rgba(255,255,255,0.07);border-radius:32px">
+<svg aria-label="Лампочка" width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="width:48px;height:48px"><g fill="none" stroke="#4AB6FF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 31c-3-2.5-5-6.5-5-11a12 12 0 0 1 24 0c0 4.5-2 8.5-5 11v4H17z"/><path d="M18 41h12"/></g></svg>
+<p style="font-size:24px;font-weight:600;color:#86868B">Крок 3</p>
+<h3 style="font-size:30px;font-weight:600;line-height:1.2;color:#F5F5F7">Шукати варіанти</h3>
+<p style="font-size:24px;line-height:1.4;color:#A1A1A6">Запропонувати якомога більше ідей без критики.</p>
+</div>
+<div data-build-in="rise 6 auto" style="position:absolute;left:1142px;top:384px;width:312px;height:430px;display:flex;flex-direction:column;gap:14px;padding:36px 32px;background:linear-gradient(180deg, #1C1C1F 0%, #121214 100%);border:1px solid rgba(255,255,255,0.07);border-radius:32px">
+<svg aria-label="Галочка в колі" width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="width:48px;height:48px"><g fill="none" stroke="#64D2FF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="24" r="18"/><path d="M16 24.5l5.5 5.5L32 19"/></g></svg>
+<p style="font-size:24px;font-weight:600;color:#86868B">Крок 4</p>
+<h3 style="font-size:30px;font-weight:600;line-height:1.2;color:#F5F5F7">Обрати рішення</h3>
+<p style="font-size:24px;line-height:1.4;color:#A1A1A6">Зупинитися на тому, що вигідне обом.</p>
+</div>
+<div data-build-in="rise 7 auto" style="position:absolute;left:1480px;top:384px;width:312px;height:430px;display:flex;flex-direction:column;gap:14px;padding:36px 32px;background:linear-gradient(180deg, #221B10 0%, #141210 100%);border:1px solid rgba(255,214,10,0.3);border-radius:32px">
+<svg aria-label="Мішень" width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="width:48px;height:48px"><g fill="none" stroke="#FFD60A" stroke-width="2.5"><circle cx="24" cy="24" r="18"/><circle cx="24" cy="24" r="10"/><circle cx="24" cy="24" r="3" fill="#FFD60A"/></g></svg>
+<p style="font-size:24px;font-weight:600;color:#86868B">Крок 5</p>
+<h3 style="font-size:30px;font-weight:600;line-height:1.2;color:#F5F5F7">Втілити й оцінити</h3>
+<p style="font-size:24px;line-height:1.4;color:#A1A1A6">Домовитися про кроки й перевірити результат.</p>
+</div>
+<p data-build-in="fade 8 auto" style="position:absolute;left:128px;top:850px;width:1664px;font-size:30px;font-weight:500;color:#A1A1A6;text-align:center">Говорити про інтереси, а не про позиції.</p>
+<p style="position:absolute;left:128px;bottom:64px;width:800px;font-size:24px;color:#86868B">Компроміс і співпраця</p>
+<p style="position:absolute;right:128px;bottom:64px;width:240px;font-size:24px;color:#86868B;text-align:right;font-variant-numeric:tabular-nums">7 / 10</p>
+
+</section>
+<section id="compare" data-transition="push" style="background:#050506;color:#F5F5F7;font-family:'Inter', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column">
+<div style="position:absolute;left:0px;top:0px;width:1920px;height:1080px;background:radial-gradient(ellipse at 50% -10%, rgba(255,255,255,0.07) 0%, rgba(0,0,0,0) 55%)"></div>
+<p data-build-in="fade 1 auto" style="position:absolute;left:128px;top:120px;width:900px;font-size:28px;font-weight:600;color:#A1A1A6">Порівняння</p>
+<h2 data-build-in="rise 2 auto" style="position:absolute;left:128px;top:164px;width:1664px;font-family:'Inter Tight', Arial, sans-serif;font-size:80px;font-weight:700;line-height:1.08;letter-spacing:-3px;color:#F5F5F7">Дві стратегії поруч</h2>
+<iframe class="emb" sandbox="allow-scripts" scrolling="no" style="position:absolute;left:540px;top:290px;width:56px;height:56px;border:0;background:transparent" srcdoc="<!doctype html><html><head><meta charset=&quot;utf-8&quot;><style>html,body{margin:0;height:100%;background:transparent;overflow:hidden}svg{width:100%;height:100%;display:block}
+.b{transform-origin:24px 12px;animation:t 2.6s ease-in-out infinite alternate}@keyframes t{from{transform:rotate(-8deg)}to{transform:rotate(8deg)}}
+.l{animation:l 2.6s ease-in-out infinite alternate}@keyframes l{from{transform:translateY(2px)}to{transform:translateY(-2px)}}
+.r{animation:r 2.6s ease-in-out infinite alternate}@keyframes r{from{transform:translateY(-2px)}to{transform:translateY(2px)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}</style></head><body><svg viewBox=&quot;0 0 48 48&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;><g fill=&quot;none&quot; stroke=&quot;#FF9F0A&quot; stroke-width=&quot;2.5&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;><path d=&quot;M24 7V40M15 42H33&quot;/><g class=&quot;b&quot;><path d=&quot;M9 12H39&quot;/></g><circle cx=&quot;24&quot; cy=&quot;12&quot; r=&quot;2.2&quot; fill=&quot;#FF9F0A&quot;/><g class=&quot;l&quot;><path d=&quot;M9 12L4 26M9 12L14 26M2 26A7 4 0 0 0 16 26Z&quot;/></g><g class=&quot;r&quot;><path d=&quot;M39 12L34 26M39 12L44 26M32 26A7 4 0 0 0 46 26Z&quot;/></g></g></svg></body></html>"></iframe>
+<h3 data-build-in="fade 3 auto" style="position:absolute;left:614px;top:294px;width:540px;font-family:'Inter Tight', Arial, sans-serif;font-size:40px;font-weight:700;letter-spacing:-1px;color:#FF9F0A">Компроміс</h3>
+<iframe class="emb" sandbox="allow-scripts" scrolling="no" style="position:absolute;left:1178px;top:290px;width:56px;height:56px;border:0;background:transparent" srcdoc="<!doctype html><html><head><meta charset=&quot;utf-8&quot;><style>html,body{margin:0;height:100%;background:transparent;overflow:hidden}svg{width:100%;height:100%;display:block}
+.g{transform-origin:24px 24px;animation:s 6s linear infinite}@keyframes s{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}</style></head><body><svg viewBox=&quot;0 0 48 48&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;><g class=&quot;g&quot; fill=&quot;none&quot; stroke-width=&quot;2.5&quot;><circle cx=&quot;18&quot; cy=&quot;24&quot; r=&quot;11&quot; stroke=&quot;#64D2FF&quot;/><circle cx=&quot;30&quot; cy=&quot;24&quot; r=&quot;11&quot; stroke=&quot;#0A84FF&quot;/></g></svg></body></html>"></iframe>
+<h3 data-build-in="fade 3 auto" style="position:absolute;left:1252px;top:294px;width:540px;font-family:'Inter Tight', Arial, sans-serif;font-size:40px;font-weight:700;letter-spacing:-1px;color:#64D2FF">Співпраця</h3>
+<div data-build-in="rise 4 auto" style="position:absolute;left:128px;top:380px;width:1664px;display:flex;flex-direction:row;gap:24px;align-items:stretch">
+<p style="width:388px;font-size:26px;font-weight:600;line-height:1.4;color:#86868B;padding:18px 4px">Результат</p>
+<p style="flex:1;font-size:26px;line-height:1.4;color:#F5F5F7;padding:18px 28px;background:rgba(255,159,10,0.09);border:1px solid rgba(255,159,10,0.22);border-radius:18px">Часткове задоволення</p>
+<p style="flex:1;font-size:26px;line-height:1.4;color:#F5F5F7;padding:18px 28px;background:rgba(10,132,255,0.11);border:1px solid rgba(100,210,255,0.25);border-radius:18px">Повне задоволення</p>
+</div>
+<div data-build-in="rise 5 auto" style="position:absolute;left:128px;top:462px;width:1664px;display:flex;flex-direction:row;gap:24px;align-items:stretch">
+<p style="width:388px;font-size:26px;font-weight:600;line-height:1.4;color:#86868B;padding:18px 4px">Формула</p>
+<p style="flex:1;font-size:26px;line-height:1.4;color:#F5F5F7;padding:18px 28px;background:rgba(255,159,10,0.09);border:1px solid rgba(255,159,10,0.22);border-radius:18px">«Кожен трохи поступився»</p>
+<p style="flex:1;font-size:26px;line-height:1.4;color:#F5F5F7;padding:18px 28px;background:rgba(10,132,255,0.11);border:1px solid rgba(100,210,255,0.25);border-radius:18px">«Виграш — виграш»</p>
+</div>
+<div data-build-in="rise 6 auto" style="position:absolute;left:128px;top:544px;width:1664px;display:flex;flex-direction:row;gap:24px;align-items:stretch">
+<p style="width:388px;font-size:26px;font-weight:600;line-height:1.4;color:#86868B;padding:18px 4px">Час</p>
+<p style="flex:1;font-size:26px;line-height:1.4;color:#F5F5F7;padding:18px 28px;background:rgba(255,159,10,0.09);border:1px solid rgba(255,159,10,0.22);border-radius:18px">Швидко</p>
+<p style="flex:1;font-size:26px;line-height:1.4;color:#F5F5F7;padding:18px 28px;background:rgba(10,132,255,0.11);border:1px solid rgba(100,210,255,0.25);border-radius:18px">Потребує часу</p>
+</div>
+<div data-build-in="rise 7 auto" style="position:absolute;left:128px;top:626px;width:1664px;display:flex;flex-direction:row;gap:24px;align-items:stretch">
+<p style="width:388px;font-size:26px;font-weight:600;line-height:1.4;color:#86868B;padding:18px 4px">Стосунки</p>
+<p style="flex:1;font-size:26px;line-height:1.4;color:#F5F5F7;padding:18px 28px;background:rgba(255,159,10,0.09);border:1px solid rgba(255,159,10,0.22);border-radius:18px">Зберігаються</p>
+<p style="flex:1;font-size:26px;line-height:1.4;color:#F5F5F7;padding:18px 28px;background:rgba(10,132,255,0.11);border:1px solid rgba(100,210,255,0.25);border-radius:18px">Зміцнюються</p>
+</div>
+<div data-build-in="rise 8 auto" style="position:absolute;left:128px;top:708px;width:1664px;display:flex;flex-direction:row;gap:24px;align-items:stretch">
+<p style="width:388px;font-size:26px;font-weight:600;line-height:1.4;color:#86868B;padding:18px 4px">Тривалість</p>
+<p style="flex:1;font-size:26px;line-height:1.4;color:#F5F5F7;padding:18px 28px;background:rgba(255,159,10,0.09);border:1px solid rgba(255,159,10,0.22);border-radius:18px">Часто тимчасове рішення</p>
+<p style="flex:1;font-size:26px;line-height:1.4;color:#F5F5F7;padding:18px 28px;background:rgba(10,132,255,0.11);border:1px solid rgba(100,210,255,0.25);border-radius:18px">Стійке рішення</p>
+</div>
+<div data-build-in="rise 9 auto" style="position:absolute;left:128px;top:790px;width:1664px;display:flex;flex-direction:row;gap:24px;align-items:stretch">
+<p style="width:388px;font-size:26px;font-weight:600;line-height:1.4;color:#86868B;padding:18px 4px">Умова</p>
+<p style="flex:1;font-size:26px;line-height:1.4;color:#F5F5F7;padding:18px 28px;background:rgba(255,159,10,0.09);border:1px solid rgba(255,159,10,0.22);border-radius:18px">Рівні сили, брак часу</p>
+<p style="flex:1;font-size:26px;line-height:1.4;color:#F5F5F7;padding:18px 28px;background:rgba(10,132,255,0.11);border:1px solid rgba(100,210,255,0.25);border-radius:18px">Довіра й відкритість</p>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:800px;font-size:24px;color:#86868B">Компроміс і співпраця</p>
+<p style="position:absolute;right:128px;bottom:64px;width:240px;font-size:24px;color:#86868B;text-align:right;font-variant-numeric:tabular-nums">8 / 10</p>
+
+</section>
+<section id="orange" data-transition="fade" style="background:#050506;color:#F5F5F7;font-family:'Inter', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column">
+<div style="position:absolute;left:0px;top:0px;width:1920px;height:1080px;background:radial-gradient(ellipse at 50% 60%, rgba(255,159,10,0.08) 0%, rgba(0,0,0,0) 55%)"></div>
+<p data-build-in="fade 1 auto" style="position:absolute;left:128px;top:120px;width:900px;font-size:28px;font-weight:600;color:#FF9F0A">Приклад</p>
+<h2 data-build-in="rise 2 auto" style="position:absolute;left:128px;top:164px;width:1100px;font-family:'Inter Tight', Arial, sans-serif;font-size:80px;font-weight:700;line-height:1.08;letter-spacing:-3px;color:#F5F5F7">Притча про апельсин</h2>
+<p data-build-in="fade 3 auto" style="position:absolute;left:1192px;top:200px;width:600px;font-size:28px;line-height:1.4;color:#A1A1A6;text-align:right">Двоє сперечаються за один апельсин.</p>
+<div data-build-in="scale 4 auto" style="position:absolute;left:128px;top:300px;width:820px;height:580px;background:linear-gradient(180deg, #1F1A12 0%, #121214 70%);border:1px solid rgba(255,159,10,0.18);border-radius:32px"></div>
+<iframe class="emb" sandbox="allow-scripts" scrolling="no" style="position:absolute;left:160px;top:320px;width:756px;height:300px;border:0;background:transparent" srcdoc="<!doctype html><html><head><meta charset=&quot;utf-8&quot;><style>html,body{margin:0;height:100%;background:transparent;overflow:hidden}svg{width:100%;height:100%;display:block}
+.L{transform-origin:378px 150px;animation:L 4s ease-in-out infinite}.R{transform-origin:378px 150px;animation:R 4s ease-in-out infinite}
+@keyframes L{0%,30%{transform:translateX(0) rotate(0)}55%,85%{transform:translateX(-80px) rotate(-10deg)}100%{transform:translateX(0) rotate(0)}}
+@keyframes R{0%,30%{transform:translateX(0) rotate(0)}55%,85%{transform:translateX(80px) rotate(10deg)}100%{transform:translateX(0) rotate(0)}}
+.k{animation:k 4s ease-in-out infinite}@keyframes k{0%{transform:translateY(-170px);opacity:0}8%{transform:translateY(-170px);opacity:1}30%{transform:translateY(170px);opacity:1}36%,100%{transform:translateY(170px);opacity:0}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}.k{opacity:0}}</style></head><body><svg viewBox=&quot;0 0 756 300&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;><defs><radialGradient id=&quot;og&quot; cx=&quot;.4&quot; cy=&quot;.35&quot;><stop offset=&quot;0&quot; stop-color=&quot;#FFC46B&quot;/><stop offset=&quot;.6&quot; stop-color=&quot;#FF9F0A&quot;/><stop offset=&quot;1&quot; stop-color=&quot;#D96A00&quot;/></radialGradient><radialGradient id=&quot;sh&quot;><stop offset=&quot;0&quot; stop-color=&quot;#000000&quot; stop-opacity=&quot;.6&quot;/><stop offset=&quot;1&quot; stop-color=&quot;#000000&quot; stop-opacity=&quot;0&quot;/></radialGradient><linearGradient id=&quot;kn&quot; x1=&quot;0&quot; y1=&quot;0&quot; x2=&quot;1&quot; y2=&quot;0&quot;><stop offset=&quot;0&quot; stop-color=&quot;#8E8E93&quot;/><stop offset=&quot;.5&quot; stop-color=&quot;#F5F5F7&quot;/><stop offset=&quot;1&quot; stop-color=&quot;#8E8E93&quot;/></linearGradient></defs>
+<ellipse cx=&quot;378&quot; cy=&quot;278&quot; rx=&quot;200&quot; ry=&quot;14&quot; fill=&quot;url(#sh)&quot;/>
+<g class=&quot;L&quot;><path d=&quot;M378 40A110 110 0 0 0 378 260Z&quot; fill=&quot;url(#og)&quot;/><path d=&quot;M378 52A98 98 0 0 0 378 248Z&quot; fill=&quot;#FFC46B&quot;/><path d=&quot;M378 150L308.7 219.3M378 150L280 150M378 150L308.7 80.7&quot; stroke=&quot;#FF9F0A&quot; stroke-width=&quot;3&quot;/><path d=&quot;M378 52V248&quot; stroke=&quot;#FFE2AE&quot; stroke-width=&quot;4&quot;/></g>
+<g class=&quot;R&quot;><path d=&quot;M378 40A110 110 0 0 1 378 260Z&quot; fill=&quot;url(#og)&quot;/><path d=&quot;M378 52A98 98 0 0 1 378 248Z&quot; fill=&quot;#FFC46B&quot;/><path d=&quot;M378 150L447.3 219.3M378 150L476 150M378 150L447.3 80.7&quot; stroke=&quot;#FF9F0A&quot; stroke-width=&quot;3&quot;/><path d=&quot;M378 52V248&quot; stroke=&quot;#FFE2AE&quot; stroke-width=&quot;4&quot;/></g>
+<g class=&quot;k&quot;><path d=&quot;M372 0H384V122L378 134L372 122Z&quot; fill=&quot;url(#kn)&quot;/></g>
+</svg></body></html>"></iframe>
+<p data-build-in="rise 5 auto" style="position:absolute;left:176px;top:650px;width:140px;font-family:'Inter Tight', Arial, sans-serif;font-size:72px;font-weight:700;line-height:1;color:#FF9F0A;background:linear-gradient(90deg, #FF9F0A 0%, #FFD60A 100%);background-clip:text;-webkit-text-fill-color:transparent">½</p>
+<h3 data-build-in="rise 5 auto" style="position:absolute;left:300px;top:668px;width:600px;font-family:'Inter Tight', Arial, sans-serif;font-size:36px;font-weight:700;letter-spacing:-1px;color:#F5F5F7">Компроміс</h3>
+<p data-build-in="fade 6 auto" style="position:absolute;left:176px;top:748px;width:724px;font-size:26px;line-height:1.4;color:#A1A1A6">Апельсин розрізають навпіл. Кожен отримує лише половину того, що хотів.</p>
+<div data-build-in="scale 7 auto" style="position:absolute;left:972px;top:300px;width:820px;height:580px;background:linear-gradient(180deg, #0F1A28 0%, #121214 70%);border:1px solid rgba(10,132,255,0.22);border-radius:32px"></div>
+<iframe class="emb" sandbox="allow-scripts" scrolling="no" style="position:absolute;left:1004px;top:320px;width:756px;height:300px;border:0;background:transparent" srcdoc="<!doctype html><html><head><meta charset=&quot;utf-8&quot;><style>html,body{margin:0;height:100%;background:transparent;overflow:hidden}svg{width:100%;height:100%;display:block}text{font:24px -apple-system,system-ui,'Segoe UI',Arial,sans-serif;fill:#A1A1A6}
+.o{animation:o 2.4s ease-in-out infinite alternate}@keyframes o{from{transform:translateY(0)}to{transform:translateY(-8px)}}
+.lq{transform-origin:130px 248px;animation:lq 4s ease-in-out infinite}@keyframes lq{0%{transform:scaleY(0)}70%,90%{transform:scaleY(1)}100%{transform:scaleY(0)}}
+.dr{animation:dr 1.3s ease-in infinite}@keyframes dr{0%{transform:translate(296px,150px);opacity:0}15%{opacity:1}70%{transform:translate(140px,160px);opacity:1}85%,100%{transform:translate(132px,190px);opacity:0}}
+.pe{stroke-dasharray:260;animation:pe 2.6s ease-in-out infinite alternate}@keyframes pe{from{stroke-dashoffset:260}to{stroke-dashoffset:0}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}.dr{opacity:0}}</style></head><body><svg viewBox=&quot;0 0 756 300&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;><defs><radialGradient id=&quot;og&quot; cx=&quot;.38&quot; cy=&quot;.32&quot;><stop offset=&quot;0&quot; stop-color=&quot;#FFC46B&quot;/><stop offset=&quot;.6&quot; stop-color=&quot;#FF9F0A&quot;/><stop offset=&quot;1&quot; stop-color=&quot;#D96A00&quot;/></radialGradient><clipPath id=&quot;gc&quot;><path d=&quot;M93 152L102 248H158L167 152Z&quot;/></clipPath><radialGradient id=&quot;sh&quot;><stop offset=&quot;0&quot; stop-color=&quot;#000000&quot; stop-opacity=&quot;.6&quot;/><stop offset=&quot;1&quot; stop-color=&quot;#000000&quot; stop-opacity=&quot;0&quot;/></radialGradient></defs>
+<ellipse cx=&quot;378&quot; cy=&quot;250&quot; rx=&quot;120&quot; ry=&quot;12&quot; fill=&quot;url(#sh)&quot;/>
+<g class=&quot;o&quot;><circle cx=&quot;378&quot; cy=&quot;130&quot; r=&quot;96&quot; fill=&quot;url(#og)&quot;/><ellipse cx=&quot;346&quot; cy=&quot;96&quot; rx=&quot;26&quot; ry=&quot;15&quot; fill=&quot;#FFFFFF&quot; opacity=&quot;.3&quot;/><ellipse cx=&quot;398&quot; cy=&quot;40&quot; rx=&quot;22&quot; ry=&quot;9&quot; fill=&quot;#30D158&quot; transform=&quot;rotate(-25 398 40)&quot;/><path d=&quot;M378 36V48&quot; stroke=&quot;#2A7A3A&quot; stroke-width=&quot;4&quot; stroke-linecap=&quot;round&quot;/></g>
+<g clip-path=&quot;url(#gc)&quot;><rect class=&quot;lq&quot; x=&quot;90&quot; y=&quot;190&quot; width=&quot;80&quot; height=&quot;58&quot; fill=&quot;#FFB340&quot;/></g>
+<path d=&quot;M90 150L100 250H160L170 150&quot; fill=&quot;none&quot; stroke=&quot;#A1A1A6&quot; stroke-width=&quot;3&quot; stroke-linejoin=&quot;round&quot;/>
+<g class=&quot;dr&quot;><path d=&quot;M0 -12C-5 -4 -8 1 -8 5A8 8 0 0 0 8 5C8 1 5 -4 0 -12Z&quot; fill=&quot;#FFB340&quot;/></g>
+<path class=&quot;pe&quot; d=&quot;M520 150C550 110 580 190 610 150S670 110 700 150&quot; fill=&quot;none&quot; stroke=&quot;#FF9F0A&quot; stroke-width=&quot;14&quot; stroke-linecap=&quot;round&quot;/>
+<text x=&quot;130&quot; y=&quot;290&quot; text-anchor=&quot;middle&quot;>сік</text><text x=&quot;610&quot; y=&quot;290&quot; text-anchor=&quot;middle&quot;>шкірка</text>
+</svg></body></html>"></iframe>
+<p data-build-in="rise 8 auto" style="position:absolute;left:1020px;top:650px;width:280px;font-family:'Inter Tight', Arial, sans-serif;font-size:72px;font-weight:700;line-height:1;letter-spacing:-2px;color:#64D2FF;background:linear-gradient(90deg, #0A84FF 0%, #64D2FF 100%);background-clip:text;-webkit-text-fill-color:transparent">100 %</p>
+<h3 data-build-in="rise 8 auto" style="position:absolute;left:1310px;top:668px;width:460px;font-family:'Inter Tight', Arial, sans-serif;font-size:36px;font-weight:700;letter-spacing:-1px;color:#F5F5F7">Співпраця</h3>
+<p data-build-in="fade 9 auto" style="position:absolute;left:1020px;top:748px;width:724px;font-size:26px;line-height:1.4;color:#A1A1A6">Питають «навіщо?»: одному потрібен сік, іншому шкірка для випічки. Кожен отримує все.</p>
+<p style="position:absolute;left:128px;bottom:64px;width:800px;font-size:24px;color:#86868B">Компроміс і співпраця</p>
+<p style="position:absolute;right:128px;bottom:64px;width:240px;font-size:24px;color:#86868B;text-align:right;font-variant-numeric:tabular-nums">9 / 10</p>
+
+</section>
+<section id="thanks" data-transition="fade" style="background:#050506;color:#F5F5F7;font-family:'Inter', Arial, sans-serif;padding:128px;display:flex;flex-direction:column">
+<div style="position:absolute;left:0px;top:0px;width:1920px;height:1080px;background:radial-gradient(ellipse at 50% 30%, rgba(255,255,255,0.07) 0%, rgba(0,0,0,0) 55%)"></div>
+<iframe class="emb" sandbox="allow-scripts" scrolling="no" style="position:absolute;left:510px;top:140px;width:900px;height:380px;border:0;background:transparent" srcdoc="<!doctype html><html><head><meta charset=&quot;utf-8&quot;><style>html,body{margin:0;height:100%;background:transparent;overflow:hidden}svg{width:100%;height:100%;display:block}
+.a{animation:l 5s cubic-bezier(.65,0,.35,1) infinite alternate}.b{animation:r 5s cubic-bezier(.65,0,.35,1) infinite alternate;mix-blend-mode:screen}
+@keyframes l{0%{transform:translateX(-140px)}60%,100%{transform:translateX(0)}}@keyframes r{0%{transform:translateX(140px)}60%,100%{transform:translateX(0)}}
+.p{transform-origin:450px 190px;animation:p 5s ease-in-out infinite alternate}@keyframes p{0%,50%{opacity:0;transform:scale(.6)}100%{opacity:1;transform:scale(1.15)}}
+.o{transform-origin:450px 190px;animation:s 12s linear infinite}@keyframes s{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}</style></head><body><svg viewBox=&quot;0 0 900 380&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;><defs><linearGradient id=&quot;ga&quot; x1=&quot;0&quot; y1=&quot;0&quot; x2=&quot;1&quot; y2=&quot;1&quot;><stop offset=&quot;0&quot; stop-color=&quot;#FFD60A&quot;/><stop offset=&quot;1&quot; stop-color=&quot;#FF9F0A&quot;/></linearGradient><linearGradient id=&quot;gb&quot; x1=&quot;0&quot; y1=&quot;0&quot; x2=&quot;1&quot; y2=&quot;1&quot;><stop offset=&quot;0&quot; stop-color=&quot;#64D2FF&quot;/><stop offset=&quot;1&quot; stop-color=&quot;#0A84FF&quot;/></linearGradient><filter id=&quot;gl&quot; x=&quot;-50%&quot; y=&quot;-50%&quot; width=&quot;200%&quot; height=&quot;200%&quot;><feGaussianBlur stdDeviation=&quot;18&quot;/></filter></defs>
+<circle class=&quot;p&quot; cx=&quot;450&quot; cy=&quot;190&quot; r=&quot;150&quot; fill=&quot;none&quot; stroke=&quot;#FFFFFF&quot; stroke-width=&quot;30&quot; filter=&quot;url(#gl)&quot; opacity=&quot;.4&quot;/>
+<circle cx=&quot;450&quot; cy=&quot;190&quot; r=&quot;178&quot; fill=&quot;none&quot; stroke=&quot;#FFFFFF&quot; stroke-opacity=&quot;.08&quot;/>
+<g class=&quot;o&quot;><circle cx=&quot;450&quot; cy=&quot;12&quot; r=&quot;4&quot; fill=&quot;#F5F5F7&quot;/><circle cx=&quot;450&quot; cy=&quot;368&quot; r=&quot;3&quot; fill=&quot;#86868B&quot;/></g>
+<g class=&quot;a&quot;><circle cx=&quot;450&quot; cy=&quot;190&quot; r=&quot;130&quot; fill=&quot;none&quot; stroke=&quot;url(#ga)&quot; stroke-width=&quot;20&quot; filter=&quot;url(#gl)&quot; opacity=&quot;.55&quot;/><circle cx=&quot;450&quot; cy=&quot;190&quot; r=&quot;130&quot; fill=&quot;none&quot; stroke=&quot;url(#ga)&quot; stroke-width=&quot;8&quot;/></g>
+<g class=&quot;b&quot;><circle cx=&quot;450&quot; cy=&quot;190&quot; r=&quot;130&quot; fill=&quot;none&quot; stroke=&quot;url(#gb)&quot; stroke-width=&quot;20&quot; filter=&quot;url(#gl)&quot; opacity=&quot;.55&quot;/><circle cx=&quot;450&quot; cy=&quot;190&quot; r=&quot;130&quot; fill=&quot;none&quot; stroke=&quot;url(#gb)&quot; stroke-width=&quot;8&quot;/></g>
+</svg></body></html>"></iframe>
+<h1 data-build-in="rise 1 auto" style="position:absolute;left:128px;top:570px;width:1664px;font-family:'Inter Tight', Arial, sans-serif;font-size:120px;font-weight:700;line-height:1.05;letter-spacing:-5px;color:#F5F5F7;text-align:center;background:linear-gradient(180deg, #FFFFFF 0%, #F5F5F7 45%, #9A9AA0 100%);background-clip:text;-webkit-text-fill-color:transparent">Дякую за увагу</h1>
+<p data-build-in="rise 2 auto" style="position:absolute;left:128px;top:718px;width:1664px;font-family:'Inter Tight', Arial, sans-serif;font-size:38px;font-weight:600;letter-spacing:-1px;color:#FFD60A;text-align:center;background:linear-gradient(90deg, #FF9F0A 0%, #FFD60A 30%, #64D2FF 70%, #0A84FF 100%);background-clip:text;-webkit-text-fill-color:transparent">Найкраще рішення конфлікту — те, яке сторони знаходять разом.</p>
+<p data-build-in="fade 3 auto" style="position:absolute;left:128px;top:812px;width:1664px;font-size:30px;font-weight:600;color:#F5F5F7;text-align:center">Дар’я Перепелиця</p>
+<p data-build-in="fade 4 auto" style="position:absolute;left:128px;top:860px;width:1664px;font-size:24px;color:#86868B;text-align:center">Запитання та обговорення</p>
+
+</section>
+</div>
+<div id="bar"></div>
+<div id="hint">← → або клік · F — повний екран</div>
+<script>
+const S=[...document.querySelectorAll('section')];let i=0;
+S.forEach(s=>{s.querySelectorAll('[data-build-in]').forEach(e=>{const [t,o]=e.dataset.buildIn.split(' ');e.style.setProperty('--anim',t);e.style.setProperty('--d',((+o||1)-1)*0.22+0.15+'s')})});
+function fit(){const st=document.getElementById('stage'),k=Math.min(innerWidth/1920,innerHeight/1080);st.style.transform='scale('+k+') translate(-50%,-50%)'}
+function go(n){i=Math.max(0,Math.min(S.length-1,n));S.forEach((s,j)=>s.classList.toggle('on',j===i));document.getElementById('bar').style.width=((i+1)/S.length*100)+'%';history.replaceState(null,'','#'+(i+1))}
+addEventListener('resize',fit);
+addEventListener('keydown',e=>{if(['ArrowRight','ArrowDown','PageDown',' ','Enter'].includes(e.key)){e.preventDefault();go(i+1)}if(['ArrowLeft','ArrowUp','PageUp','Backspace'].includes(e.key)){e.preventDefault();go(i-1)}if(e.key==='Home')go(0);if(e.key==='End')go(S.length-1);if(e.key==='f')document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen()});
+addEventListener('click',e=>go(e.clientX<innerWidth/3?i-1:i+1));
+let tx=null;addEventListener('touchstart',e=>tx=e.touches[0].clientX);addEventListener('touchend',e=>{if(tx===null)return;const dx=e.changedTouches[0].clientX-tx;if(Math.abs(dx)>40)go(dx<0?i+1:i-1);tx=null});
+fit();go((parseInt(location.hash.slice(1))||1)-1);</script>
+</body>
+</html>

@@ -220,7 +220,7 @@ local function commander(folder: Folder, position: Vector3, look: Vector3)
 	local tag = Instance.new("BillboardGui")
 	tag.Size = UDim2.fromOffset(200, 40)
 	tag.StudsOffset = Vector3.new(0, holder.Size.Y / 2 + 1, 0)
-	tag.MaxDistance = 60
+	tag.MaxDistance = 30
 	local label = Instance.new("TextLabel")
 	label.Size = UDim2.fromScale(1, 1)
 	label.BackgroundTransparency = 1

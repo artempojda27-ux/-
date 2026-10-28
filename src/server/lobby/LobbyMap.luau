@@ -31,10 +31,12 @@ end
 local function addLabel(pad: BasePart, text: string)
 	local gui = Instance.new("BillboardGui")
 	gui.Name = "Label"
-	gui.Size = UDim2.fromOffset(220, 70)
+	-- подпись видна только вблизи и прячется за предметами: иначе названия порталов и машин
+	-- налезают друг на друга через весь Штаб (так было на планшете)
+	gui.Size = UDim2.fromOffset(170, 52)
 	gui.StudsOffset = Vector3.new(0, 7, 0)
-	gui.AlwaysOnTop = true
-	gui.MaxDistance = 120
+	gui.AlwaysOnTop = false
+	gui.MaxDistance = 40
 
 	local label = Instance.new("TextLabel")
 	label.Name = "Text"

@@ -58,7 +58,8 @@ local countdownLabel = UI.label({
 -- Панель отряда справа
 local panel = UI.panel({
 	AnchorPoint = Vector2.new(1, 0.5),
-	Position = UDim2.new(1, -20, 0.5, 0),
+	-- на телефоне и планшете справа внизу кнопка прыжка Roblox — сдвигаем панель левее и выше, чтобы «СТАРТ» не был под ней
+	Position = if UI.isTouch then UDim2.new(1, -130, 0.5, -20) else UDim2.new(1, -20, 0.5, 0),
 	Size = UDim2.fromOffset(300, 468),
 	Visible = false,
 	Parent = gui,

@@ -158,6 +158,54 @@
           "StudsPerTile": 12,
           "MaterialPattern": "Organic"
         }
+      },
+      "IskCrystal": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "Marble",
+          "ColorMap": "rbxassetid://72421725733108",
+          "NormalMap": "rbxassetid://140149038823015",
+          "RoughnessMap": "rbxassetid://116012568801788",
+          "MetalnessMap": "rbxassetid://105907879800446",
+          "StudsPerTile": 12,
+          "MaterialPattern": "Organic"
+        }
+      },
+      "IskPaper": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "Plaster",
+          "ColorMap": "rbxassetid://103894597080463",
+          "NormalMap": "rbxassetid://83607964609952",
+          "RoughnessMap": "rbxassetid://129794858437189",
+          "MetalnessMap": "rbxassetid://103128991203474",
+          "StudsPerTile": 16,
+          "MaterialPattern": "Regular"
+        }
+      },
+      "IskObsidian": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "Basalt",
+          "ColorMap": "rbxassetid://99229355463167",
+          "NormalMap": "rbxassetid://111223341487289",
+          "RoughnessMap": "rbxassetid://75992575212495",
+          "MetalnessMap": "rbxassetid://79095356284114",
+          "StudsPerTile": 14,
+          "MaterialPattern": "Regular"
+        }
+      },
+      "IskMirror": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "CeramicTiles",
+          "ColorMap": "rbxassetid://82083097637134",
+          "NormalMap": "rbxassetid://91621529458547",
+          "RoughnessMap": "rbxassetid://119099283075822",
+          "MetalnessMap": "rbxassetid://134202949951903",
+          "StudsPerTile": 10,
+          "MaterialPattern": "Regular"
+        }
       }
     }
   }

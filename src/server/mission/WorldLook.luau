@@ -338,8 +338,9 @@ local function applyMonolith(map: Instance?)
 	setLighting({
 		ClockTime = 0,
 		Brightness = 1,
-		Ambient = Color3.new(0.16, 0.16, 0.18),
-		OutdoorAmbient = Color3.new(0.26, 0.26, 0.3),
+		-- чуть светлее чистой тьмы: иначе гравировки обсидианового пола (SurfaceLook) не видны
+		Ambient = Color3.new(0.3, 0.3, 0.34),
+		OutdoorAmbient = Color3.new(0.4, 0.4, 0.46),
 		ExposureCompensation = 0.3,
 	}, {
 		Color = Color3.new(0.02, 0.02, 0.03),

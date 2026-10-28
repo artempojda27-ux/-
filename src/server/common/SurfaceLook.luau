@@ -3,14 +3,19 @@
 -- и световые эффекты улиц.
 --   Материалы — MaterialVariant в MaterialService (заданы в *.project.json, текстуры сгенерированы в Studio):
 --     IskAsphalt — мокрый асфальт с бликами луж, IskTiles — плитка тротуара со светящимися швами,
---     IskPanels — металлическая палуба с болтами, IskTempleStone — камень храма с мхом и лепестками.
+--     IskPanels — металлическая палуба с болтами, IskTempleStone — камень храма с мхом и лепестками,
+--     IskMirror — треснутая красная зеркальная плитка, IskCrystal — кристальный пол с жилками,
+--     IskPaper — бумага с карандашной сеткой (Стёртый), IskObsidian — обсидиан с белыми гравировками (Монолит).
 --   Фонари: конус света вниз (Beam) и тёплое пятно на асфальте — как в дождливом ночном городе.
 --   Лужи: тёмные зеркальные пятна на дороге, в них отражаются неон и фонари.
 
--- Какие материалы у мира: дорога, тротуар (nil — не трогать: у мира своя задумка — стекло, гипс)
+-- Какие материалы у мира: дорога и тротуар (Puddles — лужи после дождя)
 local WORLD_SURFACES: { [string]: { Ground: { string }?, Sidewalk: { string }?, Puddles: boolean? } } = {
 	Neon = { Ground = { "Asphalt", "IskAsphalt" }, Sidewalk = { "CeramicTiles", "IskTiles" }, Puddles = true },
-	Mirror = { Ground = { "Asphalt", "IskAsphalt" }, Sidewalk = { "CeramicTiles", "IskTiles" }, Puddles = true },
+	Mirror = { Ground = { "Asphalt", "IskAsphalt" }, Sidewalk = { "CeramicTiles", "IskMirror" }, Puddles = true },
+	Crystal = { Ground = { "Marble", "IskCrystal" }, Sidewalk = { "Marble", "IskCrystal" } },
+	Erased = { Ground = { "Plaster", "IskPaper" }, Sidewalk = { "Plaster", "IskPaper" } },
+	Monolith = { Ground = { "Basalt", "IskObsidian" }, Sidewalk = { "Basalt", "IskObsidian" } },
 	Temple = { Ground = { "Cobblestone", "IskTempleStone" }, Sidewalk = { "Cobblestone", "IskTempleStone" } },
 	Core = { Ground = { "DiamondPlate", "IskPanels" }, Sidewalk = { "CeramicTiles", "IskTiles" } },
 }
@@ -26,7 +31,7 @@ local function setMaterial(part: BasePart, spec: { string })
 	part.Material = (Enum.Material :: any)[spec[1]]
 	part.MaterialVariant = spec[2]
 	local h, sat, v = part.Color:ToHSV()
-	part.Color = Color3.fromHSV(h, math.min(sat, 0.25), math.max(v, 0.48))
+	part.Color = Color3.fromHSV(h, math.min(sat, 0.25), math.max(v, 0.58))
 end
 
 local function part(props: { [string]: any }): Part

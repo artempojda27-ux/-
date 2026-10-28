@@ -3,6 +3,8 @@
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
 
 local UI = {}
 
@@ -29,14 +31,33 @@ function UI.new(className: string, props: { [string]: any }?): any
 	return instance
 end
 
+-- Телефон или планшет без клавиатуры: показываем экранные кнопки вместо подсказок про клавиши
+UI.isTouch = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+
+-- Интерфейс рассчитан на экран 1280×720; на маленьком экране (телефон) всё уменьшается пропорционально
+local function fitScale(scale: UIScale)
+	local camera = Workspace.CurrentCamera
+	local viewport = if camera then camera.ViewportSize else Vector2.new(1280, 720)
+	scale.Scale = math.clamp(math.min(viewport.X / 1280, viewport.Y / 720) * 1.15, 0.55, 1)
+end
+
 function UI.screen(name: string): ScreenGui
 	local player = Players.LocalPlayer
-	return UI.new("ScreenGui", {
+	local gui = UI.new("ScreenGui", {
 		Name = name,
 		ResetOnSpawn = false,
 		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 		Parent = player:WaitForChild("PlayerGui"),
 	})
+	local scale = UI.new("UIScale", { Parent = gui })
+	fitScale(scale)
+	local camera = Workspace.CurrentCamera
+	if camera then
+		camera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+			fitScale(scale)
+		end)
+	end
+	return gui
 end
 
 function UI.panel(props: { [string]: any }): Frame
@@ -68,6 +89,14 @@ function UI.button(props: { [string]: any }, onClick: () -> ()): TextButton
 	UI.new("UICorner", { CornerRadius = UDim.new(0, 8), Parent = button })
 	button.Activated:Connect(onClick)
 	return button
+end
+
+-- Круглая кнопка (на телефоне): у кнопки уже есть скругление — делаем его полным
+function UI.round(button: GuiObject)
+	local corner = button:FindFirstChildOfClass("UICorner")
+	if corner then
+		corner.CornerRadius = UDim.new(1, 0)
+	end
 end
 
 -- Всплывающие сообщения сверху экрана

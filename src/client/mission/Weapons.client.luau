@@ -1,5 +1,7 @@
 --!strict
 -- Стрельба игрока: клавиши 1–4 — выбор оружия, левая кнопка мыши — огонь, R — перезарядка.
+-- На телефоне: большая кнопка «ОГОНЬ» (зажать — автомат стреляет очередью), «R» — перезарядка,
+-- целятся центром экрана (там прицел), оружие выбирают нажатием на слот внизу.
 -- Выстрел рисуется сразу, а попадание и урон считает сервер (WeaponService).
 
 local Players = game:GetService("Players")
@@ -12,6 +14,7 @@ local Workspace = game:GetService("Workspace")
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Weapons = require(ReplicatedStorage.Shared.Weapons)
 local Hud = require(script.Parent:WaitForChild("Hud"))
+local UI = require(script.Parent.Parent:WaitForChild("Common"):WaitForChild("UI"))
 
 local AIM_DISTANCE = 1000
 
@@ -130,8 +133,8 @@ local function fire()
 
 	-- Куда смотрит курсор: луч из камеры через точку под мышью
 	local camera = Workspace.CurrentCamera
-	local mouse = UserInputService:GetMouseLocation()
-	local aimRay = camera:ViewportPointToRay(mouse.X, mouse.Y)
+	local aimPoint = if UI.isTouch then camera.ViewportSize / 2 else UserInputService:GetMouseLocation()
+	local aimRay = camera:ViewportPointToRay(aimPoint.X, aimPoint.Y)
 	local params = playerFilter()
 	local aimHit = Workspace:Raycast(aimRay.Origin, aimRay.Direction * AIM_DISTANCE, params)
 	local target = if aimHit then aimHit.Position else aimRay.Origin + aimRay.Direction * AIM_DISTANCE
@@ -196,6 +199,44 @@ RunService.RenderStepped:Connect(function()
 end)
 
 Hud.onSlotClicked(equip)
+
+-- Кнопки для телефона: огонь (зажимать) и перезарядка
+if UI.isTouch then
+	local touchGui = UI.screen("TouchCombatUI")
+	local fireButton = UI.button({
+		Name = "FireButton",
+		AnchorPoint = Vector2.new(1, 1),
+		-- левее стандартной кнопки прыжка Roblox (она в самом углу справа)
+		Position = UDim2.new(1, -200, 1, -24),
+		Size = UDim2.fromOffset(104, 104),
+		Text = "ОГОНЬ",
+		TextSize = 20,
+		BackgroundColor3 = UI.Colors.Glitch,
+		TextColor3 = UI.Colors.Text,
+		Parent = touchGui,
+	}, function() end)
+	UI.round(fireButton)
+	fireButton.MouseButton1Down:Connect(function()
+		triggerHeld = true
+		fire()
+	end)
+	fireButton.MouseButton1Up:Connect(function()
+		triggerHeld = false
+	end)
+	fireButton.MouseLeave:Connect(function()
+		triggerHeld = false
+	end)
+	local reloadButton = UI.button({
+		Name = "ReloadButton",
+		AnchorPoint = Vector2.new(1, 1),
+		Position = UDim2.new(1, -224, 1, -142),
+		Size = UDim2.fromOffset(56, 56),
+		Text = "R",
+		TextSize = 22,
+		Parent = touchGui,
+	}, requestReload)
+	UI.round(reloadButton)
+end
 
 -- Сервер — главный: его данные о патронах заменяют наши
 Remotes.get("WeaponState").OnClientEvent:Connect(function(state)

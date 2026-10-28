@@ -551,7 +551,14 @@ end
 
 -- Помеха мира в особом задании (раз в несколько секунд):
 --   "Fire" — дракон дышит огнём: под игроком красный круг, через секунду туда бьёт пламя;
---   "Eye" — красный луч глаза Нуля: кто остался в круге, поднимает тревогу (враги рядом)
+--   "Eye" — красный луч глаза Нуля: кто остался в круге, поднимает тревогу (враги рядом);
+--   "Shards" — с неба падают кристаллы (как огонь, только фиолетовый и быстрее);
+--   "Overload" — Ядро бьёт столбом тока (как огонь, бело-голубой, шире)
+local STRIKES: { [string]: { Color: Color3, Radius: number, Delay: number, Damage: number } } = {
+	Fire = { Color = Color3.fromRGB(255, 120, 30), Radius = 7, Delay = 1.3, Damage = 30 },
+	Shards = { Color = Color3.fromRGB(190, 120, 255), Radius = 6, Delay = 1, Damage = 25 },
+	Overload = { Color = Color3.fromRGB(150, 220, 255), Radius = 9, Delay = 1.4, Damage = 35 },
+}
 local function hazardStrike(kind: string, damageMultiplier: number, healthMultiplier: number, random: Random)
 	local targets = livingRoots()
 	if #targets == 0 then
@@ -559,8 +566,9 @@ local function hazardStrike(kind: string, damageMultiplier: number, healthMultip
 	end
 	local target = targets[random:NextInteger(1, #targets)]
 	local spot = groundAt(target.Root.Position.X, target.Root.Position.Z)
-	local color = if kind == "Fire" then Color3.fromRGB(255, 120, 30) else Color3.fromRGB(255, 30, 40)
-	local radius = if kind == "Fire" then 7 else 9
+	local strike = STRIKES[kind]
+	local color = if strike then strike.Color else Color3.fromRGB(255, 30, 40)
+	local radius = if strike then strike.Radius else 9
 	local marker = hazardPart({
 		Shape = Enum.PartType.Cylinder,
 		Size = Vector3.new(0.12, radius * 2, radius * 2),
@@ -578,19 +586,19 @@ local function hazardStrike(kind: string, damageMultiplier: number, healthMultip
 			Transparency = 0.3,
 		})
 	end
-	task.wait(1.3)
+	task.wait(if strike then strike.Delay else 1.3)
 	marker:Destroy()
 	local hit = false
 	for _, other in livingRoots() do
 		local offset = other.Root.Position - spot
 		if Vector3.new(offset.X, 0, offset.Z).Magnitude < radius then
 			hit = true
-			if kind == "Fire" then
-				other.Humanoid:TakeDamage(30 * damageMultiplier)
+			if strike then
+				other.Humanoid:TakeDamage(strike.Damage * damageMultiplier)
 			end
 		end
 	end
-	if kind == "Fire" then
+	if strike then
 		local flame = hazardPart({
 			Shape = Enum.PartType.Cylinder,
 			Size = Vector3.new(80, radius * 1.6, radius * 1.6),

@@ -11,6 +11,7 @@ local Workspace = game:GetService("Workspace")
 
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Weapons = require(ReplicatedStorage.Shared.Weapons)
+local AbilityService = require(script.Parent.AbilityService)
 local BoostEffects = require(script.Parent.BoostEffects)
 
 local MAX_ORIGIN_OFFSET = 10 -- насколько точка выстрела может отличаться от головы на сервере
@@ -225,6 +226,7 @@ local function onFire(player: Player, weaponId: any, origin: any, directions: an
 				hitAny = true
 				if enemyHumanoid.Health <= 0 then
 					killed = true
+					AbilityService.addKill(player) -- убийства заряжают ультимейт
 				end
 			end
 		end

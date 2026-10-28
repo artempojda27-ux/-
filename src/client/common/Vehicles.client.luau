@@ -37,7 +37,7 @@ local jumpButton = UI.button({
 }, function()
 	vehicleAction:FireServer("Flip")
 end)
-UI.new("UICorner", { CornerRadius = UDim.new(1, 0), Parent = jumpButton })
+UI.round(jumpButton)
 local nitroButton = UI.button({
 	Name = "NitroButton",
 	AnchorPoint = Vector2.new(1, 1),
@@ -50,7 +50,7 @@ local nitroButton = UI.button({
 }, function()
 	vehicleAction:FireServer("Nitro")
 end)
-UI.new("UICorner", { CornerRadius = UDim.new(1, 0), Parent = nitroButton })
+UI.round(nitroButton)
 
 local driving = false
 

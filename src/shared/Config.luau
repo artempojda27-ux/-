@@ -276,7 +276,38 @@ Config.HuntFragments = 5
 -- Recolor — с каждой точкой мир возвращает краски (обесцвеченный Стёртый мир)
 export type TargetSpec = { Count: number, Action: string, Object: string, Color: Color3, DoneColor: Color3, Hold: number, Recolor: boolean? }
 Config.WorldMissions = {
+	Neon = {
+		[3] = {
+			Kind = "Targets", Name = "Перезапуск генераторов",
+			Hint = "Вирус отключил генераторы города. Запустите все пять — и сеть снова оживёт.",
+			Target = { Count = 5, Action = "Запустить", Object = "Генератор", Color = Color3.fromRGB(40, 50, 60), DoneColor = Color3.fromRGB(0, 255, 200), Hold = 2 },
+		},
+	},
+	Crystal = {
+		[2] = {
+			Kind = "Targets", Name = "Очистить грани", Hazard = "Shards",
+			Hint = "Вирус пророс в грани Кристалла. Очистите четыре — и берегитесь падающих осколков!",
+			Target = { Count = 4, Action = "Очистить", Object = "Грань", Color = Color3.fromRGB(120, 255, 90), DoneColor = Color3.fromRGB(190, 150, 255), Hold = 2.5 },
+		},
+		[3] = {
+			Kind = "Targets", Name = "Семь граней", Hazard = "Shards",
+			Hint = "Соберите семь граней — по одной на каждый мир. Тогда Кристалл выдержит удар Нуля.",
+			Target = { Count = 7, Action = "Собрать", Object = "Грань мира", Color = Color3.fromRGB(90, 80, 110), DoneColor = Color3.fromRGB(255, 160, 225), Hold = 1.5 },
+		},
+	},
+	Core = {
+		[2] = {
+			Kind = "Targets", Name = "Отключить защиту Ядра", Hazard = "Overload",
+			Hint = "Ядро защищают четыре узла. Отключите их, пока Ядро бьёт током. Это последний шаг к Нулю.",
+			Target = { Count = 4, Action = "Отключить", Object = "Узел защиты", Color = Color3.fromRGB(150, 220, 255), DoneColor = Color3.fromRGB(30, 30, 40), Hold = 3 },
+		},
+	},
 	Mirror = {
+		[2] = {
+			Kind = "Targets", Name = "Разбить зеркала",
+			Hint = "Нуль смотрит на нас через четыре больших зеркала. Разбейте их — и он ослепнет в этом городе.",
+			Target = { Count = 4, Action = "Разбить", Object = "Зеркало", Color = Color3.fromRGB(255, 190, 200), DoneColor = Color3.fromRGB(60, 10, 20), Hold = 1.5 },
+		},
 		[3] = { Kind = "RealClone", Name = "Настоящая Вега", Hint = "Среди нас копии Нуля. У подделок контур чуть розовее. Проверь каждую — но осторожно." },
 	},
 	Temple = {
@@ -891,6 +922,16 @@ function Config.getSkin(key: string?): Skin?
 	end
 	return nil
 end
+
+-- Способности героя (у всех одинаковые, работают в Миссии; урон считает сервер — AbilityService):
+--   Импульс (Q) — волна кода вокруг героя: урон и отбрасывание врагов рядом;
+--   Рывок (F) — быстрый бросок вперёд (сквозь толпу, на полсекунды неуязвим);
+--   Перезапись (G) — ультимейт: заряжается убийствами, стирает врагов вокруг огромной вспышкой.
+Config.Abilities = {
+	Pulse = { Key = "Q", Name = "Импульс", Cooldown = 8, Radius = 16, Damage = 60, Knockback = 70 },
+	Dash = { Key = "F", Name = "Рывок", Cooldown = 5, Speed = 110, Duration = 0.25, Shield = 0.5 },
+	Ultimate = { Key = "G", Name = "Перезапись", Charge = 12, Radius = 45, Damage = 400 }, -- Charge — убийств до готовности
+}
 
 -- В Studio считаем, что все бусты куплены, а разовые выдаются бесплатно:
 -- так их можно проверить до публикации. В опубликованной игре это не работает.

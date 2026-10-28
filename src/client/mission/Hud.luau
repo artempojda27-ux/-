@@ -149,6 +149,27 @@ local hitMarker = UI.label({
 	Parent = gui,
 })
 
+-- Телефон: внизу слева — джойстик, справа — кнопки прыжка и огня; здоровье и патроны уходят наверх
+if UI.isTouch then
+	healthPanel.AnchorPoint = Vector2.new(0, 0)
+	healthPanel.Position = UDim2.fromOffset(12, 8)
+	ammoPanel.AnchorPoint = Vector2.new(1, 0)
+	ammoPanel.Position = UDim2.new(1, -12, 0, 8)
+	-- прицел в центре экрана: стреляют туда, куда смотрит камера
+	local cross = UI.label({
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.fromOffset(30, 30),
+		Font = Enum.Font.GothamBold,
+		TextSize = 26,
+		Text = "+",
+		TextColor3 = UI.Colors.Accent,
+		TextStrokeTransparency = 0.4,
+		Parent = gui,
+	})
+	cross.Name = "Crosshair"
+end
+
 function Hud.onSlotClicked(callback: (weaponId: string) -> ())
 	onSlotClicked = callback
 end
@@ -185,8 +206,12 @@ function Hud.setWeapon(weapon: Weapons.Weapon, ammo: number?, reloading: boolean
 end
 
 function Hud.showHit(killed: boolean)
-	local mouse = UserInputService:GetMouseLocation() - GuiService:GetGuiInset()
-	hitMarker.Position = UDim2.fromOffset(mouse.X, mouse.Y)
+	if UI.isTouch then
+		hitMarker.Position = UDim2.fromScale(0.5, 0.5) -- на телефоне целятся центром экрана
+	else
+		local mouse = UserInputService:GetMouseLocation() - GuiService:GetGuiInset()
+		hitMarker.Position = UDim2.fromOffset(mouse.X, mouse.Y)
+	end
 	hitMarker.TextColor3 = if killed then UI.Colors.Glitch else UI.Colors.Accent
 	hitMarker.TextTransparency = 0
 	TweenService:Create(hitMarker, TweenInfo.new(0.25), { TextTransparency = 1 }):Play()

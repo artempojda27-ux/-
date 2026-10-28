@@ -674,8 +674,8 @@ Config.Vehicles = {
 		Color = Color3.fromRGB(200, 20, 50),
 		GlowColor = Color3.fromRGB(255, 70, 90),
 		AccentColor = Color3.fromRGB(20, 20, 26),
-		ShellAsset = 119781525088819,
-		ShellScale = 1.25,
+		ShellAsset = 75884867346816, -- перегенерирован 2026-10-28: у старого кузова не было видно задних колёс
+		ShellScale = 1.35,
 	},
 	Prism = {
 		Id = "Prism",

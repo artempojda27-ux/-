@@ -273,7 +273,8 @@ Config.HuntFragments = 5
 --   "RealClone" — среди клонов Веги найти настоящую (подделки Нуля взрываются врагами);
 --   "Targets" — активировать точки по городу (Target — что это за точки), пока мир мешает (Hazard):
 --     "Fire" — огонь дракона бьёт в отмеченные круги, "Eye" — красный луч глаза ищет отряд.
-export type TargetSpec = { Count: number, Action: string, Object: string, Color: Color3, DoneColor: Color3, Hold: number }
+-- Recolor — с каждой точкой мир возвращает краски (обесцвеченный Стёртый мир)
+export type TargetSpec = { Count: number, Action: string, Object: string, Color: Color3, DoneColor: Color3, Hold: number, Recolor: boolean? }
 Config.WorldMissions = {
 	Mirror = {
 		[3] = { Kind = "RealClone", Name = "Настоящая Вега", Hint = "Среди нас копии Нуля. У подделок контур чуть розовее. Проверь каждую — но осторожно." },
@@ -289,7 +290,7 @@ Config.WorldMissions = {
 		[3] = {
 			Kind = "Targets", Name = "Вернуть цвета",
 			Hint = "Здесь всё стёрто. В городе остались пять узлов цвета — восстановите их, и мир вспомнит себя.",
-			Target = { Count = 5, Action = "Восстановить", Object = "Узел цвета", Color = Color3.fromRGB(200, 200, 205), DoneColor = Color3.fromRGB(255, 80, 180), Hold = 3 },
+			Target = { Count = 5, Action = "Восстановить", Object = "Узел цвета", Color = Color3.fromRGB(200, 200, 205), DoneColor = Color3.fromRGB(255, 80, 180), Hold = 3, Recolor = true },
 		},
 	},
 	Monolith = {

@@ -620,6 +620,13 @@ local function runTargets(mission: Config.Mission)
 	local healthMultiplier, damageMultiplier = enemyMultipliers()
 	local random = Random.new()
 	local done = 0
+	-- «Вернуть цвета»: насыщенность картинки растёт с каждой точкой (от серой до живой)
+	local correction = game:GetService("Lighting"):FindFirstChildOfClass("ColorCorrectionEffect")
+	local grey = if correction then correction:GetAttribute("BaseSaturation") or correction.Saturation else 0
+	if correction and spec.Recolor then
+		correction:SetAttribute("BaseSaturation", grey)
+		correction.Saturation = grey
+	end
 	local folder = Instance.new("Folder")
 	folder.Name = "MissionTargets"
 	folder.Parent = Workspace
@@ -672,6 +679,11 @@ local function runTargets(mission: Config.Mission)
 			light.Brightness = 3
 			light.Parent = cap
 			notifyAll(`{player.DisplayName}: {spec.Object} ({done}/{spec.Count})`)
+			if correction and spec.Recolor then
+				game:GetService("TweenService"):Create(correction, TweenInfo.new(2), {
+					Saturation = grey + (0.25 - grey) * done / spec.Count,
+				}):Play()
+			end
 			for _ = 1, 3 do
 				EnemyService.spawn(pickKind(2, random), groundAt(spot.X + random:NextNumber(-12, 12), spot.Z + random:NextNumber(-12, 12)),
 					healthMultiplier, damageMultiplier)

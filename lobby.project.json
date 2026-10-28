@@ -3,16 +3,26 @@
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {
-      "Shared": { "$path": "src/shared" }
+      "Shared": {
+        "$path": "src/shared"
+      }
     },
     "ServerScriptService": {
-      "Common": { "$path": "src/server/common" },
-      "Lobby": { "$path": "src/server/lobby" }
+      "Common": {
+        "$path": "src/server/common"
+      },
+      "Lobby": {
+        "$path": "src/server/lobby"
+      }
     },
     "StarterPlayer": {
       "StarterPlayerScripts": {
-        "Common": { "$path": "src/client/common" },
-        "Lobby": { "$path": "src/client/lobby" }
+        "Common": {
+          "$path": "src/client/common"
+        },
+        "Lobby": {
+          "$path": "src/client/lobby"
+        }
       }
     },
     "Lighting": {
@@ -21,8 +31,16 @@
         "Technology": "Future",
         "ClockTime": 17.8,
         "Brightness": 2.5,
-        "Ambient": [0.3, 0.28, 0.4],
-        "OutdoorAmbient": [0.55, 0.5, 0.7],
+        "Ambient": [
+          0.3,
+          0.28,
+          0.4
+        ],
+        "OutdoorAmbient": [
+          0.55,
+          0.5,
+          0.7
+        ],
         "ExposureCompensation": 0.6,
         "EnvironmentDiffuseScale": 0.6,
         "EnvironmentSpecularScale": 1,
@@ -40,8 +58,16 @@
         "$properties": {
           "Density": 0.3,
           "Offset": 0.2,
-          "Color": [0.4, 0.55, 0.75],
-          "Decay": [0.35, 0.2, 0.45],
+          "Color": [
+            0.4,
+            0.55,
+            0.75
+          ],
+          "Decay": [
+            0.35,
+            0.2,
+            0.45
+          ],
           "Glare": 0.6,
           "Haze": 1.5
         }
@@ -66,6 +92,57 @@
         "$properties": {
           "Contrast": 0.1,
           "Saturation": 0.15
+        }
+      }
+    },
+    "MaterialService": {
+      "$className": "MaterialService",
+      "IskAsphalt": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "Asphalt",
+          "ColorMap": "rbxassetid://105706094302814",
+          "NormalMap": "rbxassetid://91531154905908",
+          "RoughnessMap": "rbxassetid://80375855276427",
+          "MetalnessMap": "rbxassetid://101998953104653",
+          "StudsPerTile": 14,
+          "MaterialPattern": "Organic"
+        }
+      },
+      "IskPanels": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "DiamondPlate",
+          "ColorMap": "rbxassetid://133512951141455",
+          "NormalMap": "rbxassetid://113014018822189",
+          "RoughnessMap": "rbxassetid://85070007193169",
+          "MetalnessMap": "rbxassetid://77417231758002",
+          "StudsPerTile": 12,
+          "MaterialPattern": "Regular"
+        }
+      },
+      "IskTiles": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "CeramicTiles",
+          "ColorMap": "rbxassetid://114719934145714",
+          "NormalMap": "rbxassetid://98625409836193",
+          "RoughnessMap": "rbxassetid://118795515549834",
+          "MetalnessMap": "rbxassetid://100164154343612",
+          "StudsPerTile": 10,
+          "MaterialPattern": "Regular"
+        }
+      },
+      "IskTempleStone": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "Cobblestone",
+          "ColorMap": "rbxassetid://106393034021791",
+          "NormalMap": "rbxassetid://119793121215913",
+          "RoughnessMap": "rbxassetid://113616263872270",
+          "MetalnessMap": "rbxassetid://74446149202493",
+          "StudsPerTile": 12,
+          "MaterialPattern": "Organic"
         }
       }
     }

@@ -24,6 +24,7 @@ local VehicleService = require(ServerScriptService.Common.VehicleService)
 local BossService = require(script.Parent.BossService)
 local CitySkins = require(script.Parent.CitySkins)
 local CityLife = require(ServerScriptService.Common.CityLife)
+local SurfaceLook = require(ServerScriptService.Common.SurfaceLook)
 local CodeLeaks = require(script.Parent.CodeLeaks)
 local MemoryShards = require(script.Parent.MemoryShards)
 local VegaClone = require(script.Parent.VegaClone)
@@ -1100,6 +1101,7 @@ function MissionService.start()
 		end
 		WorldLook.apply(worldId, map)
 		WorldDetails.apply(worldId, map)
+		SurfaceLook.applyCity(worldId, map) -- после WorldDetails: тот красит землю Ядра в стекло
 		CodeLeaks.apply(worldId, map)
 		-- письмо-зацепка этого задания и клон Веги-подсказчица у площади
 		-- (в бою с Нулём письмо — значок Кая — выпадает из него; в «Удержать канал» клон появляется в бою)

@@ -15,6 +15,7 @@ local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local CityLife = require(ServerScriptService.Common.CityLife)
+local SurfaceLook = require(ServerScriptService.Common.SurfaceLook)
 
 local CYAN = Color3.fromRGB(0, 255, 200)
 local FLOOR_Y = 1
@@ -304,6 +305,7 @@ end
 function LobbyLook.apply(map: Instance)
 	local folder = Instance.new("Folder")
 	folder.Name = "LobbyLook"
+	SurfaceLook.applyLobby(map)
 	floorGrid(folder)
 	skyline(folder)
 	holoTable(folder, Vector3.new(0, FLOOR_Y, 2))

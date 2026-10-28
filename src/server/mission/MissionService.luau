@@ -602,7 +602,9 @@ local function hazardStrike(kind: string, damageMultiplier: number, healthMultip
 		end)
 	elseif hit then
 		notifyAll("Глаз Нуля заметил отряд! Тревога!")
-		for _ = 1, 4 do
+		-- маленькому отряду тревога зовёт меньше врагов: одному — двоих, двоим — троих, полному — четверых
+		local alarm = math.clamp(#Players:GetPlayers() + 1, 2, 4)
+		for _ = 1, alarm do
 			EnemyService.spawn(pickKind(3, random), groundAt(spot.X + random:NextNumber(-14, 14), spot.Z + random:NextNumber(-14, 14)),
 				healthMultiplier, damageMultiplier)
 		end

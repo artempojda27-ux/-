@@ -214,7 +214,7 @@ local function enemyMultipliers(): (number, number, number)
 	-- каждое следующее задание в мире тяжелее (Config.Missions[].Power)
 	local power = if chapterKind() == "Story" then currentMission().Power else 1
 	local health = squad.Health * (if difficulty then difficulty.EnemyHealth else 1) * world.EnemyHealth * power
-	local damage = (if difficulty then difficulty.EnemyDamage else 1) * world.EnemyDamage * power
+	local damage = (if difficulty then difficulty.EnemyDamage else 1) * world.EnemyDamage * power * (squad.Damage or 1)
 	return health, damage, squad.Count
 end
 
@@ -256,7 +256,10 @@ local function runStory()
 		MissionMap.setNodeActive(node, true)
 	end
 	setState("Combat")
-	local healthMultiplier, damageMultiplier = enemyMultipliers()
+	local healthMultiplier, damageMultiplier, countMultiplier = enemyMultipliers()
+	-- маленькому отряду меньше врагов одновременно и они реже лезут
+	local maxEnemies = math.max(4, math.floor(STORY_MAX_ENEMIES * countMultiplier))
+	local spawnInterval = STORY_SPAWN_INTERVAL / countMultiplier
 	local random = Random.new()
 	local lastSpawn = 0
 
@@ -288,7 +291,7 @@ local function runStory()
 			doubleTried = true
 			DoppelgangerService.spawn()
 		end
-		if os.clock() - lastSpawn >= STORY_SPAWN_INTERVAL and EnemyService.aliveCount() < STORY_MAX_ENEMIES then
+		if os.clock() - lastSpawn >= spawnInterval and EnemyService.aliveCount() < maxEnemies then
 			lastSpawn = os.clock()
 			for _, node in nodes do
 				if not closed[node] then

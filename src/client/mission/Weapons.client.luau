@@ -1,9 +1,11 @@
 --!strict
 -- Стрельба игрока: клавиши 1–4 — выбор оружия, левая кнопка мыши — огонь, R — перезарядка.
 -- На телефоне: большая кнопка «ОГОНЬ» (зажать — автомат стреляет очередью), «R» — перезарядка,
--- целятся центром экрана (там прицел), оружие выбирают нажатием на слот внизу.
+-- целятся центром экрана (там прицел) с помощью прицеливания: пуля летит в ближайшего к прицелу врага;
+-- оружие выбирают нажатием на слот внизу.
 -- Выстрел рисуется сразу, а попадание и урон считает сервер (WeaponService).
 
+local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -112,6 +114,37 @@ local function equip(weaponId: string)
 	weaponAction:FireServer("Equip", weaponId)
 end
 
+-- Помощь в прицеливании на телефоне: пальцем точно не навести, поэтому выстрел летит в ближайшего к прицелу
+-- видимого врага (в пределах круга вокруг центра экрана). Без врагов рядом — просто в центр экрана
+local ASSIST_RADIUS = 0.22 -- доля меньшей стороны экрана
+local function assistTarget(camera: Camera, origin: Vector3, params: RaycastParams, range: number): Vector3?
+	local viewport = camera.ViewportSize
+	local center = viewport / 2
+	local limit = math.min(viewport.X, viewport.Y) * ASSIST_RADIUS
+	local best: Vector3? = nil
+	local bestScore = math.huge
+	for _, enemy in CollectionService:GetTagged("Enemy") do
+		local root = enemy:FindFirstChild("HumanoidRootPart")
+		local humanoid = enemy:FindFirstChildOfClass("Humanoid")
+		if root and root:IsA("BasePart") and humanoid and humanoid.Health > 0 then
+			local point, onScreen = camera:WorldToViewportPoint(root.Position)
+			local distance = (root.Position - origin).Magnitude
+			if onScreen and distance <= range then
+				local offset = (Vector2.new(point.X, point.Y) - center).Magnitude
+				if offset <= limit then
+					local hit = Workspace:Raycast(origin, root.Position - origin, params)
+					local visible = not hit or hit.Instance:IsDescendantOf(enemy)
+					local score = offset + distance * 0.5 -- ближе к прицелу и ближе к герою — важнее
+					if visible and score < bestScore then
+						best, bestScore = root.Position, score
+					end
+				end
+			end
+		end
+	end
+	return best
+end
+
 local function fire()
 	local weapon = currentWeapon()
 	local now = os.clock()
@@ -140,6 +173,9 @@ local function fire()
 	local target = if aimHit then aimHit.Position else aimRay.Origin + aimRay.Direction * AIM_DISTANCE
 
 	local origin = head.Position
+	if UI.isTouch then
+		target = assistTarget(camera, origin, params, weapon.Range) or target
+	end
 	local aim = target - origin
 	if aim.Magnitude < 0.1 then
 		return

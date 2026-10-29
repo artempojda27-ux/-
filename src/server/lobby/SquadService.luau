@@ -321,14 +321,10 @@ local function broadcast()
 	end
 end
 
--- Сколько заданий в мире открыто лидеру: пройденные + следующее (в Studio — все)
-local function openMissions(player: Player?, worldId: string): number
-	if RunService:IsStudio() then
-		return #Config.Missions
-	end
-	local data = player and DataService.get(player)
-	local done = if data then data.WorldMissions[worldId] or 0 else 0
-	return math.clamp(done + 1, 1, #Config.Missions)
+-- Все задания открытого мира доступны сразу — можно выбрать, что по душе (после теста владельца: одно задание
+-- казалось «игра из одной миссии»). Следующий мир по-прежнему открывается, только когда пройдены все три.
+local function openMissions(_player: Player?, _worldId: string): number
+	return #Config.Missions
 end
 
 -- Следующее непройденное задание мира (или последнее, если всё пройдено)
@@ -394,9 +390,6 @@ local function onAction(player: Player, action: unknown, value: unknown)
 		local ids = {}
 		for index = 1, openMissions(player, squad.World) do
 			table.insert(ids, index)
-		end
-		if #ids < #Config.Missions and step == 1 and squad.Mission == ids[#ids] then
-			notify:FireClient(player, "Задания открываются по очереди: пройди текущее, чтобы открыть следующее.")
 		end
 		squad.Mission = cycle(ids, squad.Mission, step)
 	elseif action == "Mode" then

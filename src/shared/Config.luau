@@ -471,6 +471,8 @@ export type Difficulty = {
 }
 
 Config.Difficulties = {
+	-- первая — та, что стоит по умолчанию у нового отряда
+	{ Id = "Easy", Name = "Лёгкая", RewardMultiplier = 0.7, EnemyHealth = 0.7, EnemyDamage = 0.6 },
 	{ Id = "Normal", Name = "Обычная", RewardMultiplier = 1, EnemyHealth = 1, EnemyDamage = 1 },
 	{ Id = "Hard", Name = "Сложная", RewardMultiplier = 1.5, EnemyHealth = 1.5, EnemyDamage = 1.3 },
 	{ Id = "Nightmare", Name = "Кошмар", RewardMultiplier = 2.5, EnemyHealth = 2.2, EnemyDamage = 1.7 },
@@ -943,11 +945,12 @@ Config.SpeedBoostMultiplier = 1.5
 Config.BossRewardMultiplier = 3
 
 -- Множители врагов от числа игроков в отряде (пригодится в неделях 5–6)
+-- Одному и вдвоём заметно легче: враги слабее, бьют слабее и их меньше (после теста с телефона, 2026-10-29)
 Config.SquadScaling = {
-	[1] = { Health = 0.7, Count = 0.6 },
-	[2] = { Health = 0.85, Count = 0.8 },
-	[3] = { Health = 1.0, Count = 1.0 },
-	[4] = { Health = 1.15, Count = 1.2 },
+	[1] = { Health = 0.5, Count = 0.5, Damage = 0.6 },
+	[2] = { Health = 0.75, Count = 0.75, Damage = 0.8 },
+	[3] = { Health = 1.0, Count = 1.0, Damage = 1.0 },
+	[4] = { Health = 1.15, Count = 1.2, Damage = 1.1 },
 }
 
 function Config.getChapter(id: number): Chapter?

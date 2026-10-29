@@ -444,6 +444,59 @@ function VehicleService.spawnFor(player: Player, kindId: string, cf: CFrame): (M
 		LastNitro = 0,
 	}
 	applyTuning(player, model)
+
+	-- Кнопка «Сесть»: сиденья невидимые и спрятаны в кузове, на телефоне в них не попасть — сажаем по кнопке
+	-- (водитель первым, остальные — на свободные места)
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.Name = "Enter"
+	prompt.ActionText = "Сесть"
+	prompt.ObjectText = kind.Name
+	prompt.MaxActivationDistance = 14
+	prompt.RequiresLineOfSight = false
+	prompt.Parent = chassis
+	prompt.Triggered:Connect(function(rider)
+		local humanoid = rider.Character and rider.Character:FindFirstChildOfClass("Humanoid")
+		if not humanoid or humanoid.Health <= 0 or humanoid.SeatPart then
+			return
+		end
+		local seats: { Seat | VehicleSeat } = {}
+		for _, child in model:GetChildren() do
+			if (child:IsA("VehicleSeat") or child:IsA("Seat")) and not child.Occupant then
+				table.insert(seats, child)
+			end
+		end
+		table.sort(seats, function(a, b)
+			return a:IsA("VehicleSeat") and not b:IsA("VehicleSeat")
+		end)
+		if seats[1] then
+			seats[1]:Sit(humanoid)
+		end
+	end)
+	-- кнопка видна только тем, кто ещё не сидит в этой машине
+	local function refreshPrompt()
+		local free = false
+		for _, child in model:GetChildren() do
+			if (child:IsA("VehicleSeat") or child:IsA("Seat")) and not child.Occupant then
+				free = true
+			end
+		end
+		prompt.Enabled = free
+	end
+	for _, child in model:GetChildren() do
+		if child:IsA("VehicleSeat") or child:IsA("Seat") then
+			child:GetPropertyChangedSignal("Occupant"):Connect(refreshPrompt)
+		end
+	end
+
+	-- Тот, кто вызвал машину, сразу садится за руль
+	local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+	if humanoid and humanoid.Health > 0 and not humanoid.SeatPart and seat then
+		task.defer(function()
+			if seat.Parent and not seat.Occupant then
+				seat:Sit(humanoid)
+			end
+		end)
+	end
 	return model, nil
 end
 

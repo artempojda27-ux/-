@@ -28,6 +28,7 @@ local SurfaceLook = require(ServerScriptService.Common.SurfaceLook)
 local CodeLeaks = require(script.Parent.CodeLeaks)
 local MemoryShards = require(script.Parent.MemoryShards)
 local VegaClone = require(script.Parent.VegaClone)
+local SpecialMissions = require(script.Parent.SpecialMissions)
 local StoryService = require(ServerScriptService.Common.StoryService)
 local WorldDetails = require(script.Parent.WorldDetails)
 local WorldLook = require(script.Parent.WorldLook)
@@ -788,6 +789,34 @@ local function runRealClone()
 	DoppelgangerService.clear()
 end
 
+-- Паркур на небоскрёб или прятки от Стирателей (SpecialMissions)
+local function runSpecial(mission: Config.Mission)
+	setState("Combat")
+	local healthMultiplier, damageMultiplier = enemyMultipliers()
+	local accent = Workspace:GetAttribute("WorldAccent")
+	local ctx: SpecialMissions.Context = {
+		GroundAt = groundAt,
+		Notify = notifyAll,
+		Say = StoryService.say,
+		SetObjective = function(text, progress, total)
+			objectiveView = { Text = text, Progress = progress, Total = total }
+			sendAll()
+		end,
+		HealthMultiplier = healthMultiplier,
+		DamageMultiplier = damageMultiplier,
+		Color = if typeof(accent) == "Color3" then accent else Color3.fromRGB(0, 255, 200),
+	}
+	if mission.Kind == "Climb" then
+		SpecialMissions.climb(ctx, Workspace:FindFirstChild("MissionMap") :: Instance)
+	else
+		-- одному — два Стирателя, полному отряду — четыре
+		SpecialMissions.hide(ctx, math.clamp(#Players:GetPlayers() + 1, 2, 4), 5)
+	end
+	objectiveView = nil
+	EnemyService.clear()
+	DoppelgangerService.clear()
+end
+
 -- Одна волна. false, если отряд пал
 local function runWave(random: Random): boolean
 	local healthMultiplier, damageMultiplier, countMultiplier = enemyMultipliers()
@@ -1179,6 +1208,8 @@ function MissionService.start()
 					runTargets(currentMission())
 				elseif kind == "RealClone" then
 					runRealClone()
+				elseif kind == "Climb" or kind == "Hide" then
+					runSpecial(currentMission())
 				else
 					local skipNodes = RunService:IsStudio() and ServerScriptService:GetAttribute("TestBoss") == true and isBossFight()
 					if not skipNodes then

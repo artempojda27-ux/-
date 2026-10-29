@@ -234,6 +234,41 @@ RunService.RenderStepped:Connect(function()
 	end
 end)
 
+-- Телефон — как в мобильных шутерах: камера из-за правого плеча, герой всегда смотрит туда же, куда камера
+-- (джойстиком ходишь, пальцем справа целишься), и автоогонь — когда враг попадает в круг прицела, герой
+-- стреляет сам. Кнопка «ОГОНЬ» остаётся для стрельбы по своему желанию. В машине всё выключается.
+if UI.isTouch then
+	RunService.RenderStepped:Connect(function()
+		local character = player.Character
+		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+		local root = character and character:FindFirstChild("HumanoidRootPart")
+		if not humanoid or not root or not root:IsA("BasePart") then
+			return
+		end
+		-- в машине (SeatPart) не трогаем героя: поворот выдернул бы его из сиденья
+		local combat = humanoid.Health > 0 and not humanoid.Sit and humanoid.SeatPart == nil
+		humanoid.CameraOffset = if combat then Vector3.new(1.8, 0.6, 0) else Vector3.zero
+		humanoid.AutoRotate = not combat
+		if not combat then
+			return
+		end
+		local camera = Workspace.CurrentCamera
+		local look = camera.CFrame.LookVector
+		local flat = Vector3.new(look.X, 0, look.Z)
+		if flat.Magnitude > 0.1 then
+			root.CFrame = CFrame.lookAt(root.Position, root.Position + flat.Unit)
+		end
+		-- автоогонь по врагу в круге прицела
+		local head = character:FindFirstChild("Head")
+		if head and head:IsA("BasePart") then
+			local weapon = currentWeapon()
+			if assistTarget(camera, head.Position, playerFilter(), weapon.Range) then
+				fire()
+			end
+		end
+	end)
+end
+
 Hud.onSlotClicked(equip)
 
 -- Кнопки для телефона: огонь (зажимать) и перезарядка

@@ -162,14 +162,35 @@ local function buildObstacles(map: Model, length: number)
 		for _ = 1, random:NextInteger(1, 3) do
 			local x = random:NextNumber(-WIDTH / 2 + 6, WIDTH / 2 - 6)
 			local shiftZ = random:NextNumber(-40, 40)
-			part({
+			-- барьер должен быть виден издалека: светлый бетон, красно-белые неоновые полосы и маяк сверху
+			local width = random:NextInteger(6, 12)
+			local barrier = part({
 				Name = "Barrier",
-				Size = Vector3.new(random:NextInteger(6, 12), 4, 3),
+				Size = Vector3.new(width, 4, 3),
 				Position = Vector3.new(x, GROUND_Y + 2, z + shiftZ),
-				Color = Color3.fromRGB(70, 72, 82),
+				Color = Color3.fromRGB(210, 210, 220),
 				Material = Enum.Material.Concrete,
 				Parent = obstacles,
 			})
+			for i = 0, math.floor(width / 2) - 1 do
+				neon({
+					Size = Vector3.new(1, 3.6, 0.2),
+					CFrame = barrier.CFrame * CFrame.new(-width / 2 + 1 + i * 2, 0, 1.55) * CFrame.Angles(0, 0, math.rad(30)),
+					Color = Color3.fromRGB(255, 40, 60),
+					Parent = obstacles,
+				})
+			end
+			local lamp = neon({
+				Size = Vector3.new(width, 0.4, 0.4),
+				Position = barrier.Position + Vector3.new(0, 2.2, 0),
+				Color = Color3.fromRGB(255, 60, 60),
+				Parent = obstacles,
+			})
+			local glow = Instance.new("PointLight")
+			glow.Color = Color3.fromRGB(255, 50, 50)
+			glow.Range = 18
+			glow.Brightness = 2
+			glow.Parent = lamp
 		end
 		if random:NextNumber() < 0.45 then
 			-- Трамплин: поднимается по ходу движения (к −Z)

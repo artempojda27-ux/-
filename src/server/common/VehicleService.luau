@@ -488,9 +488,12 @@ function VehicleService.spawnFor(player: Player, kindId: string, cf: CFrame): (M
 		end
 	end
 
-	-- Тот, кто вызвал машину, сразу садится за руль
+	-- Тот, кто вызвал машину в гараже, сразу садится за руль (только если стоит рядом: в «Побеге» по местам
+	-- рассаживает MissionService, и прыжок через полкарты к сиденью мог убить персонажа)
 	local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-	if humanoid and humanoid.Health > 0 and not humanoid.SeatPart and seat then
+	local callerRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	local near = callerRoot and callerRoot:IsA("BasePart") and (callerRoot.Position - cf.Position).Magnitude < 60
+	if near and humanoid and humanoid.Health > 0 and not humanoid.SeatPart and seat then
 		task.defer(function()
 			if seat.Parent and not seat.Occupant then
 				seat:Sit(humanoid)

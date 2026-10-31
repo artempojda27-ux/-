@@ -43,7 +43,7 @@ local function template(assetId: number): BasePart?
 end
 
 function SkinService.owns(player: Player, skin: Config.Skin): boolean
-	return skin.Price == 0 or player:GetAttribute(`Pass_Skin_{skin.Key}`) == true
+	return (skin.Price == 0 and not skin.Season) or player:GetAttribute(`Pass_Skin_{skin.Key}`) == true
 end
 
 -- Деталь, приваренная к части тела: без массы и столкновений, чтобы не мешать бегать

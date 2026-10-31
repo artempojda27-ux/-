@@ -230,7 +230,7 @@ local function update(vehicle: Vehicle, dt: number, now: number)
 	local kind = vehicle.Kind
 	local seat = vehicle.Seat
 	local occupied = seat.Occupant ~= nil
-	local throttle = if occupied then seat.ThrottleFloat else 0
+	local throttle: number = if occupied then seat.ThrottleFloat else 0
 	local steer = if occupied then seat.SteerFloat else 0
 
 	-- Упала с карты — исчезает
@@ -257,10 +257,16 @@ local function update(vehicle: Vehicle, dt: number, now: number)
 
 	-- Скорость плавно стремится к нужной; тормозит вдвое резче
 	local nitro = now < vehicle.NitroUntil
-	local maxSpeed = if nitro then kind.MaxSpeed * Config.NitroMultiplier else kind.MaxSpeed
+	local rocket = now < vehicle.RocketUntil
+	local maxSpeed = if rocket then kind.MaxSpeed * Config.Rocket.Multiplier
+		elseif nitro then kind.MaxSpeed * Config.NitroMultiplier
+		else kind.MaxSpeed
+	if rocket then
+		throttle = 1 -- ракета тянет вперёд сама
+	end
 	local target = if throttle > 0 then throttle * maxSpeed elseif throttle < 0 then throttle * kind.ReverseSpeed else 0
 	local braking = target == 0 or (target > 0) ~= (vehicle.Speed > 0)
-	local step = kind.Acceleration * dt * (if braking then 2 elseif nitro then 2.5 else 1)
+	local step = kind.Acceleration * dt * (if braking then 2 elseif rocket then 6 elseif nitro then 2.5 else 1)
 	if math.abs(target - vehicle.Speed) <= step then
 		vehicle.Speed = target
 	else
@@ -296,15 +302,17 @@ local function update(vehicle: Vehicle, dt: number, now: number)
 		vehicle.Align.Responsiveness = 25
 	end
 	if vehicle.Flame then
-		vehicle.Flame.Enabled = nitro
+		vehicle.Flame.Enabled = nitro or rocket
 	end
 
 	-- Парение: держим высоту над землёй, без земли — падаем
 	local groundY = groundBelow(vehicle)
 	local vertical = -FALL_SPEED
 	if groundY then
-		local wanted = groundY + kind.HoverHeight + kind.Size.Y / 2
-		vertical = math.clamp((wanted - vehicle.Chassis.Position.Y) * 5, -FALL_SPEED, FALL_SPEED)
+		-- в ракетном рывке машина поднимается на Lift студов и пролетает над препятствиями
+		local lift = if rocket then Config.Rocket.Lift * math.min(1, (vehicle.RocketUntil - now) / 0.4) else 0
+		local wanted = groundY + kind.HoverHeight + kind.Size.Y / 2 + lift
+		vertical = math.clamp((wanted - vehicle.Chassis.Position.Y) * 5, -FALL_SPEED, FALL_SPEED * 2)
 	end
 
 	vehicle.Velocity.VectorVelocity = forward * vehicle.Speed + Vector3.new(0, vertical, 0)
@@ -442,6 +450,8 @@ function VehicleService.spawnFor(player: Player, kindId: string, cf: CFrame): (M
 		Flame = flame,
 		NitroUntil = 0,
 		LastNitro = 0,
+		RocketUntil = 0,
+		LastRocket = 0,
 	}
 	applyTuning(player, model)
 
@@ -588,6 +598,21 @@ function VehicleService.start()
 					if now - vehicle.LastNitro >= Config.NitroCooldown then
 						vehicle.LastNitro = now
 						vehicle.NitroUntil = now + Config.NitroDuration
+					end
+					return
+				end
+			end
+			return
+		end
+		if action == "Rocket" then
+			local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+			for _, vehicle in vehicles do
+				if humanoid and vehicle.Seat.Occupant == humanoid and vehicle.Kind.Special == "Rocket" then
+					local now = os.clock()
+					if now - vehicle.LastRocket >= Config.Rocket.Cooldown then
+						vehicle.LastRocket = now
+						vehicle.RocketUntil = now + Config.Rocket.Duration
+						player:SetAttribute("RocketReadyAt", Workspace:GetServerTimeNow() + Config.Rocket.Cooldown)
 					end
 					return
 				end

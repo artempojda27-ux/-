@@ -69,7 +69,7 @@ UI.new("UIListLayout", { Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.L
 local buttons: { [string]: TextButton } = {}
 
 local function owns(skin: Config.Skin): boolean
-	return skin.Price == 0 or player:GetAttribute(`Pass_Skin_{skin.Key}`) == true
+	return (skin.Price == 0 and not skin.Season) or player:GetAttribute(`Pass_Skin_{skin.Key}`) == true
 end
 
 local function refresh()
@@ -84,7 +84,7 @@ local function refresh()
 			button.Text = "Надеть"
 			button.BackgroundColor3 = UI.Colors.Accent
 		elseif skin then
-			button.Text = `{skin.Price} R$`
+			button.Text = if skin.Season then "Пропуск" else `{skin.Price} R$`
 			button.BackgroundColor3 = UI.Colors.Glitch
 		end
 		button.AutoButtonColor = not worn
@@ -138,6 +138,8 @@ local function row(order: number, key: string, name: string, description: string
 		local skin = Config.getSkin(key)
 		if key == "None" or (skin and owns(skin)) then
 			skinAction:FireServer("Equip", key)
+		elseif skin and skin.Season then
+			UI.toast("Этот скин — награда сезонного пропуска. Открой «ПРОПУСК».")
 		elseif skin then
 			if skin.Id == 0 then
 				UI.toast("Покупки заработают после публикации игры.")

@@ -1,12 +1,14 @@
 --!strict
 -- Управление машиной для водителя: подсказка внизу экрана и платные возможности машины:
 -- реактивный прыжок с сальто (Shift или F), нитро (Q), смена цвета неонового тюнинга (C).
--- На телефоне — кнопки «ПРЫЖОК» и «НИТРО». Всё проверяет и выполняет сервер (VehicleService).
+-- У Вольта своя функция — ракетный рывок (X): полёт над препятствиями.
+-- На телефоне — кнопки «ПРЫЖОК», «НИТРО» и «РАКЕТА». Всё проверяет и выполняет сервер (VehicleService).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
+local Config = require(ReplicatedStorage.Shared.Config)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local UI = require(script.Parent:WaitForChild("UI"))
 
@@ -51,8 +53,23 @@ local nitroButton = UI.button({
 	vehicleAction:FireServer("Nitro")
 end)
 UI.round(nitroButton)
+local rocketButton = UI.button({
+	Name = "RocketButton",
+	AnchorPoint = Vector2.new(1, 1),
+	Position = UDim2.new(1, -250, 1, -120),
+	Size = UDim2.fromOffset(90, 90),
+	Text = "РАКЕТА",
+	TextSize = 16,
+	BackgroundColor3 = Color3.fromRGB(255, 140, 40),
+	Visible = false,
+	Parent = gui,
+}, function()
+	vehicleAction:FireServer("Rocket")
+end)
+UI.round(rocketButton)
 
 local driving = false
+local rocketCar = false -- сидим за рулём машины с ракетой (Вольт)
 
 local function owns(key: string): boolean
 	return player:GetAttribute(`Pass_{key}`) == true
@@ -69,21 +86,35 @@ local function refresh()
 	if owns("NeonTuning") then
 		table.insert(parts, "C — цвет")
 	end
+	if rocketCar then
+		table.insert(parts, "X — ракета")
+	end
 	table.insert(parts, "пробел — выйти")
 	hint.Visible = driving
 	hint.Text = table.concat(parts, ", ")
 	jumpButton.Visible = driving and owns("Thrusters") and UserInputService.TouchEnabled
 	nitroButton.Visible = driving and owns("Nitro") and UserInputService.TouchEnabled
+	rocketButton.Visible = driving and rocketCar and UserInputService.TouchEnabled
 end
 
 local function watchCharacter(character: Model)
 	local humanoid = character:WaitForChild("Humanoid") :: Humanoid
-	driving = false
-	refresh()
-	humanoid.Seated:Connect(function(active, seat)
-		driving = active and seat ~= nil and seat.Name == "DriverSeat"
+	-- следим за SeatPart: событие Seated не приходит, когда в машину сажает сервер
+	local function update()
+		local seat = humanoid.SeatPart
+		driving = seat ~= nil and seat.Name == "DriverSeat"
+		rocketCar = false
+		if driving and seat and seat.Parent then
+			for _, kind in Config.Vehicles do
+				if kind.Name == seat.Parent.Name and kind.Special == "Rocket" then
+					rocketCar = true
+				end
+			end
+		end
 		refresh()
-	end)
+	end
+	humanoid:GetPropertyChangedSignal("SeatPart"):Connect(update)
+	update()
 end
 
 if player.Character then
@@ -104,5 +135,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		vehicleAction:FireServer("Nitro")
 	elseif input.KeyCode == Enum.KeyCode.C then
 		vehicleAction:FireServer("Color")
+	elseif input.KeyCode == Enum.KeyCode.X and rocketCar then
+		vehicleAction:FireServer("Rocket")
 	end
 end)

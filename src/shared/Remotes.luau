@@ -18,6 +18,7 @@ local NAMES = {
 	"TestPurchase", -- клиент → сервер: бесплатная «покупка» разового буста, только в Studio (productKey)
 	"AbilityAction", -- клиент → сервер: способность героя: "Pulse" | "Dash" | "Ultimate"
 	"AbilityFx", -- сервер → клиенты: нарисовать способность (player, name, position)
+	"SeasonAction", -- клиент → сервер: "Claim" (level, "F" | "P") — забрать награду сезонного пропуска
 	"Speech", -- сервер → клиент: реплика персонажа (speaker, text) — субтитры внизу экрана
 	"Lore", -- сервер → клиент: найден осколок памяти (title, text)
 	"SkinAction", -- клиент → сервер: "Equip" (ключ скина или "None") — только в Штабе

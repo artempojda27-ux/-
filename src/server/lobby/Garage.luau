@@ -3,6 +3,7 @@
 -- на трассе за подиумом (старая твоя машина исчезает). Пока все машины бесплатные;
 -- позже часть станет платной (за биты или Robux).
 
+local MarketplaceService = game:GetService("MarketplaceService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 local Workspace = game:GetService("Workspace")
@@ -64,8 +65,10 @@ function Garage.start(slots: { Slot })
 		end
 
 		local prompt = Instance.new("ProximityPrompt")
+		local paid = (kind.Price or 0) > 0
 		prompt.ActionText = `Вызвать: {kind.Name}`
-		prompt.ObjectText = `{kind.Seats} мест · скорость {kind.MaxSpeed}`
+		prompt.ObjectText = (if paid then `{kind.Price} R$ · ` else "") .. `{kind.Seats} мест · скорость {kind.MaxSpeed}`
+			.. (if kind.Special == "Rocket" then " · ракета" else "")
 		prompt.HoldDuration = 0.5
 		prompt.MaxActivationDistance = 18
 		prompt.RequiresLineOfSight = false
@@ -77,6 +80,15 @@ function Garage.start(slots: { Slot })
 				return
 			end
 			lastUse[player] = now
+			-- платная машина: без пропуска — предложить покупку
+			if paid and player:GetAttribute(`Pass_Car_{kind.Id}`) ~= true then
+				if (kind.PassId or 0) == 0 then
+					notify:FireClient(player, `{kind.Name} — {kind.Price} R$. Покупка заработает, когда пропуск появится в Creator Hub.`)
+				else
+					MarketplaceService:PromptGamePassPurchase(player, kind.PassId :: number)
+				end
+				return
+			end
 			local model, reason = VehicleService.spawnFor(player, kind.Id, freeSpot(slot.Spot))
 			if model then
 				notify:FireClient(player, `{kind.Name} ждёт на трассе! W/S — газ, A/D — руль, пробел — выйти.`)

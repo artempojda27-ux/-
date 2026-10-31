@@ -50,6 +50,8 @@ function StoryService.collect(player: Player, id: string): boolean
 	end
 	data.ShardsFound[id] = true
 	player:SetAttribute(`Shard_{id}`, true)
+	-- письмо — немного опыта сезона (SeasonService подключаем здесь, чтобы не было круговых require)
+	require(script.Parent.SeasonService).addXP(player, Config.Season.XP.Letter)
 	return true
 end
 

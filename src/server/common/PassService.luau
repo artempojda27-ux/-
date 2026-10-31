@@ -96,6 +96,11 @@ local function allPasses(): { { Key: string, Id: number } }
 			table.insert(list, { Key = `Skin_{skin.Key}`, Id = skin.Id })
 		end
 	end
+	for _, kind in Config.Vehicles do
+		if (kind.Price or 0) > 0 then
+			table.insert(list, { Key = `Car_{kind.Id}`, Id = kind.PassId or 0 })
+		end
+	end
 	return list
 end
 

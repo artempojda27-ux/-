@@ -555,6 +555,13 @@ Config.GamePasses = {
 		Price = 99,
 	},
 	{
+		Key = "SeasonPass",
+		Id = 0,
+		Name = "Пропуск сезона «Трещина»",
+		Description = "Премиум-награды сезона: эксклюзивный скин, неоновый след, тысячи бит",
+		Price = 299,
+	},
+	{
 		Key = "VIP",
 		Id = 0,
 		Name = "VIP",
@@ -656,6 +663,11 @@ export type VehicleKind = {
 	-- Детальный кузов: модель-ассет, сгенерированная в Studio (0 — собирать машину из деталей)
 	ShellAsset: number,
 	ShellScale: number, -- во сколько раз увеличить модель
+	-- Платная машина: цена в Robux (0 — бесплатная) и номер Game Pass из Creator Hub (атрибут "Pass_Car_<Id>")
+	Price: number?,
+	PassId: number?,
+	-- Особая функция машины: "Rocket" — ракетный рывок (X / кнопка «РАКЕТА»): ускорение и полёт над препятствиями
+	Special: string?,
 }
 
 Config.Vehicles = {
@@ -679,6 +691,9 @@ Config.Vehicles = {
 	},
 	Volt = {
 		Id = "Volt",
+		Price = 249,
+		PassId = 0,
+		Special = "Rocket",
 		Name = "Вольт",
 		Order = 2,
 		Design = "Roadster",
@@ -697,6 +712,8 @@ Config.Vehicles = {
 	},
 	Prism = {
 		Id = "Prism",
+		Price = 349,
+		PassId = 0,
 		Name = "Призма",
 		Order = 3,
 		Design = "Hypercar",
@@ -715,6 +732,8 @@ Config.Vehicles = {
 	},
 	Orbit = {
 		Id = "Orbit",
+		Price = 299,
+		PassId = 0,
 		Name = "Орбита",
 		Order = 4,
 		Design = "Roadster",
@@ -750,6 +769,9 @@ Config.Vehicles = {
 		ShellScale = 1.6,
 	},
 } :: { [string]: VehicleKind }
+
+-- Ракетный рывок (особая функция Вольта): сколько длится, во сколько раз быстрее, перезарядка
+Config.Rocket = { Duration = 1.6, Multiplier = 2.2, Lift = 14, Cooldown = 8 }
 
 Config.VehicleIdleDespawn = 60 -- пустая машина исчезает через столько секунд
 Config.VehicleFlipCooldown = 3 -- секунд между реактивными прыжками
@@ -815,6 +837,7 @@ export type Skin = {
 	Accent: Color3, -- цвет свечения
 	Pieces: { SkinPiece },
 	Effect: string?,
+	Season: string?, -- скин из сезонного пропуска (не продаётся, открывается наградой)
 }
 
 Config.Skins = {
@@ -930,6 +953,41 @@ Config.Skins = {
 		},
 		Effect = "Rage",
 	},
+	-- Награды сезонного пропуска «Трещина» (открываются в пропуске, не продаются)
+	{
+		Key = "Shard",
+		Id = 0,
+		Name = "Осколок Сети",
+		Description = "Сезон «Трещина»: броня из треснувшего кода, сквозь трещины сочится свет",
+		Price = 0,
+		Season = "S1",
+		Body = Color3.fromRGB(230, 236, 245),
+		Material = Enum.Material.SmoothPlastic,
+		Accent = Color3.fromRGB(0, 230, 255),
+		Pieces = {
+			{ Asset = 101409906455656, Attach = "Head", Fit = 1.45, Offset = Vector3.new(0, 0.12, 0) },
+			{ Asset = 92296990915532, Attach = "UpperTorso", Fit = 1.45, Offset = Vector3.new(0, 0.05, 0) },
+		},
+		Effect = "Glitch",
+	},
+	{
+		Key = "NullHunter",
+		Id = 0,
+		Name = "Охотник на Нуля",
+		Description = "Финал сезона «Трещина» (премиум): белая броня, синее кольцо кода и пламя Ядра",
+		Price = 0,
+		Season = "S1",
+		Body = Color3.fromRGB(245, 248, 255),
+		Material = Enum.Material.Glass,
+		Accent = Color3.fromRGB(120, 200, 255),
+		Pieces = {
+			{ Asset = 74165910550599, Attach = "Head", Fit = 1.45, Offset = Vector3.new(0, 0.12, 0) },
+			{ Asset = 128652350667306, Attach = "UpperTorso", Fit = 1.5, Offset = Vector3.new(0, 0.05, 0) },
+			{ Asset = 89332774121080, Attach = "LeftLowerArm", Fit = 1.2, Wrap = true },
+			{ Asset = 89332774121080, Attach = "RightLowerArm", Fit = 1.2, Wrap = true },
+		},
+		Effect = "Horizon",
+	},
 } :: { Skin }
 
 function Config.getSkin(key: string?): Skin?
@@ -939,6 +997,35 @@ function Config.getSkin(key: string?): Skin?
 		end
 	end
 	return nil
+end
+
+-- Сезонный пропуск: опыт сезона идёт за задания, уровни 1–30. У каждого уровня бесплатная награда (всем)
+-- и премиальная (с пропуском SeasonPass). Награды: Bits — биты, Skin — сезонный скин, Trail — неоновый след.
+-- Забирать награды можно в Штабе (окно «ПРОПУСК»), опыт копится и в Миссии.
+export type SeasonReward = { Kind: string, Amount: number?, Key: string?, Name: string }
+Config.Season = {
+	Id = "S1",
+	Name = "Сезон 1: Трещина",
+	XPPerLevel = 100,
+	Levels = 30,
+	-- сколько опыта даёт: победа в задании (умножается на сложность задания), босс, волна, побег, письмо
+	XP = { Mission = 100, Boss = 300, Wave = 12, Escape = 90, Letter = 30 },
+	Free = {} :: { [number]: SeasonReward },
+	Premium = {} :: { [number]: SeasonReward },
+}
+do
+	local season = Config.Season
+	for level = 1, season.Levels do
+		-- бесплатная линия: биты каждый уровень, скин на 15-м
+		season.Free[level] = { Kind = "Bits", Amount = 40 + level * 5, Name = `{40 + level * 5} бит` }
+		-- премиум: втрое больше бит, след на 10-м, скины на 15-м (тот же, что бесплатно — получают сразу) и 30-м
+		season.Premium[level] = { Kind = "Bits", Amount = 120 + level * 15, Name = `{120 + level * 15} бит` }
+	end
+	season.Free[15] = { Kind = "Skin", Key = "Shard", Name = "Скин «Осколок Сети»" }
+	season.Free[30] = { Kind = "Bits", Amount = 1500, Name = "1500 бит" }
+	season.Premium[1] = { Kind = "Skin", Key = "Shard", Name = "Скин «Осколок Сети» сразу" }
+	season.Premium[10] = { Kind = "Trail", Name = "Неоновый след сезона" }
+	season.Premium[30] = { Kind = "Skin", Key = "NullHunter", Name = "Скин «Охотник на Нуля»" }
 end
 
 -- Способности героя (у всех одинаковые, работают в Миссии; урон считает сервер — AbilityService):

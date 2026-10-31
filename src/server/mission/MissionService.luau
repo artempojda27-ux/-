@@ -30,6 +30,7 @@ local MemoryShards = require(script.Parent.MemoryShards)
 local VegaClone = require(script.Parent.VegaClone)
 local SpecialMissions = require(script.Parent.SpecialMissions)
 local StoryService = require(ServerScriptService.Common.StoryService)
+local SeasonService = require(ServerScriptService.Common.SeasonService)
 local WorldDetails = require(script.Parent.WorldDetails)
 local WorldLook = require(script.Parent.WorldLook)
 local MissionMap = require(script.Parent.MissionMap)
@@ -898,6 +899,7 @@ local function giveStoryRewards(bonus: number?)
 				and DataService.completeMission(player, info.Chapter, reward, info.World, mission.Index, #Config.Missions) then
 				StoryService.refresh(player)
 				notify:FireClient(player, if vip then `Награда: +{reward} бит (x2 VIP)` else `Награда: +{reward} бит`)
+				SeasonService.addXP(player, if mission.Kind == "Boss" then Config.Season.XP.Boss else Config.Season.XP.Mission * mission.Power)
 			end
 		end)
 	end
@@ -914,6 +916,7 @@ local function giveSurvivalRewards()
 			if reward > 0 and DataService.addBits(player, reward) then
 				notify:FireClient(player, if vip then `Награда: +{reward} бит (x2 VIP)` else `Награда: +{reward} бит`)
 			end
+			SeasonService.addXP(player, Config.Season.XP.Wave * wavesCleared)
 			if DataService.recordWave(player, wavesCleared) then
 				notify:FireClient(player, `Новый рекорд: {wavesCleared} волн!`)
 			end
@@ -1081,6 +1084,7 @@ local function giveEscapeRewards()
 			local reward = math.floor(Config.MissionReward * Config.Escape.RewardMultiplier * multiplier)
 			if DataService.waitFor(player, 10) and DataService.completeMission(player, info.Chapter, reward, info.World) then
 				notify:FireClient(player, if vip then `Награда: +{reward} бит (x2 VIP)` else `Награда: +{reward} бит`)
+				SeasonService.addXP(player, Config.Season.XP.Escape)
 			end
 		end)
 	end

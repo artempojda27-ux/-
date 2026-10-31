@@ -57,19 +57,25 @@ end
 local function watch(character: Model)
 	local humanoid = character:WaitForChild("Humanoid") :: Humanoid
 	stopFollowing()
-	humanoid.Seated:Connect(function(active, seat)
-		if active and seat then
+	-- следим за SeatPart: событие Seated не приходит, когда в машину сажает сервер
+	local function update()
+		local seat = humanoid.SeatPart
+		if seat then
 			local model = seat.Parent
 			local chassis = model and model:FindFirstChild("Chassis")
 			if chassis and chassis:IsA("BasePart") then
-				car = chassis
-				savedFov = Workspace.CurrentCamera.FieldOfView
+				if car ~= chassis then
+					car = chassis
+					savedFov = Workspace.CurrentCamera.FieldOfView
+				end
 				viewButton.Visible = true
 				return
 			end
 		end
 		stopFollowing()
-	end)
+	end
+	humanoid:GetPropertyChangedSignal("SeatPart"):Connect(update)
+	update()
 end
 
 if player.Character then

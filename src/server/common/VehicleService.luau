@@ -468,8 +468,8 @@ function VehicleService.spawnFor(player: Player, kindId: string, cf: CFrame): (M
 		table.sort(seats, function(a, b)
 			return a:IsA("VehicleSeat") and not b:IsA("VehicleSeat")
 		end)
-		if seats[1] then
-			seats[1]:Sit(humanoid)
+		if seats[1] and humanoid.Health > 0 then
+			pcall(seats[1].Sit, seats[1], humanoid)
 		end
 	end)
 	-- кнопка видна только тем, кто ещё не сидит в этой машине
@@ -495,8 +495,8 @@ function VehicleService.spawnFor(player: Player, kindId: string, cf: CFrame): (M
 	local near = callerRoot and callerRoot:IsA("BasePart") and (callerRoot.Position - cf.Position).Magnitude < 60
 	if near and humanoid and humanoid.Health > 0 and not humanoid.SeatPart and seat then
 		task.defer(function()
-			if seat.Parent and not seat.Occupant then
-				seat:Sit(humanoid)
+			if seat.Parent and not seat.Occupant and humanoid.Health > 0 and humanoid:IsDescendantOf(workspace) then
+				pcall(seat.Sit, seat, humanoid)
 			end
 		end)
 	end

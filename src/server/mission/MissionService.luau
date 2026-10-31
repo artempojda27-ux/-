@@ -931,9 +931,12 @@ local function seatInVehicle(player: Player, model: Model): boolean
 	for _, seatName in { "DriverSeat", "Seat2", "Seat3", "Seat4" } do
 		local seat = model:FindFirstChild(seatName)
 		if seat and (seat:IsA("Seat") or seat:IsA("VehicleSeat")) and not seat.Occupant then
+			-- персонаж может только что появиться или погибнуть — сажаем лишь живого и уже в мире
+			if humanoid.Health <= 0 or not humanoid:IsDescendantOf(workspace) then
+				return false
+			end
 			character:PivotTo(seat.CFrame + Vector3.new(0, 3, 0))
-			seat:Sit(humanoid)
-			return true
+			return (pcall(seat.Sit, seat, humanoid))
 		end
 	end
 	return false

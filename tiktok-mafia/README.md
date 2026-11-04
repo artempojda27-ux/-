@@ -157,7 +157,7 @@
 
     STREAM_LANG     ru | en — язык эфира (по умолчанию ru)
     PROVIDER        anthropic | openai | mock
-    MODEL           по умолчанию claude-haiku-4-5-20251001
+    MODEL           по умолчанию claude-haiku-5-5 (≈ $0,01 за партию)
     BASE_URL        для OpenRouter / DeepSeek и прочих OpenAI-совместимых
     VOTE_SECONDS    окно голосования, по умолчанию 50
     VOTE_TAIL_MS    сколько добирать голоса после нуля на таймере (8000)

@@ -9,7 +9,7 @@
  *
  * Переменные окружения:
  *   PROVIDER   anthropic | openai | mock   (default: anthropic)
- *   MODEL      default: claude-haiku-4-5-20251001
+ *   MODEL      default: claude-haiku-5-5
  *   BASE_URL   для OpenRouter/DeepSeek и прочих OpenAI-совместимых
  *   ANTHROPIC_API_KEY / OPENAI_API_KEY
  *
@@ -32,7 +32,7 @@ const opt = (name) => {
 };
 
 const PROVIDER = process.env.PROVIDER || 'anthropic';
-const MODEL = process.env.MODEL || 'claude-haiku-4-5-20251001';
+const MODEL = process.env.MODEL || 'claude-haiku-5-5';
 const API_KEY = process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY || '';
 const BASE_URL =
   process.env.BASE_URL ||
@@ -168,10 +168,18 @@ async function callLLM(system, user, maxTokens = 200) {
         max_tokens: maxTokens,
         system,
         messages: [{ role: 'user', content: user }],
+        // Haiku 5.5 по умолчанию сначала «думает», и раздумья съедают
+        // короткий лимит реплики. Реплика в 25 слов раздумий не требует:
+        // выключаем их и ставим низкое усилие — быстрее и дешевле.
+        ...(/^claude-haiku-5/.test(MODEL)
+          ? { thinking: { type: 'disabled' }, output_config: { effort: 'low' } }
+          : {}),
       }),
     });
     data = await res.json();
     if (data.error) throw new Error(data.error.message);
+    // фильтр безопасности отклонил запрос — как ошибка: движок подставит запасной ход
+    if (data.stop_reason === 'refusal') throw new Error('refusal');
     usage.inTokens += data.usage?.input_tokens || 0;
     usage.outTokens += data.usage?.output_tokens || 0;
     var text = data.content.map((b) => b.text || '').join('');

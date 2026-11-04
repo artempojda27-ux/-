@@ -53,9 +53,13 @@ let tick = 0;
 /** n клипов из пула, сначала те, что показывали давнее всего; ничья — случайно */
 function fresh(pool, n, rand = Math.random) {
   const ok = pool.filter(has);
+  // кандидаты — на один больше, чем нужно: иначе пул из 6 по 3 ходит
+  // по кругу одними и теми же тройками; порядок внутри — тоже случайный
   const pickd = ok
     .map((name) => ({ name, at: shown.get(name) ?? -1, r: rand() }))
     .sort((a, b) => a.at - b.at || a.r - b.r)
+    .slice(0, Math.min(ok.length, n + 1))
+    .sort(() => rand() - 0.5)
     .slice(0, n)
     .map((x) => x.name);
   for (const name of pickd) shown.set(name, ++tick);

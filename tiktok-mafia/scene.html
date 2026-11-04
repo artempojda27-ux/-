@@ -163,9 +163,9 @@ body.night .shot .slight{background:linear-gradient(var(--lightdir,100deg),rgba(
 /* видео действия: персонаж в кадре в городе говорит или обвиняет —
    целиком закрывает размытый фон и вырезку, остаются только субтитры */
 .shot .sact{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
-  transform-origin:var(--ox,50%) var(--oy,45%);
-  transform:scale(var(--z0,1.02)) scaleX(var(--mx,1));transition:transform 9s linear}
-.shot.on .sact{transform:scale(var(--z1,1.09)) scaleX(var(--mx,1))}
+  rotate:y var(--rot,0deg);
+  transform:scale(var(--z0,1.02)) translate(var(--tx,0),var(--ty,0));transition:transform 9s linear}
+.shot.on .sact{transform:scale(var(--z1,1.09)) translate(var(--tx,0),var(--ty,0))}
 .shot.acting .sbg,.shot.acting .sfig,.shot.acting .slight{display:none}
 .shot.acting .sgrade{background:linear-gradient(180deg,rgba(8,6,6,.35),rgba(8,6,6,0) 18%,rgba(8,6,6,0) 58%,rgba(8,6,6,.8) 80%)}
 /* реакция — короче и ближе: только лицо, без слов */
@@ -261,9 +261,9 @@ body.montage #toast{opacity:0}
   transition:opacity .6s,visibility 0s .6s;pointer-events:none}
 #cine.on{opacity:1;visibility:visible;transition:opacity .6s}
 #cine video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;
-  transform-origin:var(--ox,50%) var(--oy,50%);
-  transform:scale(var(--z0,1)) scaleX(var(--mx,1));transition:transform 5.5s linear}
-#cine video.live{transform:scale(var(--z1,1.05)) scaleX(var(--mx,1))}
+  rotate:y var(--rot,0deg);
+  transform:scale(var(--z0,1)) translate(var(--tx,0),var(--ty,0));transition:transform 5.5s linear}
+#cine video.live{transform:scale(var(--z1,1.05)) translate(var(--tx,0),var(--ty,0))}
 #cine video.live{opacity:1}
 #cine .cap{position:absolute;left:64px;right:64px;bottom:300px;opacity:0;
   transform:translateY(16px);transition:opacity .8s,transform .8s}
@@ -1250,11 +1250,19 @@ function vary(v, src, opts = {}) {
   const r = (a, b) => a + Math.random() * (b - a);
   const mirror = !NO_MIRROR.test(src) && Math.random() < 0.5;
   const z0 = r(1, opts.close ? 1.08 : 1.12), push = r(0.03, 0.09) * (Math.random() < 0.25 ? -1 : 1);
-  v.style.setProperty('--mx', mirror ? -1 : 1);
+  // зеркало — отдельным свойством rotate: оно не анимируется, иначе
+  // переход от прямого к зеркальному сплющивает кадр в полоску
+  v.style.transition = 'none';
+  v.style.setProperty('--rot', mirror ? '180deg' : '0deg');
+  const z1 = Math.max(1, z0 + push);
   v.style.setProperty('--z0', z0.toFixed(3));
-  v.style.setProperty('--z1', Math.max(1, z0 + push).toFixed(3));
-  v.style.setProperty('--ox', `${r(35, 65).toFixed(0)}%`);
-  v.style.setProperty('--oy', `${r(opts.close ? 30 : 35, opts.close ? 50 : 65).toFixed(0)}%`);
+  v.style.setProperty('--z1', z1.toFixed(3));
+  // кадрирование: сдвиг в пределах увеличения — края кадра не открываются
+  const room = (1 - 1 / Math.min(z0, z1)) / 2 * 100;
+  v.style.setProperty('--tx', `${(r(-1, 1) * room).toFixed(2)}%`);
+  v.style.setProperty('--ty', `${(r(opts.close ? 0 : -1, 1) * room).toFixed(2)}%`);
+  void v.offsetWidth;
+  v.style.transition = '';
   v.style.filter = `saturate(${r(0.9, 1.2).toFixed(2)}) contrast(${r(0.95, 1.12).toFixed(2)}) hue-rotate(${r(-8, 8).toFixed(0)}deg) brightness(${r(0.95, 1.06).toFixed(2)})`;
   // катсцены по времени расписаны движком — их не замедляем
   const rate = opts.keepRate ? 1 : r(0.82, 1);

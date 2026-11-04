@@ -730,6 +730,11 @@ async function runGame() {
     cast: state.players.map((p) => ({ name: p.name, slug: p.slug, bio: p.bio })),
   });
 
+  // город с воздуха под открывающие титры: первая картинка эфира — яркая.
+  // После titles: титры гасят прошлую катсцену, а эту должны накрыть сверху.
+  const opening = cinema.openingReel().filter(Boolean);
+  if (opening.length) broadcast({ type: 'cutscene', clips: opening.map((c) => c.src), caption: '', sub: '' });
+
   broadcast({
     type: 'party',
     lang: LANG,          // сцена переключает надписи и голоса под язык эфира
@@ -820,7 +825,7 @@ async function runGame() {
       await sleep(2600 * 3 + 600);
 
       // катсцена ночи: чей-то последний вечер и шаги следом
-      await cutscene(night ? cinema.nightReel(night.victim, pick) : cinema.quietReel(pick),
+      await cutscene(night ? cinema.nightReel(night.victim) : cinema.quietReel(),
         narrate.clock(state.round), night ? night.where : '');
       say(C.cyan(`\n───── НОЧЬ ${state.round} ─────`), `\n### Ночь ${state.round}`);
       if (night) {

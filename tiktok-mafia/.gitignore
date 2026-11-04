@@ -4,3 +4,4 @@ calibration.json
 art_in/
 __pycache__/
 history-en.json
+assets/gta/clips/*.webm

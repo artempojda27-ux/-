@@ -957,6 +957,9 @@ function cutscene(list, caption, sub, hold) {
     document.body.classList.remove('cine');
     setTimeout(() => { if (run === cineRun) { A.classList.remove('live'); B.classList.remove('live'); } }, 700);
   };
+  // браузер без H.264 (сборки Chromium без кодеков) — берём WebM рядом, если он есть
+  const mp4ok = !!A.canPlayType('video/mp4; codecs="avc1.640028"');
+  list = list.map(src => mp4ok ? src : src.replace(/\.mp4$/, '.webm'));
   const load = (v, src) => { v.onended = v.onerror = null; v.src = src; v.load(); };
   const play = () => {
     if (run !== cineRun) return;

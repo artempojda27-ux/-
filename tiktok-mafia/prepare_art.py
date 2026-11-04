@@ -132,7 +132,35 @@ def strip_background(img, tol=TOLERANCE):
                     a,
                 )
 
+    despill(img, ref)
     return img
+
+
+def despill(img, ref, band=28):
+    """Зелёный ореол. Волосы и пушок по краю фигуры пропускают фон —
+    на тёмной сцене это светится зелёной каймой. В полосе у края фигуры
+    гасим лишний зелёный до уровня красного и синего, а самый край
+    подъедаем на пиксель. Только для зелёного фона и только у края:
+    тёмно-зелёная одежда в глубине фигуры не трогается."""
+    if not (ref[1] > ref[0] + 60 and ref[1] > ref[2] + 60):
+        return
+    from PIL import ImageFilter
+    a = img.getchannel('A')
+    inner = a.filter(ImageFilter.MinFilter(band * 2 + 1))   # всё, что глубже полосы
+    a = a.filter(ImageFilter.MinFilter(3))                   # минус пиксель по краю
+    px, ip, ap = img.load(), inner.load(), a.load()
+    w, h = img.size
+    for y in range(h):
+        for x in range(w):
+            r, g, b, al = px[x, y]
+            al = min(al, ap[x, y])
+            if al and ip[x, y] < 250:
+                m = max(r, b)
+                if g > m + 45:
+                    al = 0          # явный фон в просвете волос
+                elif g > m:
+                    g = m
+            px[x, y] = (r, g, b, al)
 
 
 def normalize(img):

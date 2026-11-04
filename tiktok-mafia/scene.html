@@ -163,8 +163,9 @@ body.night .shot .slight{background:linear-gradient(var(--lightdir,100deg),rgba(
 /* видео действия: персонаж в кадре в городе говорит или обвиняет —
    целиком закрывает размытый фон и вырезку, остаются только субтитры */
 .shot .sact{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
-  transform:scale(1.02);transition:transform 9s linear}
-.shot.on .sact{transform:scale(1.09)}
+  transform-origin:var(--ox,50%) var(--oy,45%);
+  transform:scale(var(--z0,1.02)) scaleX(var(--mx,1));transition:transform 9s linear}
+.shot.on .sact{transform:scale(var(--z1,1.09)) scaleX(var(--mx,1))}
 .shot.acting .sbg,.shot.acting .sfig,.shot.acting .slight{display:none}
 .shot.acting .sgrade{background:linear-gradient(180deg,rgba(8,6,6,.35),rgba(8,6,6,0) 18%,rgba(8,6,6,0) 58%,rgba(8,6,6,.8) 80%)}
 /* реакция — короче и ближе: только лицо, без слов */
@@ -259,7 +260,10 @@ body.montage #toast{opacity:0}
 #cine{position:absolute;inset:0;z-index:7;background:#000;opacity:0;visibility:hidden;
   transition:opacity .6s,visibility 0s .6s;pointer-events:none}
 #cine.on{opacity:1;visibility:visible;transition:opacity .6s}
-#cine video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0}
+#cine video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;
+  transform-origin:var(--ox,50%) var(--oy,50%);
+  transform:scale(var(--z0,1)) scaleX(var(--mx,1));transition:transform 5.5s linear}
+#cine video.live{transform:scale(var(--z1,1.05)) scaleX(var(--mx,1))}
 #cine video.live{opacity:1}
 #cine .cap{position:absolute;left:64px;right:64px;bottom:300px;opacity:0;
   transform:translateY(16px);transition:opacity .8s,transform .8s}
@@ -837,6 +841,7 @@ const DC = (() => {
 
 /* ─────────────────────── режиссёр ───────────────────────
    Крупный план говорящего, склейка на реакцию, общий план. */
+const accusedAt = {};
 let shotFront = 'shotA', shotOn = null, shotSide = 1, reactTimer = null;
 function currentBg() {
   const a = $('#room'), b = $('#room2');
@@ -935,7 +940,7 @@ function hasAct(slug, mood) {
   return false;
 }
 function preloadActs(players) {
-  for (const p of players || []) for (const m of ['talk', 'accuse']) hasAct(p.slug, m);
+  for (const p of players || []) for (const m of ['talk', 'accuse', 'defend']) hasAct(p.slug, m);
 }
 function actEl(slug, mood) {
   const v = document.createElement('video');
@@ -944,6 +949,7 @@ function actEl(slug, mood) {
   // повтор реплики не повторяет движение: старт с разного места
   v.addEventListener('loadedmetadata', () => { v.currentTime = Math.random() * Math.max(0, (v.duration || 0) - 2.5); }, { once: true });
   v.src = actSrc(slug, mood);
+  vary(v, v.src, { close: true });
   v.play().catch(() => {});
   return v;
 }
@@ -998,8 +1004,11 @@ let talking = null;
    план того, на кого показали, со злым лицом */
 function reactionShot(name) {
   if (!cards[name]) return;
-  closeUp(name, { react: true, state: '-angry' });
-  reactTimer = setTimeout(() => { if (shotOn === name) wideShot(); }, 1700);
+  // реакция того, на кого показали: живое видео, как он отпирается,
+  // а без него — злой кадр портрета
+  const live = hasAct(slugs[name], 'defend');
+  closeUp(name, live ? { react: true, mood: 'defend' } : { react: true, state: '-angry' });
+  reactTimer = setTimeout(() => { if (shotOn === name) wideShot(); }, live ? 2400 : 1700);
 }
 
 /* примитивный лип-синк: кадры «говорит» и «спокоен» чередуются, пока
@@ -1232,6 +1241,27 @@ function showReveal(name, role, title) {
    Список клипов играется подряд. Следующий клип грузится во втором
    видео заранее, переключение — на событии ended, без чёрной дыры.
    Клип не загрузился (нет файла, офлайн-запись) — пропускаем его. */
+/* ─── один клип — много кадров ───
+   Тот же клип каждый раз подаётся по-другому: зеркало, кадрирование,
+   наезд камеры, скорость и цвет. Для зрителя это другой план, а не повтор.
+   Зеркалить нельзя клипы с надписями (лента, номер улики). */
+const NO_MIRROR = /tape|evidence|news/;
+function vary(v, src, opts = {}) {
+  const r = (a, b) => a + Math.random() * (b - a);
+  const mirror = !NO_MIRROR.test(src) && Math.random() < 0.5;
+  const z0 = r(1, opts.close ? 1.08 : 1.12), push = r(0.03, 0.09) * (Math.random() < 0.25 ? -1 : 1);
+  v.style.setProperty('--mx', mirror ? -1 : 1);
+  v.style.setProperty('--z0', z0.toFixed(3));
+  v.style.setProperty('--z1', Math.max(1, z0 + push).toFixed(3));
+  v.style.setProperty('--ox', `${r(35, 65).toFixed(0)}%`);
+  v.style.setProperty('--oy', `${r(opts.close ? 30 : 35, opts.close ? 50 : 65).toFixed(0)}%`);
+  v.style.filter = `saturate(${r(0.9, 1.2).toFixed(2)}) contrast(${r(0.95, 1.12).toFixed(2)}) hue-rotate(${r(-8, 8).toFixed(0)}deg) brightness(${r(0.95, 1.06).toFixed(2)})`;
+  // катсцены по времени расписаны движком — их не замедляем
+  const rate = opts.keepRate ? 1 : r(0.82, 1);
+  v.defaultPlaybackRate = rate; v.playbackRate = rate;
+  return rate;
+}
+
 let cineRun = 0;
 function cutscene(list, caption, sub, hold) {
   const box = $('#cine');
@@ -1269,6 +1299,7 @@ function cutscene(list, caption, sub, hold) {
     v.onended = () => { i++; [cur, nxt] = [nxt, cur]; play(); };
     v.onerror = v.onended;
     v.currentTime = 0;
+    vary(v, list[i], { keepRate: true });
     const p = v.play();
     if (p && p.catch) p.catch(() => v.onended());
     v.classList.add('live');
@@ -1405,8 +1436,14 @@ function handle(e) {
       if (e.slug) slugs[e.name] = e.slug;
       focusOn(e.name);
       {
-        const accusing = e.suspect || Object.keys(cards).some(n => n !== e.name && e.text.includes(n));
-        closeUp(e.name, { talk: true, mood: accusing ? 'accuse' : 'talk' });
+        // настроение реплики: показывает на другого — обвиняет; его самого
+        // недавно назвали — оправдывается; иначе просто говорит
+        const target = e.suspect || Object.keys(cards).find(n => n !== e.name && e.text.includes(n));
+        const underFire = accusedAt[e.name] && Date.now() - accusedAt[e.name] < 45000;
+        const mood = target ? 'accuse' : underFire ? 'defend' : 'talk';
+        if (target) accusedAt[target] = Date.now();
+        if (mood === 'defend') delete accusedAt[e.name];
+        closeUp(e.name, { talk: true, mood: hasAct(slugs[e.name], mood) ? mood : 'talk' });
       }
       $('#speaker').textContent = e.name;
       $('#line').textContent = e.text;
@@ -1465,7 +1502,7 @@ function handle(e) {
     case 'lastword':
       if (e.slug) slugs[e.name] = e.slug;
       focusOn(e.name);
-      closeUp(e.name, { talk: true, mood: 'talk' });
+      closeUp(e.name, { talk: true, mood: hasAct(slugs[e.name], 'defend') ? 'defend' : 'talk' });
       $('#speaker').textContent = `${e.name} · ${t('LASTWORD')}`;
       $('#line').textContent = e.text;
       $('#speech').classList.add('on');

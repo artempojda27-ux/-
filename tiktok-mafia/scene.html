@@ -245,6 +245,25 @@ body.montage #toast{opacity:0}
 /* ── кашет: чёрные полосы сверху и снизу ──
    Единственный приём, который мгновенно переключает восприятие с
    «интерфейс» на «кино». Выезжает на титрах, главах и вскрытиях. */
+/* ── катсцены: видеоклип во весь кадр, как вставка в игре ──
+   Два видео по очереди: пока играет одно, следующее уже грузится,
+   и склейка идёт без чёрного кадра. Голос рассказчика и главы — поверх. */
+#cine{position:absolute;inset:0;z-index:7;background:#000;opacity:0;visibility:hidden;
+  transition:opacity .6s,visibility 0s .6s;pointer-events:none}
+#cine.on{opacity:1;visibility:visible;transition:opacity .6s}
+#cine video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0}
+#cine video.live{opacity:1}
+#cine .cap{position:absolute;left:64px;right:64px;bottom:300px;opacity:0;
+  transform:translateY(16px);transition:opacity .8s,transform .8s}
+#cine .cap.on{opacity:1;transform:none}
+#cine .cap .c1{font-family:Georgia,serif;font-size:66px;color:var(--bone);
+  text-shadow:0 4px 26px rgba(0,0,0,.95)}
+#cine .cap .c2{font-family:Georgia,serif;font-size:30px;color:var(--brass);
+  letter-spacing:.22em;text-transform:uppercase;margin-top:8px;text-shadow:0 2px 14px #000}
+#cine::after{content:'';position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(to bottom,rgba(0,0,0,.35),transparent 22%,transparent 62%,rgba(0,0,0,.6))}
+body.cine #ladder,body.cine #toast,body.cine #speech{opacity:0}
+
 #bars{position:absolute;inset:0;pointer-events:none;z-index:10}
 #bars::before,#bars::after{content:'';position:absolute;left:0;right:0;height:0;
   background:#000;transition:height .8s cubic-bezier(.22,.7,.2,1)}
@@ -369,6 +388,8 @@ body.rain #weather{background-image:repeating-linear-gradient(104deg,
   <div id="places"></div>
   <div id="shades"></div>
   <div id="placeName"><div class="pn serif"></div><div class="pc serif"></div></div>
+  <div id="cine"><video muted playsinline preload="auto"></video><video muted playsinline preload="auto"></video>
+    <div class="cap"><div class="c1"></div><div class="c2"></div></div></div>
   <div id="curtain"><div><div class="t serif"></div><div class="s"></div></div></div>
   <div id="place"><div class="lbl"></div><div class="loc serif"></div><div class="clock"></div></div>
   <div id="narr" class="serif"></div>
@@ -907,9 +928,69 @@ function showReveal(name, role, title) {
   setTimeout(() => $('#bars').classList.remove('on'), 5400);
 }
 
+/* ─────────────────────── катсцены ───────────────────────
+   Список клипов играется подряд. Следующий клип грузится во втором
+   видео заранее, переключение — на событии ended, без чёрной дыры.
+   Клип не загрузился (нет файла, офлайн-запись) — пропускаем его. */
+let cineRun = 0;
+function cutscene(list, caption, sub, hold) {
+  const box = $('#cine');
+  const [A, B] = box.querySelectorAll('video');
+  const run = ++cineRun;
+  let i = 0, cur = A, nxt = B;
+  if (!list || !list.length) return;
+  wideShot();
+  stopTalking();
+  document.body.classList.add('cine');
+  box.querySelector('.c1').textContent = caption || '';
+  box.querySelector('.c2').textContent = sub || '';
+  const cap = box.querySelector('.cap');
+  cap.classList.remove('on');
+  if (caption || sub) {
+    setTimeout(() => run === cineRun && cap.classList.add('on'), 900);
+    setTimeout(() => run === cineRun && cap.classList.remove('on'), 4800);
+  }
+  const done = () => {
+    if (run !== cineRun) return;
+    if (hold) return;                 // финал: последний кадр стоит до конца эфира
+    box.classList.remove('on');
+    document.body.classList.remove('cine');
+    setTimeout(() => { if (run === cineRun) { A.classList.remove('live'); B.classList.remove('live'); } }, 700);
+  };
+  const load = (v, src) => { v.onended = v.onerror = null; v.src = src; v.load(); };
+  const play = () => {
+    if (run !== cineRun) return;
+    if (i >= list.length) return done();
+    const v = cur;
+    if (!v.src.endsWith(list[i])) load(v, list[i]);
+    v.onended = () => { i++; [cur, nxt] = [nxt, cur]; play(); };
+    v.onerror = v.onended;
+    v.currentTime = 0;
+    const p = v.play();
+    if (p && p.catch) p.catch(() => v.onended());
+    v.classList.add('live');
+    nxt.classList.remove('live');
+    if (i + 1 < list.length) load(nxt, list[i + 1]);
+  };
+  load(cur, list[0]);
+  box.classList.add('on');
+  play();
+}
+function cutsceneOff() {
+  cineRun++;
+  const box = $('#cine');
+  box.classList.remove('on');
+  document.body.classList.remove('cine');
+  box.querySelectorAll('video').forEach(v => { v.pause(); v.classList.remove('live'); });
+}
+
 /* ─────────────────────── события партии ─────────────────────── */
 function handle(e) {
   switch (e.type) {
+    case 'cutscene':
+      cutscene(e.clips, e.caption, e.sub, e.hold);
+      break;
+
     case 'ladder': {
       $('#ladder').innerHTML = e.items.map(i =>
         `<div class="row"><span class="g">${i.gift}</span><span class="a">${i.label}</span></div>`
@@ -918,6 +999,7 @@ function handle(e) {
     }
 
     case 'titles': {
+      cutsceneOff();   // финальный кадр прошлой партии уходит
       // Открывающие титры: название, номер дела, состав. Дальше зритель
       // уже знает, кто перед ним, и обсуждение читается с первой реплики.
       if (e.lang) setLang(e.lang);

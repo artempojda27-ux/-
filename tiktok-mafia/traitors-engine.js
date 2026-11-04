@@ -112,6 +112,16 @@ const C = {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// Кино-вставка во весь кадр. Движок ждёт, пока она идёт: реплики и
+// голосование не должны начаться поверх катсцены.
+const cinema = require('./cinema');
+async function cutscene(reel, caption = '', sub = '') {
+  const clips = reel.filter(Boolean);
+  if (!clips.length) return;
+  broadcast({ type: 'cutscene', clips: clips.map((c) => c.src), caption, sub });
+  await sleep(cinema.reelMs(clips));
+}
+
 const INITIAL_SEED = Number(opt('seed')) || Math.floor(Math.random() * 1e9);
 let seed = INITIAL_SEED;
 function rand() {
@@ -808,6 +818,10 @@ async function runGame() {
         })),
       });
       await sleep(2600 * 3 + 600);
+
+      // катсцена ночи: чей-то последний вечер и шаги следом
+      await cutscene(night ? cinema.nightReel(night.victim, pick) : cinema.quietReel(pick),
+        narrate.clock(state.round), night ? night.where : '');
       say(C.cyan(`\n───── НОЧЬ ${state.round} ─────`), `\n### Ночь ${state.round}`);
       if (night) {
         state.log.push(`[Ночью не стало ${night.victim.name}. Нашли здесь: ${night.where}]`);
@@ -817,12 +831,19 @@ async function runGame() {
         });
         broadcast({ type: 'chapter', title: tr('УТРО', 'MORNING'), sub: '' });
         await sleep(CONFIG.beat);
-        broadcast({
-          type: 'narrate',
-          text: narrate.morning(state.round, night.victim.name,
-            (night.victim.voice || '').startsWith('женский')),
-        });
-        await sleep(CONFIG.beat * 1.5);
+        // голос рассказчика идёт поверх утренней катсцены: полиция, лента, простыня
+        const morningText = narrate.morning(state.round, night.victim.name,
+          (night.victim.voice || '').startsWith('женский'));
+        const reel = cinema.morningReel().filter(Boolean);
+        if (reel.length) {
+          broadcast({ type: 'cutscene', clips: reel.map((c) => c.src), caption: night.where, sub: narrate.clock(state.round) });
+          await sleep(1200);
+          broadcast({ type: 'narrate', text: morningText });
+          await sleep(cinema.reelMs(reel) - 1200);
+        } else {
+          broadcast({ type: 'narrate', text: morningText });
+          await sleep(CONFIG.beat * 1.5);
+        }
         broadcast({
           type: 'nightplace', where: night.where, whereId: night.whereId,
           name: night.victim.name, clock: narrate.clock(state.round),
@@ -893,6 +914,12 @@ async function runGame() {
       say(wasTraitor ? C.red('  ЭТО БЫЛА МАФИЯ.') : C.green(`  ${was} ${roleWord}.`),
           wasTraitor ? '> ЭТО БЫЛА МАФИЯ.' : `> ${was} ${roleWord}.`);
       if (CONFIG.pause) await sleep(CONFIG.pause);
+      // вскрытие роли отыгрывает, потом катсцена: наручники или уход из города
+      if (cinema.ON) {
+        await sleep(5200);
+        await cutscene(cinema.banishReel(b), b.name,
+          wasTraitor ? tr('мафия за решёткой', 'mafia behind bars') : tr('уходит из города', 'leaves the city'));
+      }
     }
 
     winner = checkWin(state);
@@ -937,8 +964,13 @@ async function runGame() {
   // финал называет решения зала, а не просто победителя
   state.epilogue = narrate.epilogue(winner, state.players, state.verdicts);
   say(`\n${state.epilogue}`, `\n_${state.epilogue}_`);
+  const finale = cinema.finaleReel(winner, state.players.filter((p) => p.alive)).filter(Boolean);
+  if (finale.length) {
+    broadcast({ type: 'cutscene', clips: finale.map((c) => c.src), caption: '', sub: '', hold: true });
+    await sleep(800);
+  }
   broadcast({ type: 'narrate', text: state.epilogue });
-  await sleep(CONFIG.beat * 2);
+  await sleep(Math.max(CONFIG.beat * 2, finale.length ? cinema.reelMs(finale) - 800 : 0));
 
   broadcast({
     type: 'over',

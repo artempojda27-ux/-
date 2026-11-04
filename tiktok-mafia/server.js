@@ -293,9 +293,26 @@ const server = http.createServer((req, res) => {
     '.jpeg': 'image/jpeg',
     '.webp': 'image/webp',
     '.svg': 'image/svg+xml',
+    '.mp4': 'video/mp4',
+    '.webm': 'video/webm',
   };
   const ext = path.extname(file).toLowerCase();
-  res.writeHead(200, { 'content-type': MIME[ext] || 'application/octet-stream' });
+  const type = MIME[ext] || 'application/octet-stream';
+  // Видео браузер просит кусками (Range): без ответа 206 катсцены в OBS
+  // не перематываются и иногда не стартуют вовсе
+  const size = fs.statSync(full).size;
+  const m = /bytes=(\d*)-(\d*)/.exec(req.headers.range || '');
+  if (m) {
+    const start = m[1] ? Number(m[1]) : Math.max(0, size - Number(m[2]));
+    const end = m[1] && m[2] ? Math.min(Number(m[2]), size - 1) : size - 1;
+    res.writeHead(206, {
+      'content-type': type, 'accept-ranges': 'bytes',
+      'content-range': `bytes ${start}-${end}/${size}`, 'content-length': end - start + 1,
+    });
+    fs.createReadStream(full, { start, end }).pipe(res);
+    return;
+  }
+  res.writeHead(200, { 'content-type': type, 'accept-ranges': 'bytes', 'content-length': size });
   fs.createReadStream(full).pipe(res);
 });
 

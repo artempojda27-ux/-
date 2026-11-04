@@ -59,15 +59,16 @@ body.night #depthcam{filter:saturate(.85) brightness(.92)}
 /* свет и грейд поверх комнаты: без этого фон и персонажи не склеиваются */
 #grade{position:absolute;inset:0;pointer-events:none;
   background:
-    radial-gradient(120% 70% at 50% 34%, rgba(255,214,150,.16), transparent 60%),
-    linear-gradient(180deg, rgba(10,8,8,.72) 0%, rgba(10,8,8,.15) 28%, rgba(10,8,8,.86) 78%);
+    radial-gradient(120% 70% at 50% 34%, rgba(255,214,150,.12), transparent 60%),
+    linear-gradient(180deg, rgba(10,8,8,.5) 0%, rgba(10,8,8,0) 18%, rgba(10,8,8,0) 50%, rgba(10,8,8,.72) 86%);
   transition:background 1.6s ease}
 body.night #grade{
   background:
     radial-gradient(120% 70% at 50% 30%, rgba(140,180,255,.12), transparent 60%),
     linear-gradient(180deg, rgba(6,12,20,.78) 0%, rgba(6,12,20,.2) 28%, rgba(6,12,20,.9) 78%)}
 #vignette{position:absolute;inset:0;pointer-events:none;
-  box-shadow:inset 0 0 300px 90px rgba(0,0,0,.85)}
+  box-shadow:inset 0 0 220px 30px rgba(0,0,0,.5);transition:box-shadow 1.6s}
+body.night #vignette{box-shadow:inset 0 0 300px 90px rgba(0,0,0,.85)}
 
 /* ── камера ── */
 /* весь мир слегка наезжает, когда кто-то говорит. Origin переносится
@@ -97,7 +98,7 @@ header{position:relative;display:flex;align-items:baseline;justify-content:space
 @keyframes breathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
 
 /* задний ряд глушится: так появляется глубина */
-.who.back{filter:brightness(.62) saturate(.8) blur(.6px)}
+.who.back{filter:brightness(.86) saturate(.95) blur(.4px)}
 
 .plate{margin-top:8px;display:inline-block;min-width:160px;padding:5px 14px 8px;
   background:rgba(12,9,9,.72);border-radius:3px;position:relative;overflow:hidden}
@@ -121,9 +122,9 @@ header{position:relative;display:flex;align-items:baseline;justify-content:space
 
 /* стол на переднем плане: держит персонажей в комнате, а не в воздухе */
 #table{position:absolute;left:-60px;right:-60px;top:900px;height:220px;
-  background:linear-gradient(180deg,#3A2A20,#1A120E);
-  border-radius:50% 50% 0 0 / 90px 90px 0 0;
-  box-shadow:0 -20px 50px rgba(0,0,0,.6);opacity:.92;transition:filter 1.6s}
+  /* не деревянный стол, а тень у ног: люди стоят на улице, а не в комнате */
+  background:linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,.45) 40%,rgba(0,0,0,.7));
+  opacity:1;transition:filter 1.6s}
 body.night #table{filter:brightness(.5) saturate(.5)}
 body.montage #table{opacity:0}
 
@@ -159,6 +160,13 @@ body.montage #table{opacity:0}
   background:linear-gradient(180deg,rgba(8,6,6,.55),rgba(8,6,6,0) 22%,rgba(8,6,6,0) 55%,rgba(8,6,6,.92) 74%)}
 body.night .shot .sbg{filter:blur(9px) brightness(.55) saturate(.7) hue-rotate(-8deg)}
 body.night .shot .slight{background:linear-gradient(var(--lightdir,100deg),rgba(150,190,255,.45),rgba(0,0,0,0) 45%,rgba(0,0,0,.6))}
+/* видео действия: персонаж в кадре в городе говорит или обвиняет —
+   целиком закрывает размытый фон и вырезку, остаются только субтитры */
+.shot .sact{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  transform:scale(1.02);transition:transform 9s linear}
+.shot.on .sact{transform:scale(1.09)}
+.shot.acting .sbg,.shot.acting .sfig,.shot.acting .slight{display:none}
+.shot.acting .sgrade{background:linear-gradient(180deg,rgba(8,6,6,.35),rgba(8,6,6,0) 18%,rgba(8,6,6,0) 58%,rgba(8,6,6,.8) 80%)}
 /* реакция — короче и ближе: только лицо, без слов */
 .shot.react .sfig{bottom:200px;width:1200px;height:1600px;margin-left:-600px}
 /* в кино-режиме доска и стол уходят, субтитры остаются */
@@ -262,7 +270,7 @@ body.montage #toast{opacity:0}
   letter-spacing:.22em;text-transform:uppercase;margin-top:8px;text-shadow:0 2px 14px #000}
 #cine::after{content:'';position:absolute;inset:0;pointer-events:none;
   background:linear-gradient(to bottom,rgba(0,0,0,.35),transparent 22%,transparent 62%,rgba(0,0,0,.6))}
-body.cine #ladder,body.cine #toast,body.cine #speech{opacity:0}
+body.cutscene #ladder,body.cutscene #toast,body.cutscene #speech{opacity:0}
 
 #bars{position:absolute;inset:0;pointer-events:none;z-index:10}
 #bars::before,#bars::after{content:'';position:absolute;left:0;right:0;height:0;
@@ -406,6 +414,253 @@ body.rain #weather{background-image:repeating-linear-gradient(104deg,
   </div>
 </div>
 
+<script>
+/**
+ * ЗВУК СЦЕНЫ.
+ *
+ * Весь звук синтезируется в браузере (WebAudio): ни файлов, ни кредитов,
+ * и он никогда не повторяется один в один — шум и случайные паузы каждый
+ * раз другие. Под каждый момент эфира свой слой:
+ *
+ *   день       тёплый город: гул улицы, далёкие машины, мягкий аккорд
+ *   ночь       дождь, низкий тревожный гул, редкие далёкие сирены
+ *   катсцена   ночью — напряжённый удар, утром — сирены и вертолёт
+ *   голосование — сердцебиение и тиканье
+ *   вскрытие   удар и низкий аккорд; мафия — темнее
+ *   глава      «вжух» на смену карточки
+ *
+ * Голоса (озвучка реплик) идут поверх: пока кто-то говорит, фон приглушается.
+ *
+ * В OBS (Browser Source) звук играет сам. В обычном браузере он ждёт
+ * первого клика по странице — так браузеры защищают от автозвука.
+ */
+const SND = (() => {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return { on() {}, phase() {}, cue() {}, duck() {} };
+
+  let ctx = null, master, bed, bedGain, layers = {};
+  const MASTER = 0.55;
+
+  function init() {
+    if (ctx) return;
+    ctx = new AC();
+    master = ctx.createGain(); master.gain.value = MASTER;
+    // мягкий компрессор: удары не перекрывают голос, тихое не пропадает
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -18; comp.ratio.value = 3;
+    master.connect(comp).connect(ctx.destination);
+    bedGain = ctx.createGain(); bedGain.gain.value = 1; bedGain.connect(master);
+  }
+  const resume = () => { init(); if (ctx.state === 'suspended') ctx.resume(); };
+  ['click', 'keydown', 'touchstart'].forEach(ev => addEventListener(ev, resume, { passive: true }));
+
+  function noiseBuffer(sec = 4, brown = false) {
+    const len = ctx.sampleRate * sec, b = ctx.createBuffer(1, len, ctx.sampleRate), d = b.getChannelData(0);
+    let last = 0;
+    for (let i = 0; i < len; i++) {
+      const w = Math.random() * 2 - 1;
+      if (brown) { last = (last + 0.02 * w) / 1.02; d[i] = last * 3.5; } else d[i] = w;
+    }
+    return b;
+  }
+  function loopNoise(brown, filterType, freq, q, gain) {
+    const src = ctx.createBufferSource(); src.buffer = noiseBuffer(4, brown); src.loop = true;
+    const f = ctx.createBiquadFilter(); f.type = filterType; f.frequency.value = freq; f.Q.value = q;
+    const g = ctx.createGain(); g.gain.value = 0;
+    src.connect(f).connect(g); src.start();
+    return { src, f, g, target: gain };
+  }
+  function tone(type, freq, gain) {
+    const o = ctx.createOscillator(); o.type = type; o.frequency.value = freq;
+    const g = ctx.createGain(); g.gain.value = 0;
+    o.connect(g); o.start();
+    return { o, g, target: gain };
+  }
+  function fade(node, to, sec = 2) {
+    const t = ctx.currentTime;
+    node.gain.cancelScheduledValues(t);
+    node.gain.setValueAtTime(node.gain.value, t);
+    node.gain.linearRampToValueAtTime(to, t + sec);
+  }
+
+  /* постоянные слои: создаются один раз, дальше только громкость */
+  function build() {
+    if (layers.ready) return;
+    const out = (l) => { l.g.connect(bedGain); return l; };
+    layers.city = out(loopNoise(true, 'lowpass', 420, 0.4, 0.5));        // гул улицы
+    layers.air = out(loopNoise(false, 'bandpass', 2400, 0.3, 0.025));    // воздух, далёкий шум
+    layers.rain = out(loopNoise(false, 'highpass', 1800, 0.5, 0.16));    // дождь
+    layers.rainLow = out(loopNoise(true, 'lowpass', 900, 0.5, 0.35));    // шум капель по асфальту
+    // аккорды: день — светлый мажор, ночь — низкий минор
+    const pad = (freqs, gain) => {
+      const g = ctx.createGain(); g.gain.value = 0;
+      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 900;
+      g.connect(lp).connect(bedGain);
+      freqs.forEach((f, i) => {
+        const o = ctx.createOscillator(); o.type = i % 2 ? 'triangle' : 'sine';
+        o.frequency.value = f; o.detune.value = (Math.random() - 0.5) * 12;
+        const og = ctx.createGain(); og.gain.value = 1 / freqs.length;
+        // медленное дыхание громкости: аккорд живой, а не гудок
+        const lfo = ctx.createOscillator(); lfo.frequency.value = 0.05 + Math.random() * 0.08;
+        const lg = ctx.createGain(); lg.gain.value = 0.35 / freqs.length;
+        lfo.connect(lg).connect(og.gain); lfo.start();
+        o.connect(og).connect(g); o.start();
+      });
+      return { g, target: gain };
+    };
+    layers.dayPad = pad([220, 277.2, 329.6, 415.3], 0.05);     // A maj7
+    layers.nightPad = pad([55, 82.4, 110, 130.8], 0.11);        // A min, низко
+    layers.ready = true;
+  }
+
+  let current = null, sirenTimer = null, beatTimer = null, carTimer = null;
+
+  function phase(name) {
+    if (!ctx) init();
+    build();
+    current = name;
+    const want = {
+      day:   { city: 1, air: 1, rain: 0, rainLow: 0, dayPad: 1, nightPad: 0 },
+      night: { city: 0.3, air: 0.4, rain: 1, rainLow: 1, dayPad: 0, nightPad: 1 },
+      quiet: { city: 0.2, air: 0.3, rain: 0, rainLow: 0, dayPad: 0, nightPad: 0.5 },
+    }[name] || {};
+    for (const k of ['city', 'air', 'rain', 'rainLow', 'dayPad', 'nightPad']) {
+      fade(layers[k].g, layers[k].target * (want[k] || 0), 3);
+    }
+    clearTimeout(sirenTimer); clearTimeout(carTimer);
+    if (name === 'night') distantSirens();
+    if (name === 'day') passingCars();
+  }
+
+  /* далёкая сирена раз в полминуты-минуту: город живёт и ночью */
+  function distantSirens() {
+    sirenTimer = setTimeout(() => {
+      if (current !== 'night') return;
+      siren(7, 0.05);
+      distantSirens();
+    }, 25000 + Math.random() * 35000);
+  }
+  /* днём мимо проезжают машины: шум нарастает и уходит */
+  function passingCars() {
+    carTimer = setTimeout(() => {
+      if (current !== 'day') return;
+      whoosh(2.2 + Math.random() * 1.5, 0.12, 300, 1200);
+      passingCars();
+    }, 5000 + Math.random() * 9000);
+  }
+
+  function siren(sec = 6, vol = 0.12) {
+    const t = ctx.currentTime;
+    const o = ctx.createOscillator(); o.type = 'triangle';
+    const g = ctx.createGain(); g.gain.value = 0;
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1800;
+    o.connect(lp).connect(g).connect(master);
+    // вой: частота ходит вверх-вниз, громкость наплывает и уходит (проезжает мимо)
+    for (let i = 0; i < sec; i += 1.2) {
+      o.frequency.setValueAtTime(620, t + i);
+      o.frequency.linearRampToValueAtTime(1080, t + i + 0.6);
+      o.frequency.linearRampToValueAtTime(620, t + i + 1.2);
+    }
+    g.gain.linearRampToValueAtTime(vol, t + sec * 0.4);
+    g.gain.linearRampToValueAtTime(0, t + sec);
+    o.start(t); o.stop(t + sec + 0.1);
+  }
+  function helicopter(sec = 5, vol = 0.18) {
+    const t = ctx.currentTime;
+    const src = ctx.createBufferSource(); src.buffer = noiseBuffer(2, true); src.loop = true;
+    const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 260;
+    const am = ctx.createGain(); am.gain.value = 0.5;
+    const lfo = ctx.createOscillator(); lfo.frequency.value = 11; // лопасти
+    const lg = ctx.createGain(); lg.gain.value = 0.5;
+    lfo.connect(lg).connect(am.gain);
+    const g = ctx.createGain(); g.gain.value = 0;
+    src.connect(f).connect(am).connect(g).connect(master);
+    g.gain.linearRampToValueAtTime(vol, t + sec * 0.5);
+    g.gain.linearRampToValueAtTime(0, t + sec);
+    src.start(t); lfo.start(t); src.stop(t + sec + 0.1); lfo.stop(t + sec + 0.1);
+  }
+  function whoosh(sec = 0.9, vol = 0.2, from = 400, to = 3000) {
+    const t = ctx.currentTime;
+    const src = ctx.createBufferSource(); src.buffer = noiseBuffer(2);
+    const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 1.2;
+    f.frequency.setValueAtTime(from, t); f.frequency.exponentialRampToValueAtTime(to, t + sec);
+    const g = ctx.createGain(); g.gain.value = 0;
+    g.gain.linearRampToValueAtTime(vol, t + sec * 0.5);
+    g.gain.linearRampToValueAtTime(0, t + sec);
+    src.connect(f).connect(g).connect(master); src.start(t); src.stop(t + sec + 0.05);
+  }
+  function boom(vol = 0.6, low = 48) {
+    const t = ctx.currentTime;
+    const o = ctx.createOscillator(); o.type = 'sine';
+    o.frequency.setValueAtTime(low * 2.2, t); o.frequency.exponentialRampToValueAtTime(low, t + 0.5);
+    const g = ctx.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + 2.4);
+    o.connect(g).connect(master); o.start(t); o.stop(t + 2.5);
+    const n = ctx.createBufferSource(); n.buffer = noiseBuffer(1, true);
+    const ng = ctx.createGain(); ng.gain.setValueAtTime(vol * 0.6, t); ng.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
+    n.connect(ng).connect(master); n.start(t); n.stop(t + 0.7);
+  }
+  function chord(freqs, sec = 4, vol = 0.12) {
+    const t = ctx.currentTime;
+    const g = ctx.createGain(); g.gain.value = 0;
+    g.gain.linearRampToValueAtTime(vol, t + 0.3); g.gain.linearRampToValueAtTime(0, t + sec);
+    g.connect(master);
+    freqs.forEach(f => {
+      const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f;
+      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 700;
+      o.connect(lp).connect(g); o.start(t); o.stop(t + sec + 0.1);
+    });
+  }
+  function thump(vol = 0.5) {
+    const t = ctx.currentTime;
+    for (const [dt, v] of [[0, vol], [0.22, vol * 0.65]]) {
+      const o = ctx.createOscillator(); o.type = 'sine';
+      o.frequency.setValueAtTime(70, t + dt); o.frequency.exponentialRampToValueAtTime(38, t + dt + 0.18);
+      const g = ctx.createGain(); g.gain.setValueAtTime(0, t + dt);
+      g.gain.linearRampToValueAtTime(v, t + dt + 0.01); g.gain.exponentialRampToValueAtTime(0.001, t + dt + 0.25);
+      o.connect(g).connect(master); o.start(t + dt); o.stop(t + dt + 0.3);
+    }
+  }
+  function tick(vol = 0.08) {
+    const t = ctx.currentTime;
+    const o = ctx.createOscillator(); o.type = 'square'; o.frequency.value = 2400;
+    const g = ctx.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+    o.connect(g).connect(master); o.start(t); o.stop(t + 0.05);
+  }
+
+  /* отдельные события эфира */
+  function cue(name, arg) {
+    if (!ctx) init();
+    build();
+    switch (name) {
+      case 'chapter': whoosh(1.1, 0.16); break;
+      case 'night-reel': boom(0.35, 42); chord([55, 58.3, 82.4], 6, 0.08); break;
+      case 'morning-reel': siren(8, 0.13); setTimeout(() => helicopter(6, 0.16), 1500); break;
+      case 'arrest-reel': siren(6, 0.16); break;
+      case 'leave-reel': chord([110, 130.8, 164.8], 5, 0.06); break;
+      case 'finale-city': chord([220, 277.2, 329.6, 440], 9, 0.1); break;
+      case 'finale-mafia': boom(0.5, 40); chord([55, 65.4, 82.4, 98], 9, 0.1); break;
+      case 'vote-start':
+        clearInterval(beatTimer);
+        beatTimer = setInterval(() => thump(0.4), 900);
+        break;
+      case 'vote-tick': tick(arg && arg <= 5 ? 0.14 : 0.07); break;
+      case 'vote-end': clearInterval(beatTimer); break;
+      case 'reveal': boom(0.7, arg === 'traitor' ? 36 : 52);
+        chord(arg === 'traitor' ? [55, 58.3, 77.8] : [110, 138.6, 164.8], 4, 0.1); break;
+      case 'event': whoosh(0.6, 0.12, 1200, 400); tick(0.1); break;
+      case 'gift': tick(0.12); setTimeout(() => tick(0.1), 90); break;
+    }
+  }
+
+  /* голос поверх: фон уходит тише, пока кто-то говорит */
+  function duck(on) {
+    if (!ctx) return;
+    fade(bedGain, on ? 0.45 : 1, on ? 0.25 : 1.2);
+  }
+
+  return { phase, cue, duck, on: resume };
+})();
+</script>
 <script>
 const $ = (s) => document.querySelector(s);
 
@@ -599,8 +854,14 @@ function closeUp(name, opts = {}) {
   const fig = el.querySelector('.sfig');
   fig.innerHTML = '';
   const slug = slugs[name], kind = opts.talk ? 'talk' : 'idle';
+  el.querySelectorAll('.sact').forEach(v => v.remove());
+  // видео действия под настроение реплики: спокойно говорит или обвиняет
+  if (opts.mood && hasAct(slug, opts.mood)) {
+    el.classList.add('acting');
+    el.insertBefore(actEl(slug, opts.mood), el.querySelector('.sgrade'));
+  }
   // реакция — злое лицо, его даёт только статичный кадр; остальное — живое видео, если есть
-  if (opts.state !== '-angry' && probeVid(slug, kind)) fig.appendChild(videoEl(slug, kind));
+  else if (opts.state !== '-angry' && probeVid(slug, kind)) fig.appendChild(videoEl(slug, kind));
   else fig.appendChild(faceEl(name, opts.state || ''));
   // перезапуск наезда: убираем .on, даём кадру отрисоваться, включаем
   el.classList.remove('on');
@@ -650,6 +911,41 @@ function videoEl(slug, kind) {
   v.play().catch(() => {});
   return v;
 }
+/* ─── видео действий: assets/gta/talk/<slug>-<mood>.mp4 ───
+   talk — спокойно объясняет, accuse — злится и показывает на кого-то.
+   Заранее проверяем, что файл есть: иначе крупный план остаётся на портрете. */
+const ACT_MP4 = !!document.createElement('video').canPlayType('video/mp4; codecs="avc1.640028"');
+const actOk = {};
+function actSrc(slug, mood) {
+  if (window.EMBEDDED_ACTS) return window.EMBEDDED_ACTS[`${slug}-${mood}`] || null;
+  return `assets/gta/talk/${slug}-${mood}.${ACT_MP4 ? 'mp4' : 'webm'}`;
+}
+function hasAct(slug, mood) {
+  const k = `${slug}-${mood}`;
+  if (k in actOk) return actOk[k];
+  actOk[k] = false;
+  const src = slug && actSrc(slug, mood);
+  if (!src) return false;
+  const v = document.createElement('video');
+  v.muted = true; v.preload = 'metadata';
+  v.onloadedmetadata = () => { actOk[k] = true; };
+  v.src = src;
+  return false;
+}
+function preloadActs(players) {
+  for (const p of players || []) for (const m of ['talk', 'accuse']) hasAct(p.slug, m);
+}
+function actEl(slug, mood) {
+  const v = document.createElement('video');
+  v.className = 'sact';
+  v.muted = true; v.loop = true; v.playsInline = true; v.autoplay = true;
+  // повтор реплики не повторяет движение: старт с разного места
+  v.addEventListener('loadedmetadata', () => { v.currentTime = Math.random() * Math.max(0, (v.duration || 0) - 2.5); }, { once: true });
+  v.src = actSrc(slug, mood);
+  v.play().catch(() => {});
+  return v;
+}
+
 /* переключить живую петлю в текущем кадре: говорит ↔ слушает */
 function shotVideo(name, kind) {
   if (shotOn !== name) return false;
@@ -666,6 +962,7 @@ function shotFace(name, state) {
   if (shotOn !== name) return;
   const fig = document.getElementById(shotFront).querySelector('.sfig');
   if (fig.querySelector('video')) return;     // живое видео моргает и говорит само
+  if (document.getElementById(shotFront).classList.contains('acting')) return;
   fig.innerHTML = ''; fig.appendChild(faceEl(name, state));
 }
 /* Моргание. Живое лицо моргает раз в 3–6 секунд; без этого крупный план
@@ -821,7 +1118,8 @@ function speak(text, name, hint, onend) {
   const v = voiceFor(name, hint || '');
   u.lang = LANG === 'en' ? 'en-US' : 'ru-RU'; u.pitch = v.pitch; u.rate = v.rate;
   if (v.voice) u.voice = v.voice;
-  u.onend = () => onend && onend();
+  SND.duck(true);
+  u.onend = () => { SND.duck(false); onend && onend(); };
   speechSynthesis.speak(u);
 }
 
@@ -941,7 +1239,7 @@ function cutscene(list, caption, sub, hold) {
   if (!list || !list.length) return;
   wideShot();
   stopTalking();
-  document.body.classList.add('cine');
+  document.body.classList.add('cutscene');
   box.querySelector('.c1').textContent = caption || '';
   box.querySelector('.c2').textContent = sub || '';
   const cap = box.querySelector('.cap');
@@ -954,7 +1252,7 @@ function cutscene(list, caption, sub, hold) {
     if (run !== cineRun) return;
     if (hold) return;                 // финал: последний кадр стоит до конца эфира
     box.classList.remove('on');
-    document.body.classList.remove('cine');
+    document.body.classList.remove('cutscene');
     setTimeout(() => { if (run === cineRun) { A.classList.remove('live'); B.classList.remove('live'); } }, 700);
   };
   // браузер без H.264 (сборки Chromium без кодеков) — берём WebM рядом, если он есть
@@ -983,16 +1281,21 @@ function cutsceneOff() {
   cineRun++;
   const box = $('#cine');
   box.classList.remove('on');
-  document.body.classList.remove('cine');
+  document.body.classList.remove('cutscene');
   box.querySelectorAll('video').forEach(v => { v.pause(); v.classList.remove('live'); });
 }
 
 /* ─────────────────────── события партии ─────────────────────── */
 function handle(e) {
   switch (e.type) {
-    case 'cutscene':
+    case 'cutscene': {
       cutscene(e.clips, e.caption, e.sub, e.hold);
+      const c = (e.clips || []).join(' ');
+      SND.cue(/final-pier/.test(c) ? 'finale-city' : /final-car/.test(c) ? 'finale-mafia'
+        : /final-arrest|final-chase|final-interrog/.test(c) ? 'arrest-reel'
+        : /morning-/.test(c) ? 'morning-reel' : /night-/.test(c) ? 'night-reel' : 'leave-reel');
       break;
+    }
 
     case 'ladder': {
       $('#ladder').innerHTML = e.items.map(i =>
@@ -1020,6 +1323,7 @@ function handle(e) {
     }
 
     case 'chapter': {
+      SND.cue('chapter');
       wideShot();
       const c = $('#card');
       c.className = 'on';
@@ -1047,12 +1351,18 @@ function handle(e) {
       $('#partyno').textContent = (LANG === 'en' ? '#' : '№') + e.no;
       $('#phase').textContent = t('allIn');
       drawRoster(e.players);
+      preloadActs(e.players);
+      SND.phase('day');
+      // первая картинка партии — солнечная площадь, а не пустой тёмный задник
+      document.body.classList.remove('night', 'rain');
+      setBackground('square', true);
       unfocus();
       break;
 
     case 'phase': {
       wideShot();
       const night = e.phase === 'night';
+      SND.phase(night ? 'night' : 'day');
       document.body.classList.toggle('night', night);
       document.body.classList.toggle('rain', !!e.rain);
       $('#phase').textContent = `${night ? t('night') : t('day')} ${e.round}`;
@@ -1078,6 +1388,7 @@ function handle(e) {
     }
 
     case 'event': {
+      SND.cue('event');
       const box = $('#event');
       box.querySelector('h2').textContent = e.title;
       box.querySelector('p').textContent = e.text;
@@ -1091,7 +1402,10 @@ function handle(e) {
       $('#narr').classList.remove('on');
       if (e.slug) slugs[e.name] = e.slug;
       focusOn(e.name);
-      closeUp(e.name, { talk: true });
+      {
+        const accusing = e.suspect || Object.keys(cards).some(n => n !== e.name && e.text.includes(n));
+        closeUp(e.name, { talk: true, mood: accusing ? 'accuse' : 'talk' });
+      }
       $('#speaker').textContent = e.name;
       $('#line').textContent = e.text;
       $('#speech').classList.add('on');
@@ -1113,6 +1427,7 @@ function handle(e) {
       $('#call').innerHTML = `${t('call')}<br>
         <span style="font-size:23px;opacity:.85">${t('callHint')}</span>`;
       $('#vote').classList.add('on');
+      SND.cue('vote-start');
       $('#clock').textContent = e.seconds;
       wideShot();
       unfocus();
@@ -1123,6 +1438,7 @@ function handle(e) {
       break;
 
     case 'tick':
+      SND.cue('vote-tick', e.left);
       $('#clock').textContent = e.left;
       break;
 
@@ -1147,7 +1463,7 @@ function handle(e) {
     case 'lastword':
       if (e.slug) slugs[e.name] = e.slug;
       focusOn(e.name);
-      closeUp(e.name, { talk: true });
+      closeUp(e.name, { talk: true, mood: 'talk' });
       $('#speaker').textContent = `${e.name} · ${t('LASTWORD')}`;
       $('#line').textContent = e.text;
       $('#speech').classList.add('on');
@@ -1168,6 +1484,7 @@ function handle(e) {
       break;
 
     case 'vote_closed':
+      SND.cue('vote-end');
       $('#vote').classList.remove('on');
       $('#ladder').classList.remove('hidden');
       break;
@@ -1238,6 +1555,7 @@ function handle(e) {
     }
 
     case 'bought': {
+      SND.cue('gift');
       const t = $('#toast');
       t.querySelector('.who2').textContent = '@' + e.user;
       t.querySelector('.what').textContent = `${e.label} → ${e.target}`;
@@ -1270,7 +1588,7 @@ function handle(e) {
         c.querySelector('.plate').dataset.stamp = e.by === 'night' ? t('stampNight') : t('stampOut');
         if (e.by === 'night' && e.where) c.title = e.where;
       }
-      if (e.by === 'vote') showReveal(e.name, e.role);
+      if (e.by === 'vote') { SND.cue('vote-end'); SND.cue('reveal', e.role); showReveal(e.name, e.role); }
       break;
     }
 

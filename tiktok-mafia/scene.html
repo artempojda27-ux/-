@@ -449,6 +449,8 @@ const SND = (() => {
     const comp = ctx.createDynamicsCompressor();
     comp.threshold.value = -18; comp.ratio.value = 3;
     master.connect(comp).connect(ctx.destination);
+    // отвод для записи пробных прогонов: в эфире не используется
+    if (window.SND_TAP) { const d = ctx.createMediaStreamDestination(); comp.connect(d); window.SND_TAP(d.stream); }
     bedGain = ctx.createGain(); bedGain.gain.value = 1; bedGain.connect(master);
   }
   const resume = () => { init(); if (ctx.state === 'suspended') ctx.resume(); };

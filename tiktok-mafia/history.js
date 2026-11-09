@@ -14,7 +14,7 @@ const path = require('path');
 
 // У каждого языка эфира свой сериал: у английского другие имена и другая
 // аудитория, и «Ранее в Городе» должно пересказывать их серию, а не русскую
-const FILE = path.join(__dirname, require('./i18n').LANG === 'en' ? 'history-en.json' : 'history.json');
+const FILE = path.join(__dirname, (({ LANG }) => (LANG === 'ru' ? 'history.json' : `history-${LANG}.json`))(require('./i18n')));
 
 const EMPTY = { partyNo: 0, players: {}, pairs: {} };
 

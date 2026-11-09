@@ -27,7 +27,7 @@ const EVENTS = [
         truthful,
         publicText: tr(
           `Под дверью нашли записку: "Ночью я видел, как ${target.name} ${she(target) ? 'выходила' : 'выходил'} из комнаты". Кто написал — неизвестно.`,
-          `A note was slipped under the door: "Last night I saw ${target.name} sneaking out." Nobody knows who wrote it.`),
+          'A note was slipped under the door: "Last night I saw {name} sneaking out." Nobody knows who wrote it.', { name: target.name }),
       };
       return state.event.publicText;
     },
@@ -93,7 +93,8 @@ const EVENTS = [
       back.returned = true;
       state.event = { id: 'return', target: back.name };
       return tr(`${back.name} возвращается в дом. ${she(back) ? 'Она выбыла' : 'Он выбыл'} ночью — значит ${she(back) ? 'она точно ВЕРНАЯ' : 'он точно ВЕРНЫЙ'}.`,
-        `${back.name} is back. ${she(back) ? 'She' : 'He'} died in the night — so ${she(back) ? 'she' : 'he'} is definitely INNOCENT.`);
+        she(back) ? '{name} is back. She died in the night — so she is definitely INNOCENT.'
+          : '{name} is back. He died in the night — so he is definitely INNOCENT.', { name: back.name });
     },
   },
 ];

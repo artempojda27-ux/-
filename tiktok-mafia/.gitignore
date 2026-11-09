@@ -3,6 +3,6 @@ transcript-*.md
 calibration.json
 art_in/
 __pycache__/
-history-en.json
+history-*.json
 assets/gta/clips/*.webm
 assets/gta/talk/*.webm

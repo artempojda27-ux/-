@@ -206,9 +206,46 @@ function clockEn(round) {
   return `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
 }
 
-const { LANG } = require('./i18n');
-const L = LANG === 'en'
-  ? EN
+// ───────────────────────── эфир из пакета lang/<код>.js ─────────────────────────
+// Та же структура, что у английского финала, только строки из пакета.
+function packEpilogue(E) {
+  const listP = (ps) => ps.map((p) => p.name).join(', ').replace(/, ([^,]*)$/, `${E.and}$1`);
+  return function (winner, players, verdicts) {
+    const by = (n) => players.find((p) => p.name === n);
+    const innocents = verdicts.filter((v) => v.role !== 'traitor').map((v) => by(v.name));
+    const caught = verdicts.filter((v) => v.role === 'traitor').map((v) => by(v.name));
+    const sheriffOut = verdicts.find((v) => v.role === 'sheriff');
+    const traitorsLeft = players.filter((p) => p.role === 'traitor' && p.alive);
+    const key = winner === 'faithful'
+      ? verdicts.filter((v) => v.role === 'traitor').sort((a, b) => b.pct - a.pct)[0]
+      : sheriffOut || verdicts[verdicts.length - 1];
+    const out = [];
+    if (winner === 'faithful') {
+      out.push(innocents.length ? fill(E.survivedInnocents, { list: listP(innocents) }) : E.survivedClean);
+      if (key) out.push(fill(E.key, key));
+    } else {
+      if (sheriffOut) out.push(fill(E.sheriffOut, sheriffOut));
+      else if (caught.length) out.push(fill(E.caught, { list: listP(caught) }));
+      else out.push(E.never);
+      if (traitorsLeft.length) {
+        out.push(fill(traitorsLeft.length > 1 ? E.leftMany : E.leftOne, { list: listP(traitorsLeft) }));
+      }
+    }
+    return out.join(' ');
+  };
+}
+function packPreviously(E) {
+  return function (last) {
+    if (!last) return null;
+    const v = (last.verdicts || [])[0];
+    const head = v ? `${E.previously} ${fill(E.firstVerdict, v)} ${E.roles[v.role] || E.roles.faithful}` : E.previously;
+    return `${head} ${last.epilogue || ''}`.trim();
+  };
+}
+
+const { LANG, PACK } = require('./i18n');
+const L = PACK ? PACK.narrator
+  : LANG === 'en' ? EN
   : { NIGHT_OPEN, MORNING, PLACE, QUIET, VOTE };
 
 const narrate = {
@@ -221,9 +258,9 @@ const narrate = {
   quiet: (round) => pickLine(L.QUIET, round),
   vote: (round) => pickLine(L.VOTE, round),
   ending: (winner) => pickLine(ENDING[winner] || ENDING.traitor, Date.now() / 1000 | 0),
-  clock: LANG === 'en' ? clockEn : clockFor,
-  epilogue: LANG === 'en' ? epilogueEn : epilogue,
-  previously: LANG === 'en' ? previouslyEn : previously,
+  clock: LANG === 'en' ? clockEn : clockFor,   // в Европе и Латинской Америке часы 24-часовые
+  epilogue: PACK ? packEpilogue(PACK.narrator.epilogue) : LANG === 'en' ? epilogueEn : epilogue,
+  previously: PACK ? packPreviously(PACK.narrator.epilogue) : LANG === 'en' ? previouslyEn : previously,
 };
 
 module.exports = { narrate };

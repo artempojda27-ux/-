@@ -357,6 +357,13 @@ body.rain #weather{background-image:repeating-linear-gradient(104deg,
 #reveal .rrole{font-family:Georgia,serif;font-size:120px;letter-spacing:.06em}
 #reveal .traitor{color:var(--blood)}
 #reveal .faithful{color:var(--bone)}
+/* ?voice=only — пульт голоса вместо кадра */
+body.voiceonly #root{display:none}
+#vpanel{font:20px/1.5 system-ui,sans-serif;color:#eee;padding:32px;max-width:720px}
+#vpanel h1{font-size:28px;letter-spacing:.2em;margin:0 0 20px}
+#vpanel button{font:inherit;padding:14px 24px;border-radius:12px;border:0;background:#e8c46a;color:#111;cursor:pointer}
+#vpanel #vline{opacity:.8;min-height:3em}
+#vpanel small{opacity:.55}
 </style>
 </head>
 <body>
@@ -1049,7 +1056,14 @@ function cameraWide() {
 /* ─────────────────────── язык эфира ───────────────────────
    Берётся из адреса (?lang=en — так его задаёшь в OBS) или из события
    party, которое шлёт сервер, запущенный с STREAM_LANG=en. */
-let LANG = new URLSearchParams(location.search).get('lang') === 'en' ? 'en' : 'ru';
+const QS = new URLSearchParams(location.search);
+let LANG = QS.get('lang') || 'ru';
+/* Озвучка: ?voice=on — сцена говорит сама (обычный браузер);
+   ?voice=off — картинка для OBS без голоса, субтитры держатся по длине фразы;
+   ?voice=only — только голос: эту вкладку держат открытой в Chrome или Edge,
+   а OBS забирает её звук. Во встроенном браузере OBS голосов нет. */
+const VOICE_MODE = ['off', 'only'].includes(QS.get('voice')) ? QS.get('voice') : 'on';
+const SPEECH_LANG = { ru: 'ru-RU', en: 'en-US', es: 'es-ES', de: 'de-DE', pt: 'pt-BR' };
 const T = {
   ru: {
     title: 'ГОРОД ЗАСЫПАЕТ', caseNo: 'ДЕЛО № ', sayTitles: 'Город засыпает. Дело номер ',
@@ -1077,13 +1091,53 @@ const T = {
     crash: 'glitch — restarting',
     role: { traitor: 'MAFIA', sheriff: 'SHERIFF', faithful: 'INNOCENT' }, roleSay: { faithful: 'innocent' },
   },
+  es: {
+    title: 'LA CIUDAD DUERME', caseNo: 'CASO N.º ', sayTitles: 'La ciudad duerme. Caso número ',
+    allIn: 'ya están todos', night: 'noche', day: 'día', waiting: 'empezamos pronto',
+    curtainSub: 'cada uno se va a pasar la noche', sayNight: 'La ciudad duerme.',
+    call: '¿Quién es la mafia? <b>Escribe un nombre en el chat</b>', callHint: 'manda un regalo después del nombre para una jugada especial',
+    lastword: 'últimas palabras', LASTWORD: 'ÚLTIMAS PALABRAS',
+    revote: '¡Votamos otra vez! <b>Escribe un nombre en el chat</b>', revoteHint: 'los votos anteriores se borran',
+    sheriff: 'el sheriff investiga a alguien', foundHere: 'LO ENCONTRARON AQUÍ',
+    inspect: 'REVELACIÓN', evidence: 'PRUEBA', stampNight: 'NOCHE', stampOut: 'EXPULSADO', stampMafia: 'MAFIA',
+    winCity: 'gana la ciudad', winMafia: 'gana la mafia', next: 'próxima partida en 30 segundos',
+    crash: 'fallo, reiniciando',
+    role: { traitor: 'MAFIA', sheriff: 'SHERIFF', faithful: 'INOCENTE' }, roleSay: { faithful: 'inocente' },
+  },
+  de: {
+    title: 'DIE STADT SCHLÄFT', caseNo: 'FALL NR. ', sayTitles: 'Die Stadt schläft. Fall Nummer ',
+    allIn: 'alle sind da', night: 'Nacht', day: 'Tag', waiting: 'gleich geht es los',
+    curtainSub: 'alle gehen irgendwohin für die Nacht', sayNight: 'Die Stadt schläft.',
+    call: 'Wer ist die Mafia? <b>Schreib einen Namen in den Chat</b>', callHint: 'Geschenk nach dem Namen = Spezialzug',
+    lastword: 'letzte Worte', LASTWORD: 'LETZTE WORTE',
+    revote: 'Neue Abstimmung! <b>Schreib einen Namen in den Chat</b>', revoteHint: 'alte Stimmen sind gelöscht',
+    sheriff: 'der Sheriff überprüft jemanden', foundHere: 'HIER GEFUNDEN',
+    inspect: 'ENTHÜLLUNG', evidence: 'BEWEIS', stampNight: 'NACHT', stampOut: 'RAUSGEWÄHLT', stampMafia: 'MAFIA',
+    winCity: 'die Stadt gewinnt', winMafia: 'die Mafia gewinnt', next: 'nächste Runde in 30 Sekunden',
+    crash: 'Fehler, Neustart',
+    role: { traitor: 'MAFIA', sheriff: 'SHERIFF', faithful: 'UNSCHULDIG' }, roleSay: { faithful: 'unschuldig' },
+  },
+  pt: {
+    title: 'A CIDADE DORME', caseNo: 'CASO Nº ', sayTitles: 'A cidade dorme. Caso número ',
+    allIn: 'todo mundo aqui', night: 'noite', day: 'dia', waiting: 'já vai começar',
+    curtainSub: 'cada um vai passar a noite em algum lugar', sayNight: 'A cidade dorme.',
+    call: 'Quem é da máfia? <b>Escreva um nome no chat</b>', callHint: 'mande um presente depois do nome para uma jogada especial',
+    lastword: 'últimas palavras', LASTWORD: 'ÚLTIMAS PALAVRAS',
+    revote: 'Votação de novo! <b>Escreva um nome no chat</b>', revoteHint: 'os votos anteriores foram apagados',
+    sheriff: 'o xerife está investigando alguém', foundHere: 'ENCONTRADO AQUI',
+    inspect: 'REVELAÇÃO', evidence: 'PROVA', stampNight: 'NOITE', stampOut: 'EXPULSO', stampMafia: 'MÁFIA',
+    winCity: 'a cidade vence', winMafia: 'a máfia vence', next: 'próxima partida em 30 segundos',
+    crash: 'falha, reiniciando',
+    role: { traitor: 'MÁFIA', sheriff: 'XERIFE', faithful: 'INOCENTE' }, roleSay: { faithful: 'inocente' },
+  },
 };
+if (!T[LANG]) LANG = 'ru';
 const t = (k) => T[LANG][k];
 function setLang(l) {
-  if (l !== 'en' && l !== 'ru') return;
+  if (!T[l]) return;
   LANG = l;
   document.documentElement.lang = l;
-  for (const k in VOICE) delete VOICE[k];      // голоса подбираются под язык заново
+  loadVoices();                                // голоса подбираются под язык заново
   applyStatic();
 }
 /* надписи, которые стоят в разметке до первого события */
@@ -1101,13 +1155,25 @@ document.addEventListener('DOMContentLoaded', applyStatic);
    Голос даёт браузер. В OBS включи у Browser Source
    «Control audio via OBS», иначе звука в эфире не будет. */
 const VOICE = {};
-let ruVoices = [], enVoices = [];
-speechSynthesis.onvoiceschanged = () => {
+/* Голоса языка эфира. Сначала нейросетевые (Edge: «Online (Natural)»,
+   Chrome: «Google …») — они звучат как люди, остальные как автоответчик.
+   Внутри — сначала основной вариант языка: en-US, pt-BR, es-ES. */
+let langVoices = [];
+function loadVoices() {
+  if (!('speechSynthesis' in window)) return;
   const all = speechSynthesis.getVoices();
-  ruVoices = all.filter(v => v.lang.startsWith('ru'));
-  // английский эфир: сначала американские голоса, потом британские
-  enVoices = all.filter(v => v.lang === 'en-US').concat(all.filter(v => v.lang === 'en-GB'));
-};
+  const main = SPEECH_LANG[LANG] || LANG;
+  const mine = all.filter(v => v.lang.replace('_', '-').toLowerCase().startsWith(LANG));
+  const score = (v) => (/natural|online|neural|google/i.test(v.name) ? 0 : 2)
+                     + (v.lang.replace('_', '-') === main ? 0 : 1);
+  langVoices = mine.sort((a, b) => score(a) - score(b));
+  const best = langVoices.filter(v => score(v) === score(langVoices[0]));
+  if (best.length >= 3) langVoices = best;     // хватает хороших — плохие не подмешиваем
+  for (const k in VOICE) delete VOICE[k];
+  voiceStatus();
+}
+if ('speechSynthesis' in window) speechSynthesis.onvoiceschanged = loadVoices;
+loadVoices();
 
 function voiceFor(name, hint = '') {
   if (VOICE[name]) return VOICE[name];
@@ -1118,20 +1184,66 @@ function voiceFor(name, hint = '') {
     rate: (hint.includes('быстр') ? 1.2
           : hint.includes('медленн') || hint.includes('ленив') ? 0.88 : 1.02)
           + ((h % 5) - 2) * 0.03,
-    voice: (LANG === 'en' ? enVoices : ruVoices)[h % Math.max(1, (LANG === 'en' ? enVoices : ruVoices).length)] || null,
+    voice: langVoices[h % Math.max(1, langVoices.length)] || null,
   };
   return VOICE[name];
 }
 
 function speak(text, name, hint, onend) {
-  if (!('speechSynthesis' in window)) { onend && onend(); return; }
-  const u = new SpeechSynthesisUtterance(text);
+  const done = () => { SND.duck(false); onend && onend(); };
   const v = voiceFor(name, hint || '');
-  u.lang = LANG === 'en' ? 'en-US' : 'ru-RU'; u.pitch = v.pitch; u.rate = v.rate;
-  if (v.voice) u.voice = v.voice;
   SND.duck(true);
-  u.onend = () => { SND.duck(false); onend && onend(); };
-  speechSynthesis.speak(u);
+  voiceLine(name, text);
+  // без голоса (картинка для OBS) реплика держится столько, сколько её произносила бы вкладка-голос
+  if (VOICE_MODE === 'off' || !('speechSynthesis' in window)) {
+    const words = text.split(/\s+/).length;
+    setTimeout(done, Math.max(1600, words * 400 / v.rate + 500));
+    return;
+  }
+  // Голоса Google в Chrome обрываются после ~15 секунд: длинный текст режем по предложениям
+  const parts = text.match(/[^.!?…]+[.!?…]*["»“”]?\s*/g) || [text];
+  let left = parts.length;
+  for (const part of parts) {
+    const u = new SpeechSynthesisUtterance(part.trim());
+    u.lang = SPEECH_LANG[LANG] || LANG; u.pitch = v.pitch; u.rate = v.rate;
+    if (v.voice) u.voice = v.voice;
+    u.onend = u.onerror = () => { if (--left === 0) done(); };
+    speechSynthesis.speak(u);
+  }
+}
+
+/* ?voice=only: вместо кадра — пульт голоса. Звук сцены (город, удары) здесь
+   выключен, его даёт картинка в OBS; эта вкладка только говорит. */
+function voiceStatus() {
+  const s = document.getElementById('vstat');
+  if (!s) return;
+  const names = [...new Set(langVoices.map(v => v.name))];
+  s.textContent = `${LANG.toUpperCase()} · ${names.length} голос(ов): ${names.slice(0, 4).join(', ') || 'нет — открой в Chrome или Edge'}`;
+}
+function voiceLine(name, text) {
+  const l = document.getElementById('vline');
+  if (l) l.textContent = `${name}: ${text}`;
+}
+if (VOICE_MODE === 'only') {
+  for (const k of ['phase', 'cue', 'duck', 'on']) SND[k] = () => {};
+  document.addEventListener('DOMContentLoaded', () => {
+    document.body.classList.add('voiceonly');
+    const p = document.createElement('div');
+    p.id = 'vpanel';
+    p.innerHTML = `<h1>ГОЛОС ЭФИРА</h1>
+      <button id="vgo">Нажми, чтобы включить голос</button>
+      <p id="vstat"></p><p id="vline"></p>
+      <small>Держи вкладку открытой (можно за другими окнами, но не сворачивай).
+      В OBS: «Захват звука приложения» → этот браузер.</small>`;
+    document.body.appendChild(p);
+    // Chrome не даёт говорить, пока по странице не кликнули
+    $('#vgo').onclick = () => {
+      speechSynthesis.speak(new SpeechSynthesisUtterance(' '));
+      speak(t('sayNight'), 'ведущий', 'мужской');
+      $('#vgo').textContent = 'Голос включён ✓';
+    };
+    loadVoices();
+  });
 }
 
 /* ─────────────────────── отрисовка ─────────────────────── */
@@ -1389,7 +1501,7 @@ function handle(e) {
 
     case 'party':
       if (e.lang) setLang(e.lang);
-      $('#partyno').textContent = (LANG === 'en' ? '#' : '№') + e.no;
+      $('#partyno').textContent = (LANG === 'ru' ? '№' : '#') + e.no;
       $('#phase').textContent = t('allIn');
       drawRoster(e.players);
       preloadActs(e.players);

@@ -115,6 +115,17 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // Кино-вставка во весь кадр. Движок ждёт, пока она идёт: реплики и
 // голосование не должны начаться поверх катсцены.
 const cinema = require('./cinema');
+const hooks = require('./hooks');
+
+/** Строка-вопрос на экране: сколько живых, сколько мафии, что за фаза.
+    Новичок за секунду понимает, что происходит и что делать. */
+function status(state, phase) {
+  const alive = state.players.filter((p) => p.alive);
+  broadcast({
+    type: 'status', phase, round: state.round,
+    alive: alive.length, mafia: alive.filter((p) => p.role === 'traitor').length,
+  });
+}
 async function cutscene(reel, caption = '', sub = '') {
   const clips = reel.filter(Boolean);
   if (!clips.length) return;
@@ -227,6 +238,15 @@ function mockResponse(user, system = '') {
   }
   // список «В ИГРЕ» — в системном промпте, без него подозреваемый всегда был мимо
   const names = (user + '\n' + system).match(/В ИГРЕ: (.+)/)?.[1].split(', ') || ['Лиза'];
+  const viewer = user.match(/ЗРИТЕЛЬ @(\S+)/)?.[1];
+  if (viewer) {
+    return JSON.stringify({
+      line: LANG === 'en'
+        ? `@${viewer}, ${pick(["you really think it's me? Watch the quiet ones.", 'nice try. Ask yourself who was at the pier.', "good eye. I've been saying it all day."])}`
+        : `@${viewer}, ${pick(['ты правда думаешь, что это я? Смотри на тихих.', 'хорошая попытка. Спроси, кто был у пирса.', 'верно подмечено. Я весь день об этом.'])}`,
+      suspect: pick(names),
+    });
+  }
   return JSON.stringify({
     line: LANG === 'en' ? pick([
       "I don't like how quiet you've been all round.",
@@ -635,11 +655,17 @@ async function discussionPhase(state) {
     if (accused && rand() < 0.45) sp = accused;
 
     const system = buildAgentSystem(sp, state);
+    // крючок: персонаж отвечает конкретному зрителю по нику. Не чаще
+    // раза в две реплики — иначе персонажи перестанут спорить друг с другом
+    const viewer = i % 2 === 1 ? hooks.viewerFor(sp.name, alive.map((p) => p.name)) : null;
     const user = `ДЕНЬ ${state.round}. Обсуждение.
 
 ЧТО УЖЕ СКАЗАЛИ:
 ${publicLog(state)}
-
+${viewer ? `
+ЗРИТЕЛЬ @${viewer.user} написал в чат: «${viewer.text}»
+Ответь ему прямо, начни реплику с @${viewer.user}. Оставайся в роли.
+` : ''}
 Твоя реплика сейчас:`;
 
     let out;
@@ -654,7 +680,8 @@ ${publicLog(state)}
     state.log.push(`${sp.name}: ${out.line}`);
     // suspect нужен сцене для склейки на реакцию того, на кого показали
     const suspect = out.suspect && alive.some((p) => p.name === out.suspect && p.name !== sp.name) ? out.suspect : null;
-    broadcast({ type: 'line', name: sp.name, slug: sp.slug, text: out.line, voice: sp.voice, suspect });
+    broadcast({ type: 'line', name: sp.name, slug: sp.slug, text: out.line, voice: sp.voice, suspect,
+      viewer: viewer && out.line.includes('@' + viewer.user) ? viewer.user : null });
     say(`  ${C.bold(sp.name)}: ${out.line}`, `**${sp.name}:** ${out.line}`);
 
     if (out.suspect && alive.some((p) => p.name === out.suspect && p.name !== sp.name)) {
@@ -730,6 +757,7 @@ async function runGame() {
   say(C.dim(`seed=${INITIAL_SEED}  provider=${PROVIDER}  model=${MODEL}`), null);
   say('');
   currentState = state;
+  hooks.newParty();
 
   broadcast({
     type: 'titles',
@@ -805,6 +833,9 @@ async function runGame() {
       // Ночь — отдельная сцена, а не мгновение: карточке главы и закадровому
       // голосу надо дать отзвучать, иначе всё слипается в одну секунду.
       broadcast({ type: 'chapter', title: `${tr('НОЧЬ', 'NIGHT')} ${roman(state.round)}`, sub: narrate.clock(state.round) });
+      // крючок: зал гадает, кто не доживёт до утра
+      hooks.openPrediction();
+      status(state, 'night');
       await sleep(CONFIG.beat);
       broadcast({
         type: 'phase', phase: 'night', round: state.round,
@@ -863,12 +894,36 @@ async function runGame() {
           text: narrate.place(state.round, night.where),
         });
         await sleep(CONFIG.beat * 1.5);
+
+        // крючок: сколько зала угадало жертву
+        const guess = hooks.closePrediction(night.victim.name);
+        if (guess) {
+          broadcast({ type: 'prediction', victim: night.victim.name, ...guess });
+          await sleep(CONFIG.beat * 1.2);
+        }
+        // крючок: правдивая улика — где ночью был кто-то из мафии
+        const mafiaNow = state.players.filter((p) => p.alive && p.role === 'traitor');
+        if (mafiaNow.length && state.placement) {
+          const t = pick(mafiaNow);
+          const place = byId(state.placement[t.name]);
+          if (place && state.placement[t.name] !== night.whereId) {
+            const hour = narrate.clock(state.round);
+            const text = hooks.clue(place.name, hour);
+            state.log.push(`[УЛИКА: ${text}]`);
+            broadcast({ type: 'clue', title: tr('УЛИКА', 'CLUE'), text });
+            await sleep(CONFIG.beat * 1.8);
+          }
+        }
+        status(state, 'day');
         say(`  ${C.bold(night.victim.name)} — ${night.where}. ${C.green(night.victim.role === 'sheriff' ? g(night.victim, 'Он был ШЕРИФОМ.', 'Она была ШЕРИФОМ.') : g(night.victim, 'Мирный житель.', 'Мирная жительница.'))}`,
             `**${night.victim.name}** ${g(night.victim, 'не пережил', 'не пережила')} ночь. ${night.where}. _(${night.reason})_`);
         if (night.witnesses.length) {
           say(C.dim(`  там же были: ${night.witnesses.join(', ')}`), null);
         }
-      } else if (state.skipNight) {
+      } else {
+        hooks.closePrediction(null);
+      }
+      if (!night && state.skipNight) {
         broadcast({ type: 'chapter', title: tr('УТРО', 'MORNING'), sub: '' });
         await sleep(CONFIG.beat);
         broadcast({ type: 'narrate', text: narrate.quiet(state.round) });
@@ -885,12 +940,18 @@ async function runGame() {
       await sleep(CONFIG.beat);
     }
     broadcast({ type: 'phase', phase: 'day', round: state.round });
+    status(state, 'day');
+    // крючок: открытая петля — ответ обещан после голосования
+    broadcast({ type: 'narrate', text: hooks.openLoop(state.round) });
+    await sleep(CONFIG.beat * 1.4);
     say(C.yellow(`\n───── ДЕНЬ ${state.round}. Обсуждение ─────`), `\n### День ${state.round}`);
     const suspicions = await discussionPhase(state);
 
     // ── ГОЛОСОВАНИЕ ──
     say(C.yellow('\n───── ГОЛОСОВАНИЕ ЗРИТЕЛЕЙ ─────'), '\n**Голосование:**');
     broadcast({ type: 'narrate', text: narrate.vote(state.round) });
+    hooks.resetBallots();
+    status(state, 'vote');
     await sleep(CONFIG.beat);
     const { target, weights, total } = await runVote(state, suspicions);
     for (const { p, w } of weights.sort((a, b) => b.w - a.w)) {
@@ -928,11 +989,18 @@ async function runGame() {
           wasTraitor ? '> ЭТО БЫЛА МАФИЯ.' : `> ${was} ${roleWord}.`);
       if (CONFIG.pause) await sleep(CONFIG.pause);
       // вскрытие роли отыгрывает, потом катсцена: наручники или уход из города
+      // доска детективов: кто голосовал за настоящую мафию
+      const board = hooks.scoreBallots(b.name, wasTraitor);
       if (cinema.ON) {
-        await sleep(5200);
+        await sleep(7800);   // вскрытие с паузой «Он был…» отыгрывает
         await cutscene(cinema.banishReel(b), b.name,
           wasTraitor ? tr('мафия за решёткой', 'mafia behind bars') : tr('уходит из города', 'leaves the city'));
       }
+      if (board && board.length && wasTraitor) {
+        broadcast({ type: 'detectives', top: board });
+        await sleep(CONFIG.beat * 1.5);
+      }
+      status(state, 'day');
     }
 
     winner = checkWin(state);
@@ -985,6 +1053,17 @@ async function runGame() {
   broadcast({ type: 'narrate', text: state.epilogue });
   await sleep(Math.max(CONFIG.beat * 2, finale.length ? cinema.reelMs(finale) - 800 : 0));
 
+  // крючок: тизер следующей серии и лучшие детективы эфира
+  const best = hooks.top();
+  if (best.length) {
+    broadcast({ type: 'detectives', top: best, final: true });
+    await sleep(CONFIG.beat * 2.5);
+  }
+  const next = hooks.teaser(state, winner);
+  broadcast({ type: 'teaser', text: next });
+  broadcast({ type: 'narrate', text: next });
+  await sleep(CONFIG.beat * 2);
+
   broadcast({
     type: 'over',
     winner,
@@ -1030,4 +1109,5 @@ if (require.main === module) {
   });
 }
 
-module.exports = { runGame, setBroadcast, setVoteProvider, queueAction, requestSpeech, drainNow, CONFIG };
+module.exports = { runGame, setBroadcast, setVoteProvider, queueAction, requestSpeech, drainNow, CONFIG,
+  noteComment: hooks.noteComment, noteBallot: hooks.noteBallot };

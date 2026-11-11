@@ -6,3 +6,4 @@ __pycache__/
 history-en.json
 assets/gta/clips/*.webm
 assets/gta/talk/*.webm
+detectives.json

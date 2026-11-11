@@ -2,7 +2,8 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<title>Предатели — сцена</title>
+<title>Город засыпает — сцена</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Manrope:wght@500;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
 /* ───────────────────────────────────────────────────────────────
    Холст OBS 1080×1920.
@@ -17,21 +18,28 @@
    Картинок может не быть — тогда всё честно работает на монограммах.
    ─────────────────────────────────────────────────────────────── */
 :root{
-  --ink:#141010;
-  --bone:#EFE6D6;
-  --bone-dim:#9C9185;
-  --brass:#C9A227;
-  --blood:#B3261E;
-  --oxblood:#4A1220;
-  --night:#0C1A2A;
+  /* неоновый приморский город: ночь, розовые и голубые вывески, закат */
+  --ink:#0d0b1a;
+  --bone:#f3eefc;
+  --bone-dim:#a9a2c4;
+  --brass:#ffb347;     /* закат: акценты и подписи */
+  --blood:#ff4a5a;     /* мафия, опасность */
+  --oxblood:#3a0f2c;   /* плашка голосования */
+  --night:#0c1426;
+  --neon:#ff3d9a;
+  --cyan:#3fe0f0;
+  --glass:rgba(13,11,26,.84);
+  --f-display:"Unbounded","Arial Black",system-ui,sans-serif;
+  --f-body:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{width:100%;height:100%;overflow:hidden;background:#0A0808}
 #root{position:absolute;left:0;top:0;width:1080px;height:1920px;
   transform-origin:0 0;overflow:hidden;background:var(--ink)}
 body.night #root{background:var(--night)}
-.serif{font-family:Georgia,"Times New Roman",serif}
-#root{color:var(--bone);font:400 26px/1.45 -apple-system,"Segoe UI",Roboto,sans-serif}
+.serif{font-family:var(--f-display);font-weight:700;letter-spacing:-.01em}
+#root{color:var(--bone);font:500 26px/1.45 var(--f-body)}
 
 /* ── комната ── */
 /* Фон — всегда конкретное место, а не абстрактная комната. Днём площадь,
@@ -79,7 +87,7 @@ body.night #vignette{box-shadow:inset 0 0 300px 90px rgba(0,0,0,.85)}
 
 header{position:relative;display:flex;align-items:baseline;justify-content:space-between;
   border-bottom:2px solid rgba(201,162,39,.3);padding-bottom:16px}
-#title{font-family:Georgia,serif;font-size:42px;letter-spacing:.05em}
+#title{font-family:var(--f-display);font-size:42px;letter-spacing:.05em}
 #title em{font-style:normal;color:var(--brass)}
 #phase{font-size:29px;color:var(--bone-dim);letter-spacing:.04em}
 
@@ -94,7 +102,7 @@ header{position:relative;display:flex;align-items:baseline;justify-content:space
   filter:drop-shadow(0 18px 22px rgba(0,0,0,.6));
   animation:breathe 7s ease-in-out infinite}
 .figure .mono{width:150px;height:200px;border-radius:6px;background:var(--bone);
-  color:var(--ink);display:grid;place-items:center;font-family:Georgia,serif;font-size:84px}
+  color:var(--ink);display:grid;place-items:center;font-family:var(--f-display);font-size:84px}
 @keyframes breathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
 
 /* задний ряд глушится: так появляется глубина */
@@ -102,7 +110,7 @@ header{position:relative;display:flex;align-items:baseline;justify-content:space
 
 .plate{margin-top:8px;display:inline-block;min-width:160px;padding:5px 14px 8px;
   background:rgba(12,9,9,.72);border-radius:3px;position:relative;overflow:hidden}
-.pname{font-family:Georgia,serif;font-size:30px;line-height:1.1}
+.pname{font-family:var(--f-display);font-size:30px;line-height:1.1}
 .bar{position:absolute;left:0;bottom:0;height:4px;width:0;background:var(--brass);
   transition:width .4s}
 .pct{font-size:22px;color:var(--brass);opacity:0;transition:opacity .3s}
@@ -117,7 +125,7 @@ header{position:relative;display:flex;align-items:baseline;justify-content:space
 .who.out{opacity:.26;filter:grayscale(1) brightness(.5)}
 .who.out .pname{text-decoration:line-through;text-decoration-thickness:2px}
 .who.out .plate::after{content:attr(data-stamp);position:absolute;inset:0;
-  display:grid;place-items:center;color:var(--blood);font-family:Georgia,serif;
+  display:grid;place-items:center;color:var(--blood);font-family:var(--f-display);
   font-size:24px;letter-spacing:.12em;background:rgba(12,9,9,.55)}
 
 /* стол на переднем плане: держит персонажей в комнате, а не в воздухе */
@@ -151,7 +159,7 @@ body.montage #table{opacity:0}
   filter:drop-shadow(0 30px 40px rgba(0,0,0,.75)) brightness(1.04);
   transform-origin:50% 90%;animation:breathe2 6.5s ease-in-out infinite, sway 11s ease-in-out infinite alternate}
 .shot .sfig .mono{width:600px;height:800px;border-radius:8px;background:var(--bone);color:var(--ink);
-  display:grid;place-items:center;font-family:Georgia,serif;font-size:300px}
+  display:grid;place-items:center;font-family:var(--f-display);font-size:300px}
 @keyframes breathe2{0%,100%{scale:1}50%{scale:1.012}}
 /* ключевой свет со стороны камеры и тень с другой: лицо объёмное, а не наклейка */
 .shot .slight{position:absolute;inset:0;mix-blend-mode:soft-light;
@@ -179,31 +187,33 @@ body.cine #cast, body.cine #table{opacity:0 !important}
 #speech{position:absolute;left:70px;right:70px;top:1060px;min-height:180px;
   text-align:center;opacity:0;transition:opacity .3s}
 #speech.on{opacity:1}
-#speaker{font-size:26px;color:var(--brass);letter-spacing:.16em;margin-bottom:12px}
-#line{font-family:Georgia,serif;font-size:50px;line-height:1.26;
-  text-shadow:0 3px 18px rgba(0,0,0,.95)}
+#speaker{font:700 24px/1 var(--f-mono);color:var(--cyan);letter-spacing:.2em;text-transform:uppercase;margin-bottom:14px}
+#line{font:800 50px/1.24 var(--f-body);letter-spacing:-.005em;
+  text-shadow:0 3px 18px rgba(0,0,0,.95),0 0 2px rgba(0,0,0,.9)}
+#line .at{color:var(--neon);text-shadow:0 0 18px rgba(255,61,154,.55),0 3px 14px #000}
 
 /* ── голосование ── */
 #vote{position:absolute;left:48px;right:48px;top:1270px;display:none;align-items:center;
-  gap:24px;background:var(--oxblood);border-radius:4px;padding:18px 26px}
+  gap:24px;background:linear-gradient(120deg,rgba(58,15,44,.95),rgba(13,11,26,.92));
+  border:2px solid var(--neon);border-radius:18px;padding:18px 26px;box-shadow:0 0 50px rgba(255,61,154,.25)}
 #vote.on{display:flex}
-#clock{font-family:Georgia,serif;font-size:72px;line-height:1;min-width:104px;text-align:center}
+#clock{font-family:var(--f-display);font-size:72px;line-height:1;min-width:104px;text-align:center}
 #call{font-size:33px;line-height:1.24}
 #call b{color:var(--brass);font-weight:400}
 
 /* ── лестница подарков ── */
 #ladder{position:absolute;left:48px;right:48px;top:1272px;
   display:grid;grid-template-columns:repeat(3,1fr);gap:6px 18px;
-  background:rgba(10,8,8,.7);border:1px solid rgba(201,162,39,.35);
-  border-radius:4px;padding:14px 20px;transition:opacity .4s}
+  background:var(--glass);border:1px solid rgba(63,224,240,.3);
+  border-radius:14px;padding:14px 20px;transition:opacity .4s}
 #ladder.hidden{opacity:0}
 #ladder .row{display:flex;align-items:baseline;gap:10px;font-size:22px}
 #ladder .g{color:var(--brass);white-space:nowrap}
 #ladder .a{color:var(--bone-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* ── что купили ── */
-#toast{position:absolute;left:48px;right:48px;top:1180px;background:var(--brass);
-  color:var(--ink);border-radius:4px;padding:14px 22px;display:flex;gap:14px;
+#toast{position:absolute;left:48px;right:48px;top:1180px;background:linear-gradient(90deg,var(--neon),#ff7a59);
+  color:#fff;border-radius:14px;padding:14px 22px;display:flex;gap:14px;
   align-items:baseline;transform:translateY(40px);opacity:0;visibility:hidden;
   transition:transform .45s,opacity .45s,visibility 0s .45s;z-index:8}
 /* пустое уведомление невысокое: сдвиг на 200% своей высоты оставлял его
@@ -212,17 +222,20 @@ body.cine #cast, body.cine #table{opacity:0 !important}
 /* в перебивке по городу подарок не перекрывает кадр: всплывёт после */
 body.montage #toast{opacity:0}
 #toast .who2{font-size:27px;font-weight:600}
-#toast .what{font-family:Georgia,serif;font-size:32px}
+#toast .what{font-family:var(--f-display);font-size:32px}
 
 /* ── событие ── */
-#event{position:absolute;left:0;right:0;top:300px;background:var(--brass);color:var(--ink);
-  padding:20px 48px;transform:translateY(-40px);opacity:0;visibility:hidden;
+#event{position:absolute;left:48px;right:48px;top:300px;background:var(--glass);color:var(--bone);
+  border:2px solid var(--brass);border-radius:18px;box-shadow:0 0 40px rgba(255,179,71,.18);
+  padding:22px 34px;transform:translateY(-40px);opacity:0;visibility:hidden;
   transition:transform .5s,opacity .5s,visibility 0s .5s;z-index:7}
 /* прятали сдвигом на 170% своей высоты — пустая плашка невысокая и оставалась
    в кадре жёлтой полосой. Теперь прячется целиком */
 #event.on{transform:translateY(0);opacity:1;visibility:visible;transition:transform .5s,opacity .5s}
-#event h2{font-family:Georgia,serif;font-size:36px;letter-spacing:.1em;margin-bottom:4px}
-#event p{font-size:27px}
+#event h2{font:700 26px/1 var(--f-mono);letter-spacing:.22em;color:var(--brass);margin-bottom:10px}
+#event p{font-size:31px;line-height:1.35;font-weight:700}
+#event.clue{top:640px;border-color:var(--cyan);box-shadow:0 0 44px rgba(63,224,240,.22)}
+#event.clue h2{color:var(--cyan)}
 
 /* ── город: локации во весь кадр ──
    Ночь была провалом в эфире: чёрный экран и текст. Теперь это её
@@ -246,9 +259,9 @@ body.montage #toast{opacity:0}
 #placeName.on{opacity:1}
 /* «the pier» на карточке — с заглавной */
 #placeName .pn::first-letter,#place .loc::first-letter{text-transform:uppercase}
-#placeName .pn{font-family:Georgia,serif;font-size:62px;color:var(--bone);
+#placeName .pn{font-family:var(--f-display);font-size:62px;color:var(--bone);
   text-shadow:0 4px 24px rgba(0,0,0,.9)}
-#placeName .pc{font-family:Georgia,serif;font-size:32px;color:var(--brass);
+#placeName .pc{font-family:var(--f-display);font-size:32px;color:var(--brass);
   letter-spacing:.24em;margin-top:10px}
 
 /* ── кашет: чёрные полосы сверху и снизу ──
@@ -268,9 +281,9 @@ body.montage #toast{opacity:0}
 #cine .cap{position:absolute;left:64px;right:64px;bottom:300px;opacity:0;
   transform:translateY(16px);transition:opacity .8s,transform .8s}
 #cine .cap.on{opacity:1;transform:none}
-#cine .cap .c1{font-family:Georgia,serif;font-size:66px;color:var(--bone);
+#cine .cap .c1{font-family:var(--f-display);font-size:66px;color:var(--bone);
   text-shadow:0 4px 26px rgba(0,0,0,.95)}
-#cine .cap .c2{font-family:Georgia,serif;font-size:30px;color:var(--brass);
+#cine .cap .c2{font-family:var(--f-display);font-size:30px;color:var(--brass);
   letter-spacing:.22em;text-transform:uppercase;margin-top:8px;text-shadow:0 2px 14px #000}
 #cine::after{content:'';position:absolute;inset:0;pointer-events:none;
   background:linear-gradient(to bottom,rgba(0,0,0,.35),transparent 22%,transparent 62%,rgba(0,0,0,.6))}
@@ -315,17 +328,17 @@ body.rain #weather{background-image:repeating-linear-gradient(104deg,
 #card{position:absolute;inset:0;display:grid;place-items:center;z-index:11;
   background:#000;opacity:0;pointer-events:none;transition:opacity .8s;text-align:center}
 #card.on{opacity:1}
-#card .ct{font-family:Georgia,serif;font-size:96px;letter-spacing:.16em;color:var(--bone)}
-#card .cs{font-family:Georgia,serif;font-size:34px;color:var(--brass);
+#card .ct{font-family:var(--f-display);font-size:96px;letter-spacing:.16em;color:var(--bone)}
+#card .cs{font-family:var(--f-display);font-size:34px;color:var(--brass);
   letter-spacing:.3em;margin-top:18px}
 #card.titles .ct{font-size:104px;color:var(--brass)}
 #card .roster{margin:46px auto 0;max-width:860px;display:grid;grid-template-columns:1fr 1fr;
   gap:10px 60px;font-size:28px;color:var(--bone-dim);text-align:left}
-#card .roster b{color:var(--bone);font-weight:400;font-family:Georgia,serif;font-size:32px}
+#card .roster b{color:var(--bone);font-weight:400;font-family:var(--f-display);font-size:32px}
 
 /* ── голос за кадром ── */
 #narr{position:absolute;left:90px;right:90px;top:1130px;text-align:center;
-  font-family:Georgia,serif;font-size:42px;line-height:1.3;color:var(--bone);
+  font-family:var(--f-display);font-size:42px;line-height:1.3;color:var(--bone);
   text-shadow:0 3px 20px rgba(0,0,0,.95);opacity:0;transition:opacity .6s;z-index:8}
 #narr.on{opacity:1}
 
@@ -333,7 +346,7 @@ body.rain #weather{background-image:repeating-linear-gradient(104deg,
 #curtain{position:absolute;inset:0;display:grid;place-items:center;z-index:6;
   background:rgba(6,12,20,.92);opacity:0;pointer-events:none;transition:opacity .9s}
 #curtain.on{opacity:1}
-#curtain .t{font-family:Georgia,serif;font-size:76px;letter-spacing:.14em;text-align:center}
+#curtain .t{font-family:var(--f-display);font-size:76px;letter-spacing:.14em;text-align:center}
 #curtain .s{font-size:30px;color:var(--bone-dim);text-align:center;margin-top:16px}
 
 /* ── где нашли ── */
@@ -341,9 +354,42 @@ body.rain #weather{background-image:repeating-linear-gradient(104deg,
   opacity:0;transition:opacity .6s;z-index:6}
 #place.on{opacity:1}
 #place .lbl{font-size:25px;color:var(--bone-dim);letter-spacing:.24em}
-#place .loc{font-family:Georgia,serif;font-size:58px;color:var(--brass);margin-top:8px}
-#place .clock{font-family:Georgia,serif;font-size:30px;color:var(--bone-dim);
+#place .loc{font-family:var(--f-display);font-size:58px;color:var(--brass);margin-top:8px}
+#place .clock{font-family:var(--f-display);font-size:30px;color:var(--bone-dim);
   letter-spacing:.2em;margin-top:6px}
+
+/* ── крючки удержания ──
+   Строка-вопрос всегда наверху: новичок за секунду понимает, что
+   происходит и что ему делать. Под ней раз в минуту — приветствие
+   тем, кто только зашёл. Карточки: предсказание, детективы, тизер. */
+#hud{position:absolute;left:40px;right:40px;top:104px;z-index:12;display:flex;gap:14px;align-items:center;
+  background:var(--glass);border:1px solid rgba(255,61,154,.45);border-radius:999px;padding:12px 22px;
+  font:700 23px/1.2 var(--f-mono);letter-spacing:.05em;text-transform:uppercase;
+  box-shadow:0 0 30px rgba(255,61,154,.18);opacity:0;transition:opacity .5s}
+#hud.on{opacity:1}
+#hud .dot{width:14px;height:14px;border-radius:50%;background:var(--blood);flex:none;
+  box-shadow:0 0 12px var(--blood);animation:pulse 1.4s ease-in-out infinite}
+#hud .txt{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#hud em{font-style:normal;color:var(--neon)}
+#hud b{color:var(--cyan);font-weight:700}
+#ticker{position:absolute;left:60px;right:60px;top:176px;z-index:12;text-align:center;
+  font:700 24px/1.3 var(--f-body);color:var(--bone);text-shadow:0 2px 10px #000;
+  opacity:0;transform:translateY(-10px);transition:opacity .5s,transform .5s}
+#ticker.on{opacity:1;transform:none}
+#ticker span{background:rgba(63,224,240,.16);border:1px solid rgba(63,224,240,.5);border-radius:999px;padding:8px 18px;display:inline-block}
+#hook{position:absolute;left:60px;right:60px;top:420px;z-index:11;background:var(--glass);
+  border:2px solid var(--cyan);border-radius:22px;padding:30px 34px;text-align:center;
+  opacity:0;visibility:hidden;transform:scale(.96);transition:opacity .45s,transform .45s,visibility 0s .45s}
+#hook.on{opacity:1;visibility:visible;transform:none;transition:opacity .45s,transform .45s}
+#hook .h-eye{font:700 22px/1 var(--f-mono);letter-spacing:.24em;color:var(--cyan);margin-bottom:14px}
+#hook .h-big{font:900 92px/1 var(--f-display);color:var(--neon);text-shadow:0 0 30px rgba(255,61,154,.45)}
+#hook .h-txt{font:700 34px/1.3 var(--f-body);margin-top:12px}
+#hook .h-list{display:grid;gap:10px;margin-top:18px;font:700 30px/1.2 var(--f-mono);text-align:left}
+#hook .h-list div{display:flex;justify-content:space-between;gap:16px;padding:10px 16px;border-radius:12px;background:rgba(255,255,255,.05)}
+#hook .h-list div:first-child{color:var(--brass)}
+#hook .h-sub{font:700 24px/1.3 var(--f-mono);color:var(--bone-dim);margin-top:16px;letter-spacing:.06em}
+#hook.teaser{border-color:var(--neon)}
+#hook.teaser .h-txt{font-size:40px}
 
 /* ── вскрытие роли ── */
 #reveal{position:absolute;inset:0;display:none;place-items:center;z-index:9;
@@ -352,10 +398,13 @@ body.rain #weather{background-image:repeating-linear-gradient(104deg,
 #rface{height:520px;margin-bottom:22px;display:flex;align-items:flex-end;justify-content:center}
 #rface img{max-height:100%;display:block;filter:drop-shadow(0 24px 30px rgba(0,0,0,.8))}
 #rface .mono{width:300px;height:400px;border-radius:6px;background:var(--bone);color:var(--ink);
-  display:grid;place-items:center;font-family:Georgia,serif;font-size:160px}
-#reveal .rname{font-family:Georgia,serif;font-size:70px;margin-bottom:12px}
-#reveal .rrole{font-family:Georgia,serif;font-size:120px;letter-spacing:.06em}
-#reveal .traitor{color:var(--blood)}
+  display:grid;place-items:center;font-family:var(--f-display);font-size:160px}
+#reveal .rname{font-family:var(--f-display);font-size:70px;margin-bottom:12px}
+#reveal .rrole{font-family:var(--f-display);font-size:120px;letter-spacing:.06em}
+#reveal .rrole{font-weight:900}
+#reveal .rrole.pending{color:var(--bone-dim);letter-spacing:.3em;animation:pulse 0.8s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.35}}
+#reveal .traitor{color:var(--blood);text-shadow:0 0 40px rgba(255,74,90,.6)}
 #reveal .faithful{color:var(--bone)}
 </style>
 </head>
@@ -409,6 +458,9 @@ body.rain #weather{background-image:repeating-linear-gradient(104deg,
   <div id="bars"></div>
   <div id="card"><div><div class="ct serif"></div><div class="cs serif"></div><div class="roster"></div></div></div>
   <div id="event"><h2 class="serif"></h2><p></p></div>
+  <div id="hud"><span class="dot"></span><span class="txt"></span></div>
+  <div id="ticker"><span></span></div>
+  <div id="hook"><div class="h-eye"></div><div class="h-big"></div><div class="h-txt"></div><div class="h-list"></div><div class="h-sub"></div></div>
   <div id="reveal">
     <div>
       <div id="rface"></div>
@@ -1222,20 +1274,87 @@ function reactTo(text, exclude) {
 
 const roleWord = (role) => t('role')[role] || t('role').faithful;
 
-function showReveal(name, role, title) {
+/* Вскрытие с паузой: сначала имя и «…», барабанная дробь сердца, и только
+   потом роль. Три секунды ожидания держат всех, кто голосовал. */
+function showReveal(name, role, title, suspense = true) {
   stopTalking();
   const r = $('#reveal');
-  setFace($('#rface'), name, role === 'traitor' ? '-angry' : '');
+  setFace($('#rface'), name, '');
   r.querySelector('.rname').textContent = title || name;
   const label = r.querySelector('.rrole');
-  label.textContent = roleWord(role);
-  label.className = 'rrole serif ' + (role === 'traitor' ? 'traitor' : 'faithful');
+  const say = role === 'faithful' || !t('role')[role] ? t('roleSay').faithful : roleWord(role);
+  const open = () => {
+    if (role === 'traitor') setFace($('#rface'), name, '-angry');
+    label.textContent = roleWord(role);
+    label.className = 'rrole serif ' + (role === 'traitor' ? 'traitor' : 'faithful');
+    SND.cue('reveal', role);
+    speak(say + '.', 'ведущий', 'мужской');
+  };
   r.classList.add('on');
   $('#bars').classList.add('on');
-  speak(`${name}. ${role === 'faithful' || !t('role')[role] ? t('roleSay').faithful : roleWord(role)}.`, 'ведущий', 'мужской');
-  setTimeout(() => r.classList.remove('on'), 4600);
-  setTimeout(() => $('#bars').classList.remove('on'), 5400);
+  const wait = suspense ? 2600 : 0;
+  if (suspense) {
+    label.textContent = LANG === 'en' ? 'WAS…' : 'БЫЛ…';
+    label.className = 'rrole serif pending';
+    speak(`${name}…`, 'ведущий', 'мужской');
+    SND.cue('vote-start');
+    setTimeout(() => SND.cue('vote-end'), wait - 100);
+  }
+  setTimeout(open, wait);
+  setTimeout(() => r.classList.remove('on'), wait + 4400);
+  setTimeout(() => $('#bars').classList.remove('on'), wait + 5200);
 }
+
+/* ─────────────────────── крючки удержания ─────────────────────── */
+const L = (ru, en) => (LANG === 'en' ? en : ru);
+const hudState = { phase: '', round: 0, alive: 0, mafia: 0, left: null };
+const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
+function drawHud() {
+  const h = hudState;
+  if (!h.alive) return;
+  const who = L(`МАФИЯ: <em>${h.mafia}</em> ИЗ ${h.alive}`, `<em>${h.mafia}</em> MAFIA AMONG ${h.alive}`);
+  const when = h.phase === 'night' ? L(`НОЧЬ ${ROMAN[h.round] || h.round}`, `NIGHT ${ROMAN[h.round] || h.round}`)
+    : L(`ДЕНЬ ${ROMAN[h.round] || h.round}`, `DAY ${ROMAN[h.round] || h.round}`);
+  const cta = h.phase === 'vote'
+    ? (h.left != null ? L(`ГОЛОС: <b>0:${String(h.left).padStart(2, '0')}</b> · ПИШИ ИМЯ`, `VOTE: <b>0:${String(h.left).padStart(2, '0')}</b> · TYPE A NAME`) : L('<b>ГОЛОСОВАНИЕ</b> · ПИШИ ИМЯ', '<b>VOTING</b> · TYPE A NAME'))
+    : h.phase === 'night' ? L('<b>КТО НЕ ДОЖИВЁТ ДО УТРА?</b>', '<b>WHO WON\'T SEE MORNING?</b>')
+    : L('<b>КТО ВРЁТ?</b> ГОЛОС СКОРО', '<b>WHO\'S LYING?</b> VOTE SOON');
+  $('#hud .txt').innerHTML = `${when} · ${who} · ${cta}`;
+  $('#hud').classList.add('on');
+}
+/* приветствие тем, кто только зашёл: раз в ~50 секунд, по кругу */
+const TICKS = () => [
+  L('Только зашли? Среди них мафия. Пишите имя в чат — изгоняем вместе', 'Just joined? The mafia is among them. Type a name to vote them out'),
+  L('Персонажи читают чат. Спросите их — могут ответить вам по нику', 'The characters read chat. Ask them — they might answer you by name'),
+  L('Подарки меняют игру: 🍩 дать слово · 🎉 улика · 🦢 щит', 'Gifts change the game: 🍩 make them talk · 🎉 evidence · 🦢 shield'),
+  L('Угадывайте мафию — лучшие детективы попадают на экран', 'Spot the mafia — top detectives get shown on screen'),
+];
+let tickN = 0;
+setInterval(() => {
+  if (!hudState.alive || document.body.classList.contains('cutscene')) return;
+  const el = $('#ticker');
+  const list = TICKS();
+  el.querySelector('span').textContent = list[tickN++ % list.length];
+  el.classList.add('on');
+  setTimeout(() => el.classList.remove('on'), 7000);
+}, 50000);
+
+let hookTimer = null;
+function showHook({ eye = '', big = '', text = '', list = [], sub = '', kind = '', ms = 6500 }) {
+  const el = $('#hook');
+  el.className = kind;
+  el.querySelector('.h-eye').textContent = eye;
+  el.querySelector('.h-big').textContent = big;
+  el.querySelector('.h-big').hidden = !big;
+  el.querySelector('.h-txt').textContent = text;
+  el.querySelector('.h-list').innerHTML = list.map(r => `<div><span>${r[0]}</span><span>${r[1]}</span></div>`).join('');
+  el.querySelector('.h-sub').textContent = sub;
+  el.classList.add('on');
+  clearTimeout(hookTimer);
+  if (ms) hookTimer = setTimeout(() => el.classList.remove('on'), ms);
+}
+const esc = (x) => String(x).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+let interTimer = null;
 
 /* ─────────────────────── катсцены ───────────────────────
    Список клипов играется подряд. Следующий клип грузится во втором
@@ -1329,6 +1448,46 @@ function cutsceneOff() {
 /* ─────────────────────── события партии ─────────────────────── */
 function handle(e) {
   switch (e.type) {
+    case 'status':
+      Object.assign(hudState, { phase: e.phase, round: e.round, alive: e.alive, mafia: e.mafia, left: null });
+      drawHud();
+      break;
+
+    case 'prediction':
+      showHook({
+        eye: L('ПРЕДСКАЗАНИЕ НОЧИ', 'NIGHT PREDICTION'),
+        big: `${e.pct}%`,
+        text: L(`зала угадали: ${e.victim}`, `of you called it: ${e.victim}`),
+        sub: e.users && e.users.length ? e.users.map(u => '@' + u).join('  ') : '',
+      });
+      SND.cue('gift');
+      break;
+
+    case 'clue': {
+      const box = $('#event');
+      box.classList.add('clue');
+      box.querySelector('h2').textContent = e.title;
+      box.querySelector('p').textContent = e.text;
+      box.classList.add('on');
+      SND.cue('event');
+      speak(e.text, 'рассказчик', 'мужской');
+      setTimeout(() => { box.classList.remove('on'); setTimeout(() => box.classList.remove('clue'), 600); }, 8000);
+      break;
+    }
+
+    case 'detectives':
+      showHook({
+        eye: e.final ? L('ЛУЧШИЕ ДЕТЕКТИВЫ ЭФИРА', 'TOP DETECTIVES TONIGHT') : L('УГАДАЛИ МАФИЮ', 'THEY SPOTTED THE MAFIA'),
+        list: e.top.map((r, i) => [`${i + 1}. @${esc(r.user)}`, `${r.right}/${r.total}`]),
+        sub: L('голосуйте за мафию — попадёте сюда', 'vote out the mafia to get on this board'),
+        ms: 7000,
+      });
+      break;
+
+    case 'teaser':
+      showHook({ kind: 'teaser', eye: L('В СЛЕДУЮЩЕЙ СЕРИИ', 'NEXT EPISODE'), text: e.text.replace(/^(В следующей серии|Next episode):\s*/, ''), ms: 0 });
+      break;
+
     case 'cutscene': {
       cutscene(e.clips, e.caption, e.sub, e.hold);
       const c = (e.clips || []).join(' ');
@@ -1347,6 +1506,9 @@ function handle(e) {
 
     case 'titles': {
       cutsceneOff();   // финальный кадр прошлой партии уходит
+      clearInterval(interTimer);
+      $('#hook').classList.remove('on');
+      hudState.alive = 0; $('#hud').classList.remove('on');
       // Открывающие титры: название, номер дела, состав. Дальше зритель
       // уже знает, кто перед ним, и обсуждение читается с первой реплики.
       if (e.lang) setLang(e.lang);
@@ -1453,15 +1615,15 @@ function handle(e) {
         if (mood === 'defend') delete accusedAt[e.name];
         closeUp(e.name, { talk: true, mood: hasAct(slugs[e.name], mood) ? mood : 'talk' });
       }
-      $('#speaker').textContent = e.name;
-      $('#line').textContent = e.text;
+      $('#speaker').textContent = e.viewer ? `${e.name} → @${e.viewer}` : e.name;
+      $('#line').innerHTML = esc(e.text).replace(/@([\w.]+)/g, '<span class="at">@$1</span>');
       $('#speech').classList.add('on');
       reactTo(e.text, e.name);
       startTalking(e.name);
       {
         // на кого показали: из движка, а в старых записях — первое имя в тексте
         const target = e.suspect || Object.keys(cards).find(n => n !== e.name && e.text.includes(n));
-        speak(e.text, e.name, e.voice, () => {
+        speak(e.text.replace(/@/g, ''), e.name, e.voice, () => {
           stopTalking(e.name);
           shotVideo(e.name, 'idle');
           if (target) setTimeout(() => reactionShot(target), 250);
@@ -1485,6 +1647,7 @@ function handle(e) {
       break;
 
     case 'tick':
+      hudState.phase = 'vote'; hudState.left = e.left; drawHud();
       SND.cue('vote-tick', e.left);
       $('#clock').textContent = e.left;
       break;
@@ -1613,7 +1776,7 @@ function handle(e) {
     }
 
     case 'inspect':
-      showReveal(e.name, e.role, `${t('inspect')} · ${e.name}`);
+      showReveal(e.name, e.role, `${t('inspect')} · ${e.name}`, false);
       break;
 
     case 'evidence': {
@@ -1635,7 +1798,7 @@ function handle(e) {
         c.querySelector('.plate').dataset.stamp = e.by === 'night' ? t('stampNight') : t('stampOut');
         if (e.by === 'night' && e.where) c.title = e.where;
       }
-      if (e.by === 'vote') { SND.cue('vote-end'); SND.cue('reveal', e.role); showReveal(e.name, e.role); }
+      if (e.by === 'vote') { SND.cue('vote-end'); showReveal(e.name, e.role); }
       break;
     }
 
@@ -1654,9 +1817,18 @@ function handle(e) {
       }
       break;
 
-    case 'intermission':
+    case 'intermission': {
       $('#phase').textContent = t('next');
+      // тизер остаётся, под ним — обратный отсчёт до следующей серии
+      let left = e.seconds || 30;
+      const sub = $('#hook .h-sub');
+      clearInterval(interTimer);
+      const draw = () => { sub.textContent = L(`СЛЕДУЮЩАЯ СЕРИЯ ЧЕРЕЗ 0:${String(Math.max(0, left)).padStart(2, '0')}`, `NEXT EPISODE IN 0:${String(Math.max(0, left)).padStart(2, '0')}`); };
+      if (!$('#hook').classList.contains('on')) showHook({ kind: 'teaser', eye: L('ОСТАВАЙТЕСЬ', 'STAY TUNED'), text: L('Новая партия, новый состав. Мафия уже среди них.', 'New episode, new cast. The mafia is already among them.'), ms: 0 });
+      draw();
+      interTimer = setInterval(() => { left--; draw(); if (left <= 0) clearInterval(interTimer); }, 1000);
       break;
+    }
 
     case 'error':
       $('#phase').textContent = t('crash');

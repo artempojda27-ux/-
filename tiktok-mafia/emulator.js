@@ -37,8 +37,10 @@ const GIFTS = [
   { name: 'Airplane', coins: 6000, chance: 0.02 },
 ];
 
+const NICKS = ['mike_tx', 'lena.k', 'samwise', 'jo_rdan', 'nightowl', 'kate.m', 'big_tony', 'zoe_x', 'dan.dan', 'mila', 'rico99', 'ash.gray', 'pat_rick', 'luna', 'max_v', 'ivy.b'];
 const viewers = Array.from({ length: COUNT }, (_, i) => ({
-  user: `viewer_${i}`,
+  // ники как в живом чате: на них персонажи отвечают по имени
+  user: `${NICKS[i % NICKS.length]}${i >= NICKS.length ? i : ''}`,
   chatty: Math.random(),                        // как часто вообще пишет
   whale: Math.random() < (HYPE ? 0.12 : 0.04),  // донатит или нет
   bias: NAMES[Math.floor(Math.random() * NAMES.length)], // любимая мишень

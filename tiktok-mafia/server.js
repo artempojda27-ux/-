@@ -141,6 +141,8 @@ function targetFor(msg) {
 function applyInput(msg) {
   const named = nameIn(msg.text);
   if (named) lastNamed.set(msg.user, { name: named, at: Date.now() });
+  // память о зрителях для крючков: ответы по нику, предсказания
+  if (msg.type === 'comment') engine.noteComment(msg.user, msg.text, named);
 
   if (msg.type === 'gift') {
     const act = actionFor(msg.coins, msg.gift);
@@ -181,6 +183,7 @@ function applyInput(msg) {
   if (!vote.open || !named) return;
   if (vote.voted.has(msg.user)) return;
   vote.voted.add(msg.user);
+  engine.noteBallot(msg.user, named);
   vote.tally[named] = (vote.tally[named] || 0) + 1;
   push({ type: 'tally', tally: vote.tally });
 }

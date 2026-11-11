@@ -160,8 +160,9 @@ const EN_NAMES = {
   club: 'the underground club', pier: 'the pier', bridge: 'the railway bridge',
   hotel: 'the Imperial hotel',
 };
-if (require('./i18n').LANG === 'en') {
-  for (const l of [CITY, SQUARE, ...LOCATIONS]) l.name = EN_NAMES[l.id] || l.name;
+const { LATIN, PACK } = require('./i18n');
+if (LATIN) {
+  for (const l of [CITY, SQUARE, ...LOCATIONS]) l.name = PACK?.places?.[l.id] || EN_NAMES[l.id] || l.name;
 }
 
 module.exports = { LOCATIONS, SQUARE, CITY, cityTonight, HAUNTS, byId, placeEveryone, whoWasAt, nightKnowledge };

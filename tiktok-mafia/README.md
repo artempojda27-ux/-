@@ -116,7 +116,8 @@
 
     STREAM_LANG=en ANTHROPIC_API_KEY=sk-... node server.js
     STREAM_LANG=en TIKTOK_USER=твой_англ_ник node tiktok-bridge.js
-    OBS: Browser Source → http://localhost:3000/scene.html?lang=en
+    OBS: Browser Source → http://localhost:3000/scene.html?lang=en&voice=off
+    голос: http://localhost:3000/scene.html?lang=en&voice=only в Edge или Chrome (см. «OBS»)
 
 Что меняется в английском эфире:
 
@@ -168,10 +169,33 @@
     LASTWORD_MS     сколько держать речь на экране (9000)
     PORT            3000
 
+## Другие языки
+
+Кроме русского и английского есть испанский (`es`), немецкий (`de`) и
+португальский-бразильский (`pt`). Имена персонажей во всех латинских эфирах
+английские, чтобы их было легко набрать в чате.
+
+    STREAM_LANG=es ANTHROPIC_API_KEY=sk-... node server.js
+    OBS: http://localhost:3000/scene.html?lang=es&voice=off
+
+Новый язык: скопировать `lang/es.js` → `lang/xx.js`, перевести, добавить
+блок `xx` в `T` в `scene.html` и код голоса в `SPEECH_LANG` там же.
+Без ИИ (`PROVIDER=mock`) реплики персонажей остаются английскими: это
+заглушка для проверки, в эфире их пишет модель на языке эфира.
+
 ## OBS
 
 - холст 1080×1920, не 16:9
-- Browser Source, размер тот же, галочка **Control audio via OBS** — иначе озвучки в эфире не будет
+- **Картинка:** Browser Source, размер тот же, адрес
+  `http://localhost:3000/scene.html?lang=en&voice=off`, галочка
+  **Control audio via OBS** (звуки города, удары, сердцебиение)
+- **Голос:** во встроенном браузере OBS голосов нет. Поэтому говорит отдельная
+  вкладка: открой `http://localhost:3000/scene.html?lang=en&voice=only` в
+  **Microsoft Edge** (лучшие бесплатные голоса «Natural») или Chrome, нажми
+  кнопку на странице. В OBS добавь **Application Audio Capture** (Windows)
+  или **macOS Audio Capture** → этот браузер. Вкладку не сворачивать
+- обе страницы получают одни и те же события сервера одновременно, так что
+  субтитры в кадре и голос идут вместе
 - битрейт 4000–6000, 30 fps
 - нижние 28% экрана пустые: там комментарии и кнопки подарков
 

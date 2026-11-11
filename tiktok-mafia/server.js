@@ -116,10 +116,10 @@ const ALL_NAMES = [];          // имена текущего состава
  * Ищем только среди живых: зал по инерции пишет выбывших ещё минуту после
  * изгнания, и без этой проверки мертвецы копят голоса и лезут в полоски.
  */
-const { LANG } = require('./i18n');
+const { LATIN } = require('./i18n');
 function nameIn(text) {
   const t = (text || '').toLowerCase();
-  if (LANG === 'en') {
+  if (LATIN) {
     // по-английски имя должно стоять отдельным словом: иначе «general»
     // голосует за Gene, а «Ross» прячется в «across». «Gene's» засчитывается
     return ALL_NAMES.find((n) => ALIVE.has(n)

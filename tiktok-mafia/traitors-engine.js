@@ -62,7 +62,7 @@ const { rollEvent, clearEvent } = require('./events');
 const { tierByKind } = require('./gifts');
 const { CITY, cityTonight, byId, placeEveryone, whoWasAt, nightKnowledge } = require('./city');
 const { narrate } = require('./narrator');
-const { LANG, tr } = require('./i18n');
+const { LANG, LATIN, PACK, tr } = require('./i18n');
 
 const RULES = `Игра «Город засыпает». В городе восемь человек. Двое из них — МАФИЯ, один — ШЕРИФ, остальные — мирные жители.
 Ночью город засыпает: все расходятся по местам, а мафия убирает одного человека. Шериф этой же ночью тайно проверяет одного жителя и узнаёт, мафия он или нет.
@@ -248,7 +248,7 @@ function mockResponse(user, system = '') {
     });
   }
   return JSON.stringify({
-    line: LANG === 'en' ? pick([
+    line: LATIN ? pick([
       "I don't like how quiet you've been all round.",
       'Yesterday you defended the one we kicked out. Explain that.',
       'Are you serious? I was asleep all night.',
@@ -337,7 +337,7 @@ ${roleBlock}
 
 Жёстко:
 - максимум ${player.maxWords} слов
-- ${LANG === 'en'
+- ${PACK ? PACK.ai : LANG === 'en'
     ? 'ОТВЕЧАЙ ТОЛЬКО ПО-АНГЛИЙСКИ: живой разговорный американский английский, как в реалити-шоу, а не как в книге. Имена пиши как есть.'
     : 'живой разговорный русский, как в реалити-шоу, а не как в книге'}
 - реагируй на конкретную реплику, которая прозвучала прямо перед твоей
@@ -469,11 +469,11 @@ async function drainActions(state) {
         // улику придумывает модель — так она ложится в текущий разговор,
         // а не выглядит вставкой из другого эфира
         let text = tr(`Кто-то видел, как ${target.name} ночью ${female(target) ? 'выходила' : 'выходил'} из комнаты.`,
-          `Someone saw ${target.name} sneaking out last night.`);
+          'Someone saw {name} sneaking out last night.', { name: target.name });
         try {
           const raw = await callLLM(
             `Ты анонимный голос в доме. Придумай короткую правдоподобную улику против участника.
-Опирайся на то, что уже обсуждали. Максимум 20 слов, ${tr('разговорный русский', 'разговорный АНГЛИЙСКИЙ — пиши только по-английски')}.
+Опирайся на то, что уже обсуждали. Максимум 20 слов, ${PACK ? PACK.aiShort : tr('разговорный русский', 'разговорный АНГЛИЙСКИЙ — пиши только по-английски')}.
 ФОРМАТ — только JSON: {"line": "текст улики"}`,
             `УЛИКА ПРОТИВ: ${target.name}\n\nЧТО ОБСУЖДАЛИ:\n${publicLog(state)}`,
             120
@@ -782,7 +782,7 @@ async function runGame() {
   // «Ранее в Городе»: чем кончилась прошлая серия и что решил тогда зал
   const recap = narrate.previously(lastParty());
   if (recap) {
-    broadcast({ type: 'chapter', title: tr('РАНЕЕ', 'PREVIOUSLY'), sub: tr(`серия ${partyNumber()}`, `episode ${partyNumber()}`) });
+    broadcast({ type: 'chapter', title: tr('РАНЕЕ', 'PREVIOUSLY'), sub: tr(`серия ${partyNumber()}`, 'episode {n}', { n: partyNumber() }) });
     await sleep(CONFIG.beat);
     broadcast({ type: 'narrate', text: recap });
     say(C.dim(recap), `_${recap}_`);

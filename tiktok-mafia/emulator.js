@@ -20,9 +20,9 @@ const HYPE = process.argv[3] === 'hype';
 
 // имена берём из каста: в английском эфире зрители пишут английские
 const NAMES = require('./characters').CAST.map((c) => c.name);
-const { LANG } = require('./i18n');
+const { LATIN, PACK } = require('./i18n');
 // живой чат не пишет голое имя: «vote gene», «its ross!!» — так проверяется и распознавание
-const PHRASES = LANG === 'en'
+const PHRASES = PACK ? PACK.chat : LATIN
   ? ['{n}', '{n}', 'vote {n}', "it's {n}!!", '{n} is lying', 'kick {n}', '{n} sus']
   : ['{n}', '{n}', '{n} мафия', 'гоните {n}', '{n} врёт'];
 const say = (n) => PHRASES[Math.floor(Math.random() * PHRASES.length)].replace('{n}', Math.random() < 0.5 ? n.toLowerCase() : n);

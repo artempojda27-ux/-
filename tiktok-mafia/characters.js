@@ -308,15 +308,15 @@ const EN = {
   rustam: { name: 'Ross',   bio: '35, head chef' },
 };
 
-const { LANG } = require('./i18n');
-if (LANG === 'en') {
+const { LATIN, PACK } = require('./i18n');
+if (LATIN) {
   const rename = {};
   for (const c of CAST) {
     const en = EN[c.slug];
     if (!en) continue;
     rename[c.name] = en.name;
     c.name = en.name;
-    c.bio = en.bio;
+    c.bio = PACK?.bios?.[c.slug] || en.bio;
   }
   for (const r of RELATIONS) {
     r.a = rename[r.a] || r.a;

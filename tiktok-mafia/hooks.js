@@ -20,7 +20,8 @@ const path = require('path');
 const { tr } = require('./i18n');
 
 const FILE = path.join(__dirname, 'detectives.json');
-const pickOne = (arr) => arr[Math.floor(Math.random() * arr.length)];
+/** Случайный вариант фразы на языке эфира: русский или английская основа */
+const pickTr = (ru, en) => { const i = Math.floor(Math.random() * ru.length); return tr(ru[i], en[i]); };
 
 // ─── чат ───
 const chat = [];            // { user, text, named, at }
@@ -105,7 +106,7 @@ function top(board = loadBoard(), n = 3) {
 
 /** Открытая петля в начале дня: обещание, что ответ будет после голосования */
 function openLoop(round) {
-  return pickOne(tr([
+  return pickTr([
     'Кто-то из них сейчас соврёт про эту ночь. Ответ — после голосования.',
     'Один из говорящих знает, кто это сделал. Слушайте, кто первым сменит тему.',
     'Сегодня город ошибётся или нет. Узнаем через две минуты.',
@@ -115,12 +116,12 @@ function openLoop(round) {
     'Someone speaking now knows who did it. Watch who changes the subject first.',
     'Today the city gets it right, or it doesn\'t. Two minutes to find out.',
     'The mafia is sitting with them, nodding along. Watch who nods too eagerly.',
-  ])) + (round > 2 ? tr(' Ошибиться уже нельзя.', ' There is no room for mistakes now.') : '');
+  ]) + (round > 2 ? tr(' Ошибиться уже нельзя.', ' There is no room for mistakes now.') : '');
 }
 
 /** Улика: правдивая, но неполная. Место, где ночью был кто-то из мафии */
 function clue(placeName, hour) {
-  return pickOne(tr([
+  return pickTr([
     `Таксист видел, как около ${hour} кто-то быстро уходил от места «${placeName}». Лица не разглядел.`,
     `Камера у места «${placeName}» записала тень в ${hour}. Кто из них был там ночью?`,
     `В ${hour} у места «${placeName}» лаяли собаки. Значит, кто-то там был.`,
@@ -128,7 +129,7 @@ function clue(placeName, hour) {
     `A cab driver saw someone hurrying away from ${placeName} around ${hour}. No face.`,
     `A camera near ${placeName} caught a shadow at ${hour}. Which of them was there last night?`,
     `Dogs were barking near ${placeName} at ${hour}. Someone was there.`,
-  ]));
+  ]);
 }
 
 /** Тизер следующей серии: финал не отпускает, а обещает продолжение */

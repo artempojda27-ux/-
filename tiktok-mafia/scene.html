@@ -1406,7 +1406,7 @@ function showReveal(name, role, title, suspense = true) {
   $('#bars').classList.add('on');
   const wait = suspense ? 2600 : 0;
   if (suspense) {
-    label.textContent = LANG === 'en' ? 'WAS…' : 'БЫЛ…';
+    label.textContent = L('БЫЛ…', 'WAS…');
     label.className = 'rrole serif pending';
     speak(`${name}…`, 'ведущий', 'мужской');
     SND.cue('vote-start');
@@ -1418,7 +1418,8 @@ function showReveal(name, role, title, suspense = true) {
 }
 
 /* ─────────────────────── крючки удержания ─────────────────────── */
-const L = (ru, en) => (LANG === 'en' ? en : ru);
+// русский — свой текст, все латинские эфиры (en, es, de, pt) — английский
+const L = (ru, en) => (LANG === 'ru' ? ru : en);
 const hudState = { phase: '', round: 0, alive: 0, mafia: 0, left: null };
 const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
 function drawHud() {

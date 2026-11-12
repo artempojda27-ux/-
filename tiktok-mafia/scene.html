@@ -281,9 +281,9 @@ body.montage #toast{opacity:0}
 #cine .cap{position:absolute;left:64px;right:64px;bottom:300px;opacity:0;
   transform:translateY(16px);transition:opacity .8s,transform .8s}
 #cine .cap.on{opacity:1;transform:none}
-#cine .cap .c1{font-family:var(--f-display);font-size:66px;color:var(--bone);
+#cine .cap .c1{font:800 50px/1.2 var(--f-body);color:var(--bone);
   text-shadow:0 4px 26px rgba(0,0,0,.95)}
-#cine .cap .c2{font-family:var(--f-display);font-size:30px;color:var(--brass);
+#cine .cap .c2{font-family:var(--f-mono);font-weight:700;font-size:26px;color:var(--brass);
   letter-spacing:.22em;text-transform:uppercase;margin-top:8px;text-shadow:0 2px 14px #000}
 #cine::after{content:'';position:absolute;inset:0;pointer-events:none;
   background:linear-gradient(to bottom,rgba(0,0,0,.35),transparent 22%,transparent 62%,rgba(0,0,0,.6))}
@@ -1616,9 +1616,10 @@ function cutscene(list, caption, sub, hold, opts = {}) {
     v.onended = () => { if (moved) return; moved = true; i++; [cur, nxt] = [nxt, cur]; play(); };
     v.onerror = v.onended;
     // короткая нарезка: клип обрывается по таймеру, а не по концу файла
-    if (opts.cut) setTimeout(() => { if (run === cineRun && !moved) v.onended(); }, opts.cut);
+    const cutMs = (opts.cuts && opts.cuts[i]) || opts.cut || 0;
+    if (cutMs) setTimeout(() => { if (run === cineRun && !moved) v.onended(); }, cutMs);
     perClip(i);
-    v.currentTime = opts.cut ? 0.6 : 0;
+    v.currentTime = cutMs ? 0.6 : 0;
     vary(v, list[i], { keepRate: true });
     const p = v.play();
     if (p && p.catch) p.catch(() => v.onended());
@@ -1698,6 +1699,7 @@ function handle(e) {
       break;
     }
     case 'interrogate_end':
+      cutsceneOff();
       $('#interr').classList.remove('on');
       document.body.classList.remove('interr');
       $('#speech').classList.remove('on');
@@ -1732,7 +1734,7 @@ function handle(e) {
     }
 
     case 'cutscene': {
-      cutscene(e.clips, e.caption, e.sub, e.hold, { cut: e.cut, captions: e.captions, subs: e.subs });
+      cutscene(e.clips, e.caption, e.sub, e.hold, { cut: e.cut, cuts: e.cuts, captions: e.captions, subs: e.subs });
       const c = (e.clips || []).join(' ');
       SND.cue(/final-pier/.test(c) ? 'finale-city' : /final-car/.test(c) ? 'finale-mafia'
         : /final-arrest|final-chase|final-interrog/.test(c) ? 'arrest-reel'
@@ -1815,6 +1817,7 @@ function handle(e) {
       document.body.classList.toggle('rain', !!e.rain);
       $('#phase').textContent = `${night ? t('night') : t('day')} ${e.round}`;
       if (!night) {
+        cutsceneOff();   // удержанный последний кадр (участок) уступает дню
         // день — площадь, люди снова в кадре
         setBackground('square', true);
         $('#cast').style.opacity = '1';

@@ -471,7 +471,7 @@ async function drainActions(state) {
 
     switch (a.kind) {
       case 'shield':
-        await cutscene([cinema.clip('act-shield')], tr('ЩИТ', 'SHIELD'), target.name);
+        await cutscene([cinema.clip('act-shield')], `@${a.user}`, tr(`щит для ${target.name}: полиция стережёт дом`, `shield for ${target.name}: police watch the house`));
         state.shielded = target.name;
         state.log.push(`[${target.name} под защитой на эту ночь]`);
         announce(a);
@@ -485,7 +485,7 @@ async function drainActions(state) {
         break;
 
       case 'inspect': {
-        await cutscene([cinema.clip('act-inspect')], tr('ПРОВЕРКА', 'BACKGROUND CHECK'), target.name);
+        await cutscene([cinema.clip('act-inspect')], `@${a.user}`, tr(`проверка: досье на ${target.name}`, `background check on ${target.name}`));
         const role = target.role;
         state.log.push(`[ПРОВЕРКА: ${target.name} — ${role === 'traitor' ? 'ПРЕДАТЕЛЬ' : 'ВЕРНЫЙ'}]`);
         announce(a);
@@ -495,7 +495,7 @@ async function drainActions(state) {
       }
 
       case 'evidence': {
-        await cutscene([cinema.clip('act-evidence')], tr('УЛИКА', 'EVIDENCE'), target.name);
+        await cutscene([cinema.clip('act-evidence')], `@${a.user}`, tr(`подкинул улику против ${target.name}`, `planted evidence on ${target.name}`));
         // улику придумывает модель — так она ложится в текущий разговор,
         // а не выглядит вставкой из другого эфира
         let text = tr(`Кто-то видел, как ${target.name} ночью ${female(target) ? 'выходила' : 'выходил'} из комнаты.`,
@@ -730,6 +730,61 @@ ${viewer ? `
   return suspicions;
 }
 
+/** Время на подписи «камеры»: ночь идёт вперёд по минутам */
+function stamp(round, step) {
+  let m = 23 * 60 + 14 + ((round * 13) % 30) + step * 7;
+  m %= 24 * 60;
+  const h = Math.floor(m / 60), mm = String(m % 60).padStart(2, '0');
+  if (LANG !== 'en') return `${String(h).padStart(2, '0')}:${mm}`;
+  return `${h % 12 || 12}:${mm} ${h < 12 ? 'AM' : 'PM'}`;
+}
+
+/**
+ * Ночь как запись городских камер. Несколько героев — куда пошли и с кем,
+ * потом жертва, шаги следом и само убийство, где видна только тень
+ * убийцы. Каждый кадр подписан: время, место, что происходит. Всё правда:
+ * подписи берутся из настоящего расселения, по ним можно вести следствие.
+ */
+function nightFootage(state, night) {
+  const P = state.placement || {};
+  const victim = night && night.victim;
+  const alive = state.players.filter((p) => p.alive && p !== victim);
+  const seen = shuffle(alive).slice(0, victim ? 3 : 4);
+  const segs = [];
+  let step = 0;
+  const withWhom = (p) => whoWasAt(P, P[p.name], [p.name]);
+  for (const p of seen) {
+    const c = cinema.walk(p.slug);
+    if (!c) continue;
+    const others = withWhom(p);
+    segs.push({ c, cut: 2800,
+      cap: others.length
+        ? tr(`${p.name} — у места «${byId(P[p.name]).name}». Рядом: ${others.join(', ')}`, `${p.name} at ${byId(P[p.name]).name}. Also there: ${others.join(', ')}`)
+        : tr(`${p.name} — у места «${byId(P[p.name]).name}». ${g(p, 'Один', 'Одна')}`, `${p.name} at ${byId(P[p.name]).name}. Alone`),
+      sub: `${stamp(state.round, step++)} · ${tr('камера', 'camera')} ${10 + ((step * 7) % 80)}` });
+  }
+  if (victim) {
+    const w = cinema.walk(victim.slug);
+    const place = byId(night.whereId).name;
+    if (w) segs.push({ c: w, cut: 0,
+      cap: tr(`${victim.name} идёт к месту «${place}»`, `${victim.name} heads to ${place}`),
+      sub: `${stamp(state.round, step++)} · ${place}` });
+    const a = cinema.approach();
+    if (a) segs.push({ c: a, cut: 4000, cap: tr('Кто-то идёт следом', 'Someone is following'), sub: `${stamp(state.round, step++)} · ${place}` });
+    const m = cinema.murderFor(night.whereId);
+    if (m) segs.push({ c: m, cut: 0, cap: tr('Тень убийцы', "The killer's shadow"), sub: `${stamp(state.round, step++)} · ${place}` });
+  } else {
+    const a = cinema.approach();
+    if (a) segs.push({ c: a, cut: 0, cap: tr('Кто-то бродит по городу. Но до двери не дошёл', 'Someone is out there. But never reached a door'), sub: stamp(state.round, step++) });
+  }
+  return segs;
+}
+function footageMs(segs) { return segs.reduce((s, x) => s + (x.cut || x.c.ms), 0) + 700; }
+function footageEvent(segs) {
+  return { type: 'cutscene', clips: segs.map((x) => x.c.src), cuts: segs.map((x) => x.cut || 0),
+    captions: segs.map((x) => x.cap), subs: segs.map((x) => x.sub) };
+}
+
 /**
  * Допрос в участке. Утром детектив спрашивает каждого живого, где он был
  * ночью. Ответы уходят в общий лог — днём персонажи спорят уже о них,
@@ -738,13 +793,6 @@ ${viewer ? `
 async function interrogate(state) {
   const alive = state.players.filter((p) => p.alive);
   if (!state.placement || !alive.length) return;
-  await settle();
-  const room = cinema.clip('final-interrog');
-  if (room) {
-    broadcast({ type: 'cutscene', clips: [room.src], caption: tr('ПОЛИЦЕЙСКИЙ УЧАСТОК', 'POLICE STATION'), sub: tr('допрос', 'interrogation') });
-    broadcast({ type: 'chapter', title: tr('ДОПРОС', 'INTERROGATION'), sub: '' });
-    await sleep(room.ms);
-  }
   const answers = [];
   for (const p of alive) {
     const placeId = state.placement[p.name];
@@ -767,6 +815,18 @@ async function interrogate(state) {
   await settle(600);
   broadcast({ type: 'interrogate_end' });
   if (answers.length) state.log.push(`[ДОПРОС] ${answers.join(' | ')}`);
+}
+
+/** Комната допросов: видео держится последним кадром, пока идут карточки */
+async function interrogationRoom(state) {
+  await settle();
+  const room = cinema.clip('final-interrog');
+  if (!room) return;
+  broadcast({ type: 'cutscene', clips: [room.src], hold: true,
+    caption: tr('Полиция допрашивает всех', 'The police question everyone'),
+    sub: `08:${String(10 + state.round * 3).padStart(2, '0')} · ${tr('полицейский участок', 'police station')}` });
+  broadcast({ type: 'chapter', title: tr('ДОПРОС', 'INTERROGATION'), sub: '' });
+  await sleep(1800);
 }
 
 /** Поворот утра: блокнот шерифа, перехваченный звонок или свидетель */
@@ -946,16 +1006,15 @@ async function runGame() {
       });
       // пока город гаснет, мафия выбирает жертву
       const night = await nightPhase(state);
-      const nightReel = (night ? cinema.nightReel(night.victim, night.whereId) : cinema.quietReel()).filter(Boolean);
+      const nightReel = nightFootage(state, night);
 
-      // Ночь — сразу видео: глава и голос рассказчика идут поверх катсцены
+      // Ночь — сразу съёмка камер: глава и голос рассказчика идут поверх
       if (nightReel.length) {
-        broadcast({ type: 'cutscene', clips: nightReel.map((c) => c.src),
-          caption: narrate.clock(state.round), sub: night ? night.where : '' });
+        broadcast(footageEvent(nightReel));
         broadcast({ type: 'chapter', title: `${tr('НОЧЬ', 'NIGHT')} ${roman(state.round)}`, sub: narrate.clock(state.round) });
         await sleep(1500);
         broadcast({ type: 'narrate', text: narrate.nightOpen(state.round) });
-        await sleep(cinema.reelMs(nightReel) - 1500);
+        await sleep(footageMs(nightReel) - 1500);
       }
       const occupied = [...new Set(Object.values(state.placement))];
       // перебивка по городу картинками — только если видео нет
@@ -994,13 +1053,8 @@ async function runGame() {
           broadcast({ type: 'narrate', text: morningText });
           await sleep(CONFIG.beat * 1.5);
         }
-        broadcast({
-          type: 'nightplace', where: night.where, whereId: night.whereId,
-          name: night.victim.name, clock: narrate.clock(state.round),
-          text: narrate.place(state.round, night.where),
-        });
-        await sleep(CONFIG.beat * 1.5);
-
+        // утро в участке: видео комнаты допросов, поверх — предсказание и улика
+        await interrogationRoom(state);
         // крючок: сколько зала угадало жертву
         const guess = hooks.closePrediction(night.victim.name);
         if (guess) {

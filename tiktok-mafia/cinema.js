@@ -93,6 +93,11 @@ function introReel(players) {
   });
 }
 
+/** Один план убийцы, который идёт следом — давно не показанный */
+function approach() {
+  return fresh(NIGHT, 1).map(clip)[0] || null;
+}
+
 /** Тихая ночь: убийца вышел, но до двери не дошёл */
 function quietReel() {
   return fresh(NIGHT, 1).map(clip);
@@ -130,4 +135,4 @@ function finaleReel(winner, survivors) {
 /** Сколько ждать движку, пока вставка идёт в эфире */
 const reelMs = (clips) => clips.reduce((s, c) => s + c.ms, 0) + 700;
 
-module.exports = { murderFor, introReel, clip, walk, openingReel, nightReel, quietReel, morningReel, banishReel, finaleReel, reelMs, ON };
+module.exports = { approach, murderFor, introReel, clip, walk, openingReel, nightReel, quietReel, morningReel, banishReel, finaleReel, reelMs, ON };

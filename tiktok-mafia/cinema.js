@@ -119,9 +119,21 @@ function banishReel(p) {
   return pair.map(clip);
 }
 
-/** Открытие партии: город с воздуха и солнечная улица под титры */
+/** Открытие партии: город с воздуха под титры */
 function openingReel() {
-  return [clip('day-aerial'), clip('day-street')];
+  return [clip('day-aerial')];
+}
+
+/** Обычная жизнь города: места, где потом всё случится, при свете дня */
+const { tr } = require('./i18n');
+function cityLife() {
+  return [
+    ['day-street', tr('Океанский бульвар. Здесь все друг друга знают', 'Ocean Boulevard. Everyone here knows everyone')],
+    ['life-square', tr('Главная площадь. Днём здесь собирается весь город', 'The main plaza. By day, the whole town gathers here')],
+    ['life-bar', tr('Бар «Полночь». Открыт до утра, алиби здесь дешёвые', 'The Midnight bar. Open till dawn, alibis come cheap')],
+    ['life-pier', tr('Пирс. Рыбаки до рассвета, а ночью — ни души', 'The pier. Fishermen till dawn, not a soul at night')],
+    ['life-park', tr('Парк у залива. Днём бегуны, ночью темнота', 'The bay park. Joggers by day, darkness by night')],
+  ].map(([name, cap]) => { const c = clip(name); return c && { ...c, cap }; }).filter(Boolean);
 }
 
 /** Финал партии */
@@ -135,4 +147,4 @@ function finaleReel(winner, survivors) {
 /** Сколько ждать движку, пока вставка идёт в эфире */
 const reelMs = (clips) => clips.reduce((s, c) => s + c.ms, 0) + 700;
 
-module.exports = { approach, murderFor, introReel, clip, walk, openingReel, nightReel, quietReel, morningReel, banishReel, finaleReel, reelMs, ON };
+module.exports = { cityLife, approach, murderFor, introReel, clip, walk, openingReel, nightReel, quietReel, morningReel, banishReel, finaleReel, reelMs, ON };

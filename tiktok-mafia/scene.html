@@ -1617,6 +1617,7 @@ function cutscene(list, caption, sub, hold, opts = {}) {
     v.onerror = v.onended;
     // короткая нарезка: клип обрывается по таймеру, а не по концу файла
     const cutMs = (opts.cuts && opts.cuts[i]) || opts.cut || 0;
+    v.loop = !!cutMs;   // нарезка длиннее клипа — клип крутится, пока не выйдет время
     if (cutMs) setTimeout(() => { if (run === cineRun && !moved) v.onended(); }, cutMs);
     perClip(i);
     v.currentTime = cutMs ? 0.6 : 0;

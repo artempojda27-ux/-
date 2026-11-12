@@ -142,6 +142,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const cinema = require('./cinema');
 const hooks = require('./hooks');
 const story = require('./story');
+const { storyFor } = require('./backstories');
 
 /** Строка-вопрос на экране: сколько живых, сколько мафии, что за фаза.
     Новичок за секунду понимает, что происходит и что делать. */
@@ -779,6 +780,30 @@ function nightFootage(state, night) {
   }
   return segs;
 }
+/** Разгадка видеорядом: каждая ночь заново, но теперь с именами мафии */
+function truthFootage(state) {
+  const segs = [];
+  const bySlug = (name) => state.players.find((p) => p.name === name);
+  for (const n of state.nightLog || []) {
+    if (!n.victim) continue;
+    const k = bySlug(n.killers[0]);
+    const v = bySlug(n.victim);
+    const night = `${tr('НОЧЬ', 'NIGHT')} ${roman(n.round)}`;
+    const kw = k && cinema.walk(k.slug);
+    if (kw) segs.push({ c: kw, cut: 3800,
+      cap: tr(`${k.name} — мафия. Выходит в ночь от места «${byId(n.placement[k.name]).name}»`, `${k.name} is the mafia. Slips out from ${byId(n.placement[k.name]).name}`),
+      sub: `${night} · ${stamp(n.round, 1)}` });
+    const vw = v && cinema.walk(v.slug);
+    if (vw) segs.push({ c: vw, cut: 3400,
+      cap: tr(`${v.name} не знает, что за ${g(v, 'ним', 'ней')} идут`, `${v.name} has no idea someone is following`),
+      sub: `${night} · ${stamp(n.round, 2)} · ${n.where}` });
+    const m = cinema.murderFor(n.whereId);
+    if (m) segs.push({ c: m, cut: 0,
+      cap: tr(`${n.where}: ${n.killers.join(' и ')} — вот чья это тень`, `${n.where}: that shadow was ${n.killers.join(' and ')}`),
+      sub: `${night} · ${stamp(n.round, 3)}` });
+  }
+  return segs;
+}
 function footageMs(segs) { return segs.reduce((s, x) => s + (x.cut || x.c.ms), 0) + 700; }
 function footageEvent(segs) {
   return { type: 'cutscene', clips: segs.map((x) => x.c.src), cuts: segs.map((x) => x.cut || 0),
@@ -943,13 +968,32 @@ async function runGame() {
   if (openMs) await sleep(Math.max(0, openMs - CONFIG.beat * 2.5));
   await settle();
 
-  // Знакомство: каждый герой на видео, имя и кто он. Зритель знает всех
-  // в лицо до первой реплики — и до первого убийства.
+  // Город: обычная жизнь мест, где потом всё случится. Зритель понимает,
+  // где он, до того как здесь начнут умирать.
+  const life = cinema.cityLife();
+  if (life.length) {
+    broadcast({ type: 'cutscene', clips: life.map((c) => c.src), cuts: life.map(() => 3600),
+      captions: life.map((c) => c.cap), subs: life.map(() => tr('город', 'the city')) });
+    await sleep(600);
+    broadcast({ type: 'narrate', text: tr('Приморский город. Солнце, пальмы и люди, у каждого из которых есть тайна.',
+      'A seaside city. Sun, palms, and people who each have a secret.') });
+    await sleep(life.length * 3600 + 100);
+  }
+
+  // Знакомство: каждый герой на видео, имя, кто он и что скрывает —
+  // рассказчик читает предысторию. Зритель знает всех до первого убийства.
   const intro = cinema.introReel(state.players).filter(Boolean);
   if (intro.length) {
-    broadcast({ type: 'cutscene', clips: intro.map((c) => c.src), cut: 2600,
+    const cuts = intro.map((c) => { const pl = state.players.find((p) => p.name === c.name); return Math.max(4800, speechMs(storyFor(pl.slug)) + 400); });
+    broadcast({ type: 'cutscene', clips: intro.map((c) => c.src), cuts,
       captions: intro.map((c) => c.name), subs: intro.map((c) => c.bio || '') });
-    await sleep(cinema.reelMs(intro));
+    for (let k = 0; k < intro.length; k++) {
+      const pl = state.players.find((p) => p.name === intro[k].name);
+      const text = storyFor(pl.slug);
+      if (text) broadcast({ type: 'narrate', text, quiet: true });
+      await sleep(cuts[k]);
+    }
+    speechUntil = Date.now();   // голос шёл ровно по нарезке, ждать нечего
   }
 
   // Устанавливающая сцена из статичных мест — только если видео нет.
@@ -1217,6 +1261,13 @@ async function runGame() {
 
   // крючок: тизер следующей серии и лучшие детективы эфира
   // «Как это было»: каждая ночь по фактам. Разгадка была возможна — вот она
+  const replay = truthFootage(state);
+  if (replay.length) {
+    await settle();
+    broadcast(footageEvent(replay));
+    broadcast({ type: 'chapter', title: tr('КАК ЭТО БЫЛО', 'WHAT REALLY HAPPENED'), sub: '' });
+    await sleep(footageMs(replay));
+  }
   const cards = story.truth(state, { byId, g });
   if (cards.length) {
     await settle();

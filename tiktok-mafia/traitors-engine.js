@@ -88,7 +88,7 @@ function setBroadcast(fn) {
  * Движок считает, сколько займёт озвучка всего, что он отправил, и
  * перед следующей репликой, катсценой и голосованием ждёт, пока она кончится.
  */
-const SPOKEN = new Set(['line', 'narrate', 'lastword', 'clue']);
+const SPOKEN = new Set(['line', 'narrate', 'lastword', 'clue', 'interrogate']);
 let speechUntil = 0;
 function speechMs(text) {
   const words = String(text || '').split(/\s+/).filter(Boolean).length;
@@ -141,6 +141,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // голосование не должны начаться поверх катсцены.
 const cinema = require('./cinema');
 const hooks = require('./hooks');
+const story = require('./story');
 
 /** Строка-вопрос на экране: сколько живых, сколько мафии, что за фаза.
     Новичок за секунду понимает, что происходит и что делать. */
@@ -470,6 +471,7 @@ async function drainActions(state) {
 
     switch (a.kind) {
       case 'shield':
+        await cutscene([cinema.clip('act-shield')], tr('ЩИТ', 'SHIELD'), target.name);
         state.shielded = target.name;
         state.log.push(`[${target.name} под защитой на эту ночь]`);
         announce(a);
@@ -483,6 +485,7 @@ async function drainActions(state) {
         break;
 
       case 'inspect': {
+        await cutscene([cinema.clip('act-inspect')], tr('ПРОВЕРКА', 'BACKGROUND CHECK'), target.name);
         const role = target.role;
         state.log.push(`[ПРОВЕРКА: ${target.name} — ${role === 'traitor' ? 'ПРЕДАТЕЛЬ' : 'ВЕРНЫЙ'}]`);
         announce(a);
@@ -492,6 +495,7 @@ async function drainActions(state) {
       }
 
       case 'evidence': {
+        await cutscene([cinema.clip('act-evidence')], tr('УЛИКА', 'EVIDENCE'), target.name);
         // улику придумывает модель — так она ложится в текущий разговор,
         // а не выглядит вставкой из другого эфира
         let text = tr(`Кто-то видел, как ${target.name} ночью ${female(target) ? 'выходила' : 'выходил'} из комнаты.`,
@@ -586,6 +590,12 @@ ${publicLog(state)}`;
   }
 
   await sheriffCheck(state);
+
+  story.recordNight(state, {
+    round: state.round, placement: { ...placement }, victim: victim.name, female: female(victim),
+    where: byId(placement[victim.name]).name, whereId: placement[victim.name],
+    killers: traitors.map((t) => t.name),
+  });
 
   return {
     victim, reason: out.reason, witnesses,
@@ -721,6 +731,60 @@ ${viewer ? `
 }
 
 /**
+ * Допрос в участке. Утром детектив спрашивает каждого живого, где он был
+ * ночью. Ответы уходят в общий лог — днём персонажи спорят уже о них,
+ * и ложь мафии можно поймать уликой или свидетелем.
+ */
+async function interrogate(state) {
+  const alive = state.players.filter((p) => p.alive);
+  if (!state.placement || !alive.length) return;
+  await settle();
+  const room = cinema.clip('final-interrog');
+  if (room) {
+    broadcast({ type: 'cutscene', clips: [room.src], caption: tr('ПОЛИЦЕЙСКИЙ УЧАСТОК', 'POLICE STATION'), sub: tr('допрос', 'interrogation') });
+    broadcast({ type: 'chapter', title: tr('ДОПРОС', 'INTERROGATION'), sub: '' });
+    await sleep(room.ms);
+  }
+  const answers = [];
+  for (const p of alive) {
+    const placeId = state.placement[p.name];
+    const placeName = byId(placeId).name;
+    const saw = whoWasAt(state.placement, placeId, [p.name]).filter((n) => alive.some((x) => x.name === n));
+    let line;
+    if (PROVIDER === 'mock') line = story.mockAlibi(p, placeName, saw);
+    else {
+      try {
+        const { system, user } = story.interrogation(p, state, placeName, saw);
+        line = parseJSON(await callLLM(system, user, 120), {}).line;
+      } catch {}
+    }
+    if (!line) continue;
+    answers.push(`${p.name}: ${line}`);
+    await settle(200);
+    broadcast({ type: 'interrogate', name: p.name, slug: p.slug, voice: p.voice, text: line,
+      question: tr('Где вы были этой ночью?', 'Where were you last night?') });
+  }
+  await settle(600);
+  broadcast({ type: 'interrogate_end' });
+  if (answers.length) state.log.push(`[ДОПРОС] ${answers.join(' | ')}`);
+}
+
+/** Поворот утра: блокнот шерифа, перехваченный звонок или свидетель */
+async function plotTwist(state, night) {
+  if (rand() > 0.75) return;
+  const t = story.twist(state, night, { pick, byId, clock: narrate.clock(state.round), g });
+  if (!t) return;
+  await settle();
+  const c = cinema.clip(t.clip);
+  if (c) broadcast({ type: 'cutscene', clips: [c.src], caption: '', sub: '' });
+  broadcast({ type: 'twist', title: t.title, text: t.text });
+  broadcast({ type: 'narrate', text: t.text });
+  state.log.push(`[${t.title}: ${t.text}]`);
+  await sleep(Math.max(c ? c.ms : 0, 4500));
+  await settle();
+}
+
+/**
  * Голосование.
  * Если подключён внешний источник (сцена + TikTok) — ждём реальные голоса.
  * Если нет — имитируем по обвинениям персонажей, чтобы отлаживать без эфира.
@@ -819,6 +883,15 @@ async function runGame() {
   if (openMs) await sleep(Math.max(0, openMs - CONFIG.beat * 2.5));
   await settle();
 
+  // Знакомство: каждый герой на видео, имя и кто он. Зритель знает всех
+  // в лицо до первой реплики — и до первого убийства.
+  const intro = cinema.introReel(state.players).filter(Boolean);
+  if (intro.length) {
+    broadcast({ type: 'cutscene', clips: intro.map((c) => c.src), cut: 2600,
+      captions: intro.map((c) => c.name), subs: intro.map((c) => c.bio || '') });
+    await sleep(cinema.reelMs(intro));
+  }
+
   // Устанавливающая сцена из статичных мест — только если видео нет.
   // Город уже показан пролётом, второй раз картинками он не нужен.
   if (!openMs) broadcast({
@@ -873,7 +946,7 @@ async function runGame() {
       });
       // пока город гаснет, мафия выбирает жертву
       const night = await nightPhase(state);
-      const nightReel = (night ? cinema.nightReel(night.victim) : cinema.quietReel()).filter(Boolean);
+      const nightReel = (night ? cinema.nightReel(night.victim, night.whereId) : cinema.quietReel()).filter(Boolean);
 
       // Ночь — сразу видео: глава и голос рассказчика идут поверх катсцены
       if (nightReel.length) {
@@ -947,6 +1020,8 @@ async function runGame() {
             await sleep(CONFIG.beat * 1.8);
           }
         }
+        await interrogate(state);
+        await plotTwist(state, night);
         status(state, 'day');
         say(`  ${C.bold(night.victim.name)} — ${night.where}. ${C.green(night.victim.role === 'sheriff' ? g(night.victim, 'Он был ШЕРИФОМ.', 'Она была ШЕРИФОМ.') : g(night.victim, 'Мирный житель.', 'Мирная жительница.'))}`,
             `**${night.victim.name}** ${g(night.victim, 'не пережил', 'не пережила')} ночь. ${night.where}. _(${night.reason})_`);
@@ -1087,6 +1162,16 @@ async function runGame() {
   await sleep(Math.max(CONFIG.beat * 2, finale.length ? cinema.reelMs(finale) - 800 : 0));
 
   // крючок: тизер следующей серии и лучшие детективы эфира
+  // «Как это было»: каждая ночь по фактам. Разгадка была возможна — вот она
+  const cards = story.truth(state, { byId, g });
+  if (cards.length) {
+    await settle();
+    broadcast({ type: 'truth', title: tr('КАК ЭТО БЫЛО', 'WHAT REALLY HAPPENED'), cards });
+    for (const c of cards) {
+      broadcast({ type: 'narrate', text: c.text });
+      await sleep(Math.max(4200, (c.text.split(/\s+/).length / 2.5) * 1000 + 900));
+    }
+  }
   const best = hooks.top();
   if (best.length) {
     broadcast({ type: 'detectives', top: best, final: true });

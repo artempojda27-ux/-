@@ -66,13 +66,31 @@ function fresh(pool, n, rand = Math.random) {
   return pickd;
 }
 
-/** Ночь: жертва уходит одна, следом убийца, и финальный кадр — дверь,
-    лифт или мотель. Кто жертва, зритель узнает утром. */
-function nightReel(victim) {
-  const end = victim ? fresh(NIGHT_END, 1) : [];
+/** Само убийство — по месту: пирс и вода, коридор и двери, или переулок.
+    Убийца в кадре размыт и без лица: зритель видит, что случилось, но не кто. */
+function murderFor(whereId) {
+  const water = ['pier', 'bridge', 'depot'];
+  const inside = ['hotel', 'home', 'clinic', 'station', 'church', 'laundry'];
+  const name = water.includes(whereId) ? 'murder-pier' : inside.includes(whereId) ? 'murder-hotel' : 'murder-alley';
+  return clip(name) || clip('murder-alley');
+}
+
+/** Ночь: жертва уходит одна, следом убийца, потом само убийство (размыто).
+    Кто жертва, зритель узнает утром. */
+function nightReel(victim, whereId) {
+  const murder = victim ? murderFor(whereId) : null;
+  const end = victim && !murder ? fresh(NIGHT_END, 1) : [];
   // ночь — главная сцена: два плана убийцы, а не один
-  const killer = fresh(NIGHT.filter((n) => !end.includes(n)), 2);
-  return [victim && walk(victim.slug), ...killer.map(clip), ...end.map(clip)];
+  const killer = fresh(NIGHT.filter((n) => !end.includes(n)), murder ? 1 : 2);
+  return [victim && walk(victim.slug), ...killer.map(clip), murder, ...end.map(clip)];
+}
+
+/** Знакомство: каждый герой партии на видео, по ~2.6 секунды */
+function introReel(players) {
+  return players.map((p) => {
+    const f = path.join(__dirname, 'assets', 'gta', 'talk', `${p.slug}-talk.mp4`);
+    return ON && fs.existsSync(f) ? { src: `assets/gta/talk/${p.slug}-talk.mp4`, ms: 2600, name: p.name, bio: p.bio } : null;
+  });
 }
 
 /** Тихая ночь: убийца вышел, но до двери не дошёл */
@@ -112,4 +130,4 @@ function finaleReel(winner, survivors) {
 /** Сколько ждать движку, пока вставка идёт в эфире */
 const reelMs = (clips) => clips.reduce((s, c) => s + c.ms, 0) + 700;
 
-module.exports = { clip, walk, openingReel, nightReel, quietReel, morningReel, banishReel, finaleReel, reelMs, ON };
+module.exports = { murderFor, introReel, clip, walk, openingReel, nightReel, quietReel, morningReel, banishReel, finaleReel, reelMs, ON };

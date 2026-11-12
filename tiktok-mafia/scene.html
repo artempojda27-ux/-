@@ -343,7 +343,8 @@ body.cutscene #bars{display:none}
 body.cutscene #hud,body.cutscene #ticker{opacity:0 !important}
 /* лестница подарков — только на голосовании и коротко раз в пару минут */
 #ladder{opacity:0;pointer-events:none}
-body.voting #ladder,#ladder.peek{opacity:1}
+#ladder.peek{opacity:1}
+body.voting #ladder{opacity:0 !important}
 #card .roster{margin:46px auto 0;max-width:860px;display:grid;grid-template-columns:1fr 1fr;
   gap:10px 60px;font-size:28px;color:var(--bone-dim);text-align:left}
 #card .roster b{color:var(--bone);font-weight:400;font-family:var(--f-display);font-size:32px}
@@ -403,6 +404,28 @@ body.voting #ladder,#ladder.peek{opacity:1}
 #hook.teaser{border-color:var(--neon)}
 #hook.teaser .h-txt{font-size:40px}
 
+/* ── допрос: герой за столом в участке, вопрос детектива сверху ── */
+#interr{position:absolute;inset:0;opacity:0;visibility:hidden;transition:opacity .5s,visibility 0s .5s;overflow:hidden;background:#000}
+#interr.on{opacity:1;visibility:visible;transition:opacity .5s}
+#interr img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scale(1.04);transition:transform 7s linear}
+#interr.on img{transform:scale(1.14)}
+#interr .q{position:absolute;left:60px;right:60px;top:200px;text-align:center;font:700 26px/1.3 var(--f-mono);
+  letter-spacing:.14em;color:var(--brass);text-transform:uppercase;text-shadow:0 2px 12px #000}
+#interr .q b{display:block;font:800 40px/1.25 var(--f-body);letter-spacing:0;text-transform:none;color:var(--bone);margin-top:10px}
+#interr::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0) 30%,rgba(0,0,0,0) 50%,rgba(0,0,0,.85) 78%)}
+body.interr #cast,body.interr #table,body.interr #hud,body.interr #ladder{opacity:0 !important}
+#event.twist{top:640px;border-color:var(--blood);box-shadow:0 0 50px rgba(255,74,90,.3);z-index:9}
+#event.twist h2{color:var(--blood)}
+#truth{position:absolute;left:56px;right:56px;top:300px;z-index:11;display:grid;gap:18px;opacity:0;transition:opacity .6s}
+#truth.on{opacity:1}
+#truth .tt{font:900 64px/1 var(--f-display);color:var(--neon);text-align:center;text-shadow:0 0 30px rgba(255,61,154,.5)}
+#truth .card{background:var(--glass);border:1px solid rgba(255,255,255,.14);border-left:4px solid var(--brass);border-radius:16px;padding:20px 26px;
+  opacity:0;transform:translateY(16px);transition:opacity .6s,transform .6s}
+#truth .card.on{opacity:1;transform:none}
+#truth .card h3{font:700 22px/1.2 var(--f-mono);letter-spacing:.14em;color:var(--brass);margin:0 0 8px}
+#truth .card p{font:700 30px/1.35 var(--f-body);margin:0}
+#truth .card.mafia{border-left-color:var(--blood)}
+
 /* ── вскрытие роли ── */
 #reveal{position:absolute;inset:0;display:none;place-items:center;z-index:9;
   background:rgba(10,8,8,.95);text-align:center}
@@ -441,6 +464,7 @@ body.voiceonly #root{display:none}
       <div class="shot" id="shotA"><div class="sbg"></div><div class="sfig"></div><div class="slight"></div><div class="sgrade"></div></div>
       <div class="shot" id="shotB"><div class="sbg"></div><div class="sfig"></div><div class="slight"></div><div class="sgrade"></div></div>
     </div>
+    <div id="interr"><img alt=""><div class="q"></div></div>
     <div id="stage">
       <header>
         <div id="title" class="serif"><span id="titleText">ГОРОД ЗАСЫПАЕТ</span> <em id="partyno"></em></div>
@@ -477,6 +501,7 @@ body.voiceonly #root{display:none}
   <div id="bars"></div>
   <div id="card"><div><div class="ct serif"></div><div class="cs serif"></div><div class="roster"></div></div></div>
   <div id="event"><h2 class="serif"></h2><p></p></div>
+  <div id="truth"><div class="tt"></div></div>
   <div id="hud"><span class="dot"></span><span class="txt"></span></div>
   <div id="ticker"><span></span></div>
   <div id="hook"><div class="h-eye"></div><div class="h-big"></div><div class="h-txt"></div><div class="h-list"></div><div class="h-sub"></div></div>
@@ -1488,6 +1513,31 @@ function showHook({ eye = '', big = '', text = '', list = [], sub = '', kind = '
 const esc = (x) => String(x).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 let interTimer = null;
 
+/* Голосование — не статичная доска: по очереди крупно каждый кандидат
+   на видео (оправдывается) и сколько у него голосов прямо сейчас. */
+let voteCycle = null, lastTally = {}, voteNames = [];
+function startVoteCycle(names) {
+  stopVoteCycle();
+  voteNames = (names || []).slice();
+  let k = 0;
+  const step = () => {
+    if (!voteNames.length) return;
+    const n = voteNames[k++ % voteNames.length];
+    closeUp(n, { mood: hasAct(slugs[n], 'defend') ? 'defend' : 'talk' });
+    const tot = Object.values(lastTally).reduce((a, x) => a + x, 0);
+    const pct = tot ? Math.round(((lastTally[n] || 0) / tot) * 100) : 0;
+    $('#speaker').textContent = n;
+    $('#line').innerHTML = `<span class="at">${pct}%</span> ${L('голосов', 'of votes')}`;
+    $('#speech').classList.add('on');
+  };
+  step();
+  voteCycle = setInterval(step, 4200);
+}
+function stopVoteCycle() {
+  clearInterval(voteCycle); voteCycle = null;
+  $('#speech').classList.remove('on');
+}
+
 /* ─────────────────────── катсцены ───────────────────────
    Список клипов играется подряд. Следующий клип грузится во втором
    видео заранее, переключение — на событии ended, без чёрной дыры.
@@ -1522,7 +1572,7 @@ function vary(v, src, opts = {}) {
 }
 
 let cineRun = 0;
-function cutscene(list, caption, sub, hold) {
+function cutscene(list, caption, sub, hold, opts = {}) {
   const box = $('#cine');
   const [A, B] = box.querySelectorAll('video');
   const run = ++cineRun;
@@ -1535,7 +1585,14 @@ function cutscene(list, caption, sub, hold) {
   box.querySelector('.c2').textContent = sub || '';
   const cap = box.querySelector('.cap');
   cap.classList.remove('on');
-  if (caption || sub) {
+  // знакомство: у каждого клипа своя подпись (имя и кто он)
+  const perClip = (k) => {
+    if (!opts.captions) return;
+    box.querySelector('.c1').textContent = opts.captions[k] || '';
+    box.querySelector('.c2').textContent = (opts.subs && opts.subs[k]) || '';
+    cap.classList.add('on');
+  };
+  if (!opts.captions && (caption || sub)) {
     setTimeout(() => run === cineRun && cap.classList.add('on'), 900);
     setTimeout(() => run === cineRun && cap.classList.remove('on'), 4800);
   }
@@ -1555,9 +1612,13 @@ function cutscene(list, caption, sub, hold) {
     if (i >= list.length) return done();
     const v = cur;
     if (!v.src.endsWith(list[i])) load(v, list[i]);
-    v.onended = () => { i++; [cur, nxt] = [nxt, cur]; play(); };
+    let moved = false;
+    v.onended = () => { if (moved) return; moved = true; i++; [cur, nxt] = [nxt, cur]; play(); };
     v.onerror = v.onended;
-    v.currentTime = 0;
+    // короткая нарезка: клип обрывается по таймеру, а не по концу файла
+    if (opts.cut) setTimeout(() => { if (run === cineRun && !moved) v.onended(); }, opts.cut);
+    perClip(i);
+    v.currentTime = opts.cut ? 0.6 : 0;
     vary(v, list[i], { keepRate: true });
     const p = v.play();
     if (p && p.catch) p.catch(() => v.onended());
@@ -1621,8 +1682,57 @@ function handle(e) {
       showHook({ kind: 'teaser', eye: L('В СЛЕДУЮЩЕЙ СЕРИИ', 'NEXT EPISODE'), text: e.text.replace(/^(В следующей серии|Next episode):\s*/, ''), ms: 0 });
       break;
 
+    case 'interrogate': {
+      cutsceneOff();
+      wideShot();
+      document.body.classList.add('interr');
+      const box = $('#interr');
+      const img = box.querySelector('img');
+      img.src = `assets/gta/interr/${e.slug}.jpg`;
+      box.querySelector('.q').innerHTML = `${L('ДОПРОС', 'INTERROGATION')} · ${esc(e.name)}<b>${esc(e.question || '')}</b>`;
+      box.classList.remove('on'); void box.offsetWidth; box.classList.add('on');
+      $('#speaker').textContent = e.name;
+      $('#line').textContent = e.text;
+      $('#speech').classList.add('on');
+      speak(e.text, e.name, e.voice);
+      break;
+    }
+    case 'interrogate_end':
+      $('#interr').classList.remove('on');
+      document.body.classList.remove('interr');
+      $('#speech').classList.remove('on');
+      break;
+
+    case 'twist': {
+      const box = $('#event');
+      box.classList.add('twist');
+      box.querySelector('h2').textContent = e.title;
+      box.querySelector('p').textContent = e.text;
+      box.classList.add('on');
+      SND.cue('reveal', 'traitor');
+      setTimeout(() => { box.classList.remove('on'); setTimeout(() => box.classList.remove('twist'), 600); }, 9000);
+      break;
+    }
+
+    case 'truth': {
+      const tbox = $('#truth');
+      tbox.querySelectorAll('.card').forEach(c => c.remove());
+      tbox.querySelector('.tt').textContent = e.title;
+      tbox.classList.add('on');
+      $('#narr').style.visibility = 'hidden';   // текст и так на карточках
+      e.cards.forEach((c, k) => {
+        const el = document.createElement('div');
+        el.className = 'card' + (k === e.cards.length - 1 ? ' mafia' : '');
+        el.innerHTML = `<h3>${esc(c.title)}</h3><p>${esc(c.text)}</p>`;
+        tbox.appendChild(el);
+        setTimeout(() => el.classList.add('on'), 400 + k * 4800);
+      });
+      setTimeout(() => { tbox.classList.remove('on'); $('#narr').style.visibility = ''; }, 900 + e.cards.length * 4800 + 4000);
+      break;
+    }
+
     case 'cutscene': {
-      cutscene(e.clips, e.caption, e.sub, e.hold);
+      cutscene(e.clips, e.caption, e.sub, e.hold, { cut: e.cut, captions: e.captions, subs: e.subs });
       const c = (e.clips || []).join(' ');
       SND.cue(/final-pier/.test(c) ? 'finale-city' : /final-car/.test(c) ? 'finale-mafia'
         : /final-arrest|final-chase|final-interrog/.test(c) ? 'arrest-reel'
@@ -1774,12 +1884,13 @@ function handle(e) {
       document.body.classList.add('voting');
       SND.cue('vote-start');
       $('#clock').textContent = e.seconds;
-      wideShot();
       unfocus();
       Object.values(cards).forEach(c => {
         c.querySelector('.bar').style.width = '0';
         c.querySelector('.pct').style.opacity = '0';
       });
+      lastTally = {};
+      startVoteCycle(e.candidates);
       break;
 
     case 'tick':
@@ -1789,6 +1900,7 @@ function handle(e) {
       break;
 
     case 'tally': {
+      lastTally = e.tally || {};
       const total = Object.values(e.tally).reduce((s, n) => s + n, 0) || 1;
       for (const [name, n] of Object.entries(e.tally)) {
         const c = cards[name]; if (!c) continue;
@@ -1802,6 +1914,7 @@ function handle(e) {
     }
 
     case 'vote_paused':
+      stopVoteCycle();
       $('#clock').textContent = '—';
       $('#call').innerHTML = `<b>${e.name}</b> — ${t('lastword')}`;
       break;
@@ -1818,7 +1931,7 @@ function handle(e) {
       break;
 
     case 'vote_restart':
-      wideShot();
+      startVoteCycle(voteNames);
       $('#call').innerHTML = `${t('revote')}<br>
         <span style="font-size:23px;opacity:.85">${t('revoteHint')}</span>`;
       $('#clock').textContent = e.seconds;
@@ -1830,6 +1943,8 @@ function handle(e) {
       break;
 
     case 'vote_closed':
+      stopVoteCycle();
+      wideShot();
       document.body.classList.remove('voting');
       SND.cue('vote-end');
       $('#vote').classList.remove('on');

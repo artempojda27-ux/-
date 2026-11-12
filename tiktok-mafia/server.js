@@ -21,6 +21,7 @@ const fs = require('fs');
 const path = require('path');
 const engine = require('./traitors-engine');
 const { actionFor, voteWeight, payoutUsd, LADDER } = require('./gifts');
+const { LANG } = require('./i18n');
 const fsp = require('fs');
 
 const PORT = process.env.PORT || 3000;
@@ -261,6 +262,7 @@ const server = http.createServer((req, res) => {
     clients.add(res);
     res.write(`data: ${JSON.stringify({
       type: 'ladder',
+      lang: LANG,
       items: LADDER.map((s) => ({ gift: s.gift, label: s.label, hint: s.hint })),
     })}\n\n`);
     if (lastParty) res.write(`data: ${JSON.stringify(lastParty)}\n\n`);

@@ -332,6 +332,9 @@ body.rain #weather{background-image:repeating-linear-gradient(104deg,
 #card .cs{font-family:var(--f-display);font-size:34px;color:var(--brass);
   letter-spacing:.3em;margin-top:18px}
 #card.titles .ct{font-size:104px;color:var(--brass)}
+/* титры идут поверх пролёта над городом: видео должно просвечивать */
+#card.titles{background:linear-gradient(180deg,rgba(0,0,0,.15),rgba(0,0,0,.55) 45%,rgba(0,0,0,.8))}
+#card.titles .roster{text-shadow:0 2px 12px #000}
 #card .roster{margin:46px auto 0;max-width:860px;display:grid;grid-template-columns:1fr 1fr;
   gap:10px 60px;font-size:28px;color:var(--bone-dim);text-align:left}
 #card .roster b{color:var(--bone);font-weight:400;font-family:var(--f-display);font-size:32px}
@@ -1612,6 +1615,7 @@ function handle(e) {
     }
 
     case 'ladder': {
+      if (e.lang) setLang(e.lang);   // язык эфира известен сразу, ещё до титров
       $('#ladder').innerHTML = e.items.map(i =>
         `<div class="row"><span class="g">${i.gift}</span><span class="a">${i.label}</span></div>`
       ).join('');

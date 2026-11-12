@@ -78,7 +78,32 @@ let voteProvider = null;
 
 /** server.js подписывается сюда, чтобы гнать события в сцену */
 function setBroadcast(fn) {
-  broadcast = fn;
+  broadcast = (ev) => { trackSpeech(ev); fn(ev); };
+}
+
+/**
+ * Темп эфира по голосу. Реплика в 25 слов звучит 8–10 секунд, а модель
+ * отвечает за секунду-две: без ожидания следующая реплика начиналась,
+ * пока голос ещё читал прошлую, субтитры убегали вперёд, сцены рвались.
+ * Движок считает, сколько займёт озвучка всего, что он отправил, и
+ * перед следующей репликой, катсценой и голосованием ждёт, пока она кончится.
+ */
+const SPOKEN = new Set(['line', 'narrate', 'lastword', 'clue']);
+let speechUntil = 0;
+function speechMs(text) {
+  const words = String(text || '').split(/\s+/).filter(Boolean).length;
+  return Math.round(words / 2.5 * 1000) + 700;   // ~150 слов в минуту + вдох
+}
+function trackSpeech(ev) {
+  if (!SPOKEN.has(ev.type) || !ev.text) return;
+  // браузер читает фразы по очереди: новая встаёт в хвост
+  speechUntil = Math.max(Date.now(), speechUntil) + speechMs(ev.text);
+}
+/** Дождаться, пока голос договорит. В режиме без пауз (--fast) не ждём */
+async function settle(extra = 0) {
+  if (!CONFIG.pause) return;
+  const left = speechUntil - Date.now() + extra;
+  if (left > 0) await sleep(left);
 }
 /** server.js подставляет сюда реальные голоса зрителей вместо имитации */
 function setVoteProvider(fn) {
@@ -129,6 +154,7 @@ function status(state, phase) {
 async function cutscene(reel, caption = '', sub = '') {
   const clips = reel.filter(Boolean);
   if (!clips.length) return;
+  await settle();
   broadcast({ type: 'cutscene', clips: clips.map((c) => c.src), caption, sub });
   await sleep(cinema.reelMs(clips));
 }
@@ -677,6 +703,7 @@ ${viewer ? `
     }
     if (!out || !out.line) continue;
 
+    await settle(300);   // прошлая реплика договорена — только тогда новая
     state.log.push(`${sp.name}: ${out.line}`);
     // suspect нужен сцене для склейки на реакцию того, на кого показали
     const suspect = out.suspect && alive.some((p) => p.name === out.suspect && p.name !== sp.name) ? out.suspect : null;
@@ -832,6 +859,7 @@ async function runGame() {
       await drainActions(state);   // щит должен успеть до выбора жертвы
       // Ночь — отдельная сцена, а не мгновение: карточке главы и закадровому
       // голосу надо дать отзвучать, иначе всё слипается в одну секунду.
+      await settle();
       broadcast({ type: 'chapter', title: `${tr('НОЧЬ', 'NIGHT')} ${roman(state.round)}`, sub: narrate.clock(state.round) });
       // крючок: зал гадает, кто не доживёт до утра
       hooks.openPrediction();
@@ -952,7 +980,7 @@ async function runGame() {
     broadcast({ type: 'narrate', text: narrate.vote(state.round) });
     hooks.resetBallots();
     status(state, 'vote');
-    await sleep(CONFIG.beat);
+    await settle(400);   // окно голоса открывается, когда рассказчик договорил
     const { target, weights, total } = await runVote(state, suspicions);
     for (const { p, w } of weights.sort((a, b) => b.w - a.w)) {
       const pct = Math.round((w / total) * 100);
@@ -1064,6 +1092,7 @@ async function runGame() {
   broadcast({ type: 'narrate', text: next });
   await sleep(CONFIG.beat * 2);
 
+  await settle();
   broadcast({
     type: 'over',
     winner,

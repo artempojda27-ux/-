@@ -804,21 +804,24 @@ async function runGame() {
     no: partyNumber() + 1,
     players: state.players.map((p) => ({ name: p.name, slug: p.slug, bio: p.bio, voice: p.voice })),
   });
-  await sleep(CONFIG.beat * 2.5);   // открывающие титры отыгрывают
+  // Открытие — видео целиком: титры поверх пролёта, затем «Ранее в Городе»
+  // голосом поверх улицы. Ни чёрных карточек, ни статичных перебивок.
+  const openMs = opening.length ? cinema.reelMs(opening) : 0;
+  await sleep(Math.min(CONFIG.beat * 2.5, openMs || Infinity));
 
   // «Ранее в Городе»: чем кончилась прошлая серия и что решил тогда зал
   const recap = narrate.previously(lastParty());
   if (recap) {
     broadcast({ type: 'chapter', title: tr('РАНЕЕ', 'PREVIOUSLY'), sub: tr(`серия ${partyNumber()}`, 'episode {n}', { n: partyNumber() }) });
-    await sleep(CONFIG.beat);
     broadcast({ type: 'narrate', text: recap });
     say(C.dim(recap), `_${recap}_`);
-    await sleep(CONFIG.beat * 2.5);
   }
+  if (openMs) await sleep(Math.max(0, openMs - CONFIG.beat * 2.5));
+  await settle();
 
-  // Устанавливающая сцена: что это вообще за город. Без неё зритель первую
-  // минуту видит только восемь голов и не понимает, где он находится.
-  broadcast({
+  // Устанавливающая сцена из статичных мест — только если видео нет.
+  // Город уже показан пролётом, второй раз картинками он не нужен.
+  if (!openMs) broadcast({
     type: 'montage',
     clock: narrate.clock(1),
     hold: 2400,
@@ -827,7 +830,7 @@ async function runGame() {
       ...shuffle(state.city).slice(0, 3).map((id) => ({ id, name: byId(id).name, figures: 1 })),
     ],
   });
-  await sleep(2400 * 4 + 600);
+  if (!openMs) await sleep(2400 * 4 + 600);
 
   say(C.dim('Расклад (зрителям не показывается):'), '_Расклад:_');
   for (const p of state.players) {
@@ -860,25 +863,30 @@ async function runGame() {
       // Ночь — отдельная сцена, а не мгновение: карточке главы и закадровому
       // голосу надо дать отзвучать, иначе всё слипается в одну секунду.
       await settle();
-      broadcast({ type: 'chapter', title: `${tr('НОЧЬ', 'NIGHT')} ${roman(state.round)}`, sub: narrate.clock(state.round) });
       // крючок: зал гадает, кто не доживёт до утра
       hooks.openPrediction();
       status(state, 'night');
-      await sleep(CONFIG.beat);
       broadcast({
         type: 'phase', phase: 'night', round: state.round,
         title: tr('ГОРОД ЗАСЫПАЕТ', 'THE CITY SLEEPS'),
         rain: state.round % 2 === 0,   // погода меняется от ночи к ночи
       });
-      broadcast({ type: 'narrate', text: narrate.nightOpen(state.round) });
-      await sleep(CONFIG.beat);
-
-      // Перебивка по городу. Показываем места, где этой ночью кто-то есть,
-      // но не говорим кто: зритель видит живой город, а не список имён.
-      // Заодно ночь перестаёт быть провалом в эфире — это её главная сцена.
+      // пока город гаснет, мафия выбирает жертву
       const night = await nightPhase(state);
+      const nightReel = (night ? cinema.nightReel(night.victim) : cinema.quietReel()).filter(Boolean);
+
+      // Ночь — сразу видео: глава и голос рассказчика идут поверх катсцены
+      if (nightReel.length) {
+        broadcast({ type: 'cutscene', clips: nightReel.map((c) => c.src),
+          caption: narrate.clock(state.round), sub: night ? night.where : '' });
+        broadcast({ type: 'chapter', title: `${tr('НОЧЬ', 'NIGHT')} ${roman(state.round)}`, sub: narrate.clock(state.round) });
+        await sleep(1500);
+        broadcast({ type: 'narrate', text: narrate.nightOpen(state.round) });
+        await sleep(cinema.reelMs(nightReel) - 1500);
+      }
       const occupied = [...new Set(Object.values(state.placement))];
-      broadcast({
+      // перебивка по городу картинками — только если видео нет
+      if (!nightReel.length) broadcast({
         type: 'montage',
         clock: narrate.clock(state.round),
         hold: 2600,
@@ -889,11 +897,7 @@ async function runGame() {
           figures: whoWasAt(state.placement, id).length,
         })),
       });
-      await sleep(2600 * 3 + 600);
-
-      // катсцена ночи: чей-то последний вечер и шаги следом
-      await cutscene(night ? cinema.nightReel(night.victim) : cinema.quietReel(),
-        narrate.clock(state.round), night ? night.where : '');
+      if (!nightReel.length) await sleep(2600 * 3 + 600);
       say(C.cyan(`\n───── НОЧЬ ${state.round} ─────`), `\n### Ночь ${state.round}`);
       if (night) {
         state.log.push(`[Ночью не стало ${night.victim.name}. Нашли здесь: ${night.where}]`);
@@ -901,18 +905,19 @@ async function runGame() {
           type: 'out', name: night.victim.name, role: night.victim.role,
           by: 'night', where: night.where,
         });
-        broadcast({ type: 'chapter', title: tr('УТРО', 'MORNING'), sub: '' });
-        await sleep(CONFIG.beat);
         // голос рассказчика идёт поверх утренней катсцены: полиция, лента, простыня
         const morningText = narrate.morning(state.round, night.victim.name,
           (night.victim.voice || '').startsWith('женский'));
         const reel = cinema.morningReel().filter(Boolean);
         if (reel.length) {
           broadcast({ type: 'cutscene', clips: reel.map((c) => c.src), caption: night.where, sub: narrate.clock(state.round) });
+          broadcast({ type: 'chapter', title: tr('УТРО', 'MORNING'), sub: '' });
           await sleep(1200);
           broadcast({ type: 'narrate', text: morningText });
           await sleep(cinema.reelMs(reel) - 1200);
         } else {
+          broadcast({ type: 'chapter', title: tr('УТРО', 'MORNING'), sub: '' });
+          await sleep(CONFIG.beat);
           broadcast({ type: 'narrate', text: morningText });
           await sleep(CONFIG.beat * 1.5);
         }

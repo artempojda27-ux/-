@@ -335,6 +335,15 @@ body.rain #weather{background-image:repeating-linear-gradient(104deg,
 /* титры идут поверх пролёта над городом: видео должно просвечивать */
 #card.titles{background:linear-gradient(180deg,rgba(0,0,0,.15),rgba(0,0,0,.55) 45%,rgba(0,0,0,.8))}
 #card.titles .roster{text-shadow:0 2px 12px #000}
+#card.over{background:linear-gradient(180deg,rgba(0,0,0,0) 30%,rgba(0,0,0,.45) 50%,rgba(0,0,0,0) 70%)}
+#card.over .ct{text-shadow:0 4px 30px rgba(0,0,0,.9)}
+/* видео во весь кадр: полосы-кашет его обрезали, поверх катсцены их нет */
+body.cutscene #bars{display:none}
+/* меньше шума на экране: во время видео — только видео и голос */
+body.cutscene #hud,body.cutscene #ticker{opacity:0 !important}
+/* лестница подарков — только на голосовании и коротко раз в пару минут */
+#ladder{opacity:0;pointer-events:none}
+body.voting #ladder,#ladder.peek{opacity:1}
 #card .roster{margin:46px auto 0;max-width:860px;display:grid;grid-template-columns:1fr 1fr;
   gap:10px 60px;font-size:28px;color:var(--bone-dim);text-align:left}
 #card .roster b{color:var(--bone);font-weight:400;font-family:var(--f-display);font-size:32px}
@@ -1448,6 +1457,13 @@ const TICKS = () => [
 let tickN = 0;
 setInterval(() => {
   if (!hudState.alive || document.body.classList.contains('cutscene')) return;
+  if (tickN % 3 === 2) {               // раз в три такта — коротко лестница подарков
+    tickN++;
+    const lad = $('#ladder');
+    lad.classList.add('peek');
+    setTimeout(() => lad.classList.remove('peek'), 8000);
+    return;
+  }
   const el = $('#ticker');
   const list = TICKS();
   el.querySelector('span').textContent = list[tickN++ % list.length];
@@ -1636,7 +1652,6 @@ function handle(e) {
       c.querySelector('.cs').textContent = t('caseNo') + e.no;
       c.querySelector('.roster').innerHTML = e.cast
         .map(p => `<div><b>${p.name}</b><br>${p.bio || ''}</div>`).join('');
-      $('#bars').classList.add('on');
       speak(t('sayTitles') + e.no, 'ведущий', 'мужской');
       setTimeout(() => { c.classList.remove('on'); }, 7000);
       setTimeout(() => $('#bars').classList.remove('on'), 8000);
@@ -1647,12 +1662,14 @@ function handle(e) {
       SND.cue('chapter');
       wideShot();
       const c = $('#card');
-      c.className = 'on';
+      // поверх идущего видео глава — титр на кадре, а не чёрная заставка
+      const overVideo = document.body.classList.contains('cutscene');
+      c.className = overVideo ? 'on over' : 'on';
       c.querySelector('.ct').textContent = e.title;
       c.querySelector('.cs').textContent = e.sub || '';
       c.querySelector('.roster').innerHTML = '';
-      $('#bars').classList.add('on');
-      setTimeout(() => c.classList.remove('on'), 2600);
+      if (!overVideo) $('#bars').classList.add('on');
+      setTimeout(() => c.classList.remove('on'), overVideo ? 3200 : 2600);
       setTimeout(() => $('#bars').classList.remove('on'), 3600);
       break;
     }
@@ -1754,6 +1771,7 @@ function handle(e) {
       $('#call').innerHTML = `${t('call')}<br>
         <span style="font-size:23px;opacity:.85">${t('callHint')}</span>`;
       $('#vote').classList.add('on');
+      document.body.classList.add('voting');
       SND.cue('vote-start');
       $('#clock').textContent = e.seconds;
       wideShot();
@@ -1812,6 +1830,7 @@ function handle(e) {
       break;
 
     case 'vote_closed':
+      document.body.classList.remove('voting');
       SND.cue('vote-end');
       $('#vote').classList.remove('on');
       $('#ladder').classList.remove('hidden');

@@ -70,7 +70,8 @@ function fresh(pool, n, rand = Math.random) {
     лифт или мотель. Кто жертва, зритель узнает утром. */
 function nightReel(victim) {
   const end = victim ? fresh(NIGHT_END, 1) : [];
-  const killer = fresh(NIGHT.filter((n) => !end.includes(n)), victim ? 1 : 2);
+  // ночь — главная сцена: два плана убийцы, а не один
+  const killer = fresh(NIGHT.filter((n) => !end.includes(n)), 2);
   return [victim && walk(victim.slug), ...killer.map(clip), ...end.map(clip)];
 }
 

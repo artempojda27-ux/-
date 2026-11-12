@@ -377,7 +377,7 @@ body.rain #weather{background-image:repeating-linear-gradient(104deg,
   opacity:0;transform:translateY(-10px);transition:opacity .5s,transform .5s}
 #ticker.on{opacity:1;transform:none}
 #ticker span{background:rgba(63,224,240,.16);border:1px solid rgba(63,224,240,.5);border-radius:999px;padding:8px 18px;display:inline-block}
-#hook{position:absolute;left:60px;right:60px;top:420px;z-index:11;background:var(--glass);
+#hook{position:absolute;left:60px;right:60px;top:780px;z-index:11;background:var(--glass);
   border:2px solid var(--cyan);border-radius:22px;padding:30px 34px;text-align:center;
   opacity:0;visibility:hidden;transform:scale(.96);transition:opacity .45s,transform .45s,visibility 0s .45s}
 #hook.on{opacity:1;visibility:visible;transform:none;transition:opacity .45s,transform .45s}
@@ -1577,6 +1577,7 @@ function handle(e) {
       break;
 
     case 'clue': {
+      $('#hook').classList.remove('on');   // предсказание уступает место улике
       const box = $('#event');
       box.classList.add('clue');
       box.querySelector('h2').textContent = e.title;

@@ -1278,11 +1278,33 @@ function voiceFor(name, hint = '') {
   return VOICE[name];
 }
 
-function speak(text, name, hint, onend) {
-  const done = () => { SND.duck(false); onend && onend(); };
+/* Готовый нейроголос с сервера (tts.js): играет обычным <audio>, по одному.
+   Не загрузился — реплику говорит голос браузера, как раньше. */
+const VO = new Audio();
+VO.preload = 'auto';
+function speak(text, name, hint, onend, audio) {
+  let finished = false;
+  const done = () => { if (finished) return; finished = true; SND.duck(false); onend && onend(); };
   const v = voiceFor(name, hint || '');
   SND.duck(true);
   voiceLine(name, text);
+  if (audio && VOICE_MODE !== 'off') {
+    if ('speechSynthesis' in window) speechSynthesis.cancel();
+    // прошлая фраза ещё звучит — закрываем её, чтобы герой перестал «говорить»
+    if (VO.pending) VO.pending();
+    VO.pending = () => { VO.pending = null; done(); };
+    let fell = false;
+    const fallback = () => { if (fell || finished) return; fell = true; VO.onended = VO.onerror = null; browserSpeak(text, v, done); };
+    VO.onended = () => VO.pending && VO.pending();
+    VO.onerror = fallback;
+    VO.src = audio;
+    const p = VO.play();
+    if (p && p.catch) p.catch(fallback);
+    return;
+  }
+  browserSpeak(text, v, done);
+}
+function browserSpeak(text, v, done) {
   // без голоса (картинка для OBS) реплика держится столько, сколько её произносила бы вкладка-голос
   if (VOICE_MODE === 'off' || !('speechSynthesis' in window)) {
     const words = text.split(/\s+/).length;
@@ -1456,17 +1478,24 @@ function showReveal(name, role, title, suspense = true) {
 
 /* ─────────────────────── крючки удержания ─────────────────────── */
 // русский — свой текст, все латинские эфиры (en, es, de, pt) — английский
-const L = (ru, en) => (LANG === 'ru' ? ru : en);
+/* Строки оверлеев: русский, английский — и перевод для es/de/pt по английскому ключу.
+   С подстановкой: L(`НОЧЬ ${n}`, 'NIGHT {n}', { n }) */
+const LX = {"es": {"<b>VOTING</b> · TYPE A NAME": "<b>VOTACIÓN</b> · ESCRIBE UN NOMBRE", "WAS…": "ERA…", "NEXT EPISODE": "PRÓXIMO EPISODIO", "INTERROGATION": "INTERROGATORIO", "TOP DETECTIVES TONIGHT": "MEJORES DETECTIVES DE HOY", "New episode, new cast. The mafia is already among them.": "Nuevo episodio, nuevo reparto. La mafia ya está entre ellos.", "STAY TUNED": "NO SE VAYAN", "NIGHT PREDICTION": "PREDICCIÓN DE LA NOCHE", "The characters read chat. Ask them — they might answer you by name": "Los personajes leen el chat. Pregúntales: pueden responderte por tu nombre", "Gifts change the game: 🍩 make them talk · 🎉 evidence · 🦢 shield": "Los regalos cambian el juego: 🍩 hacer hablar · 🎉 prueba · 🦢 escudo", "Just joined? The mafia is among them. Type a name to vote them out": "¿Acabas de llegar? La mafia está entre ellos. Escribe un nombre para echarlo", "THEY SPOTTED THE MAFIA": "DESCUBRIERON A LA MAFIA", "Spot the mafia — top detectives get shown on screen": "Descubre a la mafia: los mejores detectives salen en pantalla", "of votes": "de los votos", "vote out the mafia to get on this board": "echa a la mafia para salir en esta lista", "{m} MAFIA AMONG {n}": "{m} MAFIA ENTRE {n}", "NIGHT {n}": "NOCHE {n}", "DAY {n}": "DÍA {n}", "VOTE: <b>0:{s}</b> · TYPE A NAME": "VOTO: <b>0:{s}</b> · ESCRIBE UN NOMBRE", "of you called it: {v}": "de ustedes acertaron: {v}", "NEXT EPISODE IN 0:{s}": "PRÓXIMO EPISODIO EN 0:{s}", "<b>WHO WON'T SEE MORNING?</b>": "<b>¿QUIÉN NO VERÁ EL AMANECER?</b>", "<b>WHO'S LYING?</b> VOTE SOON": "<b>¿QUIÉN MIENTE?</b> PRONTO SE VOTA"}, "de": {"<b>VOTING</b> · TYPE A NAME": "<b>ABSTIMMUNG</b> · NAMEN SCHREIBEN", "WAS…": "WAR…", "NEXT EPISODE": "NÄCHSTE FOLGE", "INTERROGATION": "VERHÖR", "TOP DETECTIVES TONIGHT": "BESTE DETEKTIVE HEUTE", "New episode, new cast. The mafia is already among them.": "Neue Folge, neue Besetzung. Die Mafia ist schon unter ihnen.", "STAY TUNED": "DRANBLEIBEN", "NIGHT PREDICTION": "VORHERSAGE DER NACHT", "The characters read chat. Ask them — they might answer you by name": "Die Figuren lesen den Chat. Fragt sie: Sie antworten vielleicht mit eurem Namen", "Gifts change the game: 🍩 make them talk · 🎉 evidence · 🦢 shield": "Geschenke ändern das Spiel: 🍩 reden lassen · 🎉 Beweis · 🦢 Schutz", "Just joined? The mafia is among them. Type a name to vote them out": "Gerade dazugekommen? Die Mafia ist unter ihnen. Schreib einen Namen, um abzustimmen", "THEY SPOTTED THE MAFIA": "HABEN DIE MAFIA ERKANNT", "Spot the mafia — top detectives get shown on screen": "Erkenne die Mafia: Die besten Detektive kommen auf den Bildschirm", "of votes": "der Stimmen", "vote out the mafia to get on this board": "wähl die Mafia raus, um hier zu stehen", "{m} MAFIA AMONG {n}": "{m} MAFIA UNTER {n}", "NIGHT {n}": "NACHT {n}", "DAY {n}": "TAG {n}", "VOTE: <b>0:{s}</b> · TYPE A NAME": "ABSTIMMUNG: <b>0:{s}</b> · NAMEN SCHREIBEN", "of you called it: {v}": "von euch lagen richtig: {v}", "NEXT EPISODE IN 0:{s}": "NÄCHSTE FOLGE IN 0:{s}", "<b>WHO WON'T SEE MORNING?</b>": "<b>WER ERLEBT DEN MORGEN NICHT?</b>", "<b>WHO'S LYING?</b> VOTE SOON": "<b>WER LÜGT?</b> GLEICH WIRD ABGESTIMMT"}, "pt": {"<b>VOTING</b> · TYPE A NAME": "<b>VOTAÇÃO</b> · ESCREVA UM NOME", "WAS…": "ERA…", "NEXT EPISODE": "PRÓXIMO EPISÓDIO", "INTERROGATION": "INTERROGATÓRIO", "TOP DETECTIVES TONIGHT": "MELHORES DETETIVES DE HOJE", "New episode, new cast. The mafia is already among them.": "Novo episódio, novo elenco. A máfia já está entre eles.", "STAY TUNED": "FIQUEM AÍ", "NIGHT PREDICTION": "PREVISÃO DA NOITE", "The characters read chat. Ask them — they might answer you by name": "Os personagens leem o chat. Pergunte: eles podem responder pelo seu nome", "Gifts change the game: 🍩 make them talk · 🎉 evidence · 🦢 shield": "Presentes mudam o jogo: 🍩 fazer falar · 🎉 prova · 🦢 escudo", "Just joined? The mafia is among them. Type a name to vote them out": "Acabou de chegar? A máfia está entre eles. Escreva um nome para votar", "THEY SPOTTED THE MAFIA": "DESCOBRIRAM A MÁFIA", "Spot the mafia — top detectives get shown on screen": "Descubra a máfia: os melhores detetives aparecem na tela", "of votes": "dos votos", "vote out the mafia to get on this board": "vote na máfia para entrar nesta lista", "{m} MAFIA AMONG {n}": "{m} MÁFIA ENTRE {n}", "NIGHT {n}": "NOITE {n}", "DAY {n}": "DIA {n}", "VOTE: <b>0:{s}</b> · TYPE A NAME": "VOTO: <b>0:{s}</b> · ESCREVA UM NOME", "of you called it: {v}": "de vocês acertaram: {v}", "NEXT EPISODE IN 0:{s}": "PRÓXIMO EPISÓDIO EM 0:{s}", "<b>WHO WON'T SEE MORNING?</b>": "<b>QUEM NÃO VERÁ O AMANHECER?</b>", "<b>WHO'S LYING?</b> VOTE SOON": "<b>QUEM ESTÁ MENTINDO?</b> VOTAÇÃO JÁ JÁ"}};
+const L = (ru, en, vars) => {
+  if (LANG === 'ru') return ru;
+  const s = (LX[LANG] && LX[LANG][en]) || en;
+  return vars ? s.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '') : s;
+};
 const hudState = { phase: '', round: 0, alive: 0, mafia: 0, left: null };
 const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
 function drawHud() {
   const h = hudState;
   if (!h.alive) return;
-  const who = L(`МАФИЯ: <em>${h.mafia}</em> ИЗ ${h.alive}`, `<em>${h.mafia}</em> MAFIA AMONG ${h.alive}`);
-  const when = h.phase === 'night' ? L(`НОЧЬ ${ROMAN[h.round] || h.round}`, `NIGHT ${ROMAN[h.round] || h.round}`)
-    : L(`ДЕНЬ ${ROMAN[h.round] || h.round}`, `DAY ${ROMAN[h.round] || h.round}`);
+  const who = L(`МАФИЯ: <em>${h.mafia}</em> ИЗ ${h.alive}`, '{m} MAFIA AMONG {n}', { m: `<em>${h.mafia}</em>`, n: h.alive });
+  const when = h.phase === 'night' ? L(`НОЧЬ ${ROMAN[h.round] || h.round}`, 'NIGHT {n}', { n: ROMAN[h.round] || h.round })
+    : L(`ДЕНЬ ${ROMAN[h.round] || h.round}`, 'DAY {n}', { n: ROMAN[h.round] || h.round });
   const cta = h.phase === 'vote'
-    ? (h.left != null ? L(`ГОЛОС: <b>0:${String(h.left).padStart(2, '0')}</b> · ПИШИ ИМЯ`, `VOTE: <b>0:${String(h.left).padStart(2, '0')}</b> · TYPE A NAME`) : L('<b>ГОЛОСОВАНИЕ</b> · ПИШИ ИМЯ', '<b>VOTING</b> · TYPE A NAME'))
+    ? (h.left != null ? L(`ГОЛОС: <b>0:${String(h.left).padStart(2, '0')}</b> · ПИШИ ИМЯ`, 'VOTE: <b>0:{s}</b> · TYPE A NAME', { s: String(h.left).padStart(2, '0') }) : L('<b>ГОЛОСОВАНИЕ</b> · ПИШИ ИМЯ', '<b>VOTING</b> · TYPE A NAME'))
     : h.phase === 'night' ? L('<b>КТО НЕ ДОЖИВЁТ ДО УТРА?</b>', '<b>WHO WON\'T SEE MORNING?</b>')
     : L('<b>КТО ВРЁТ?</b> ГОЛОС СКОРО', '<b>WHO\'S LYING?</b> VOTE SOON');
   $('#hud .txt').innerHTML = `${when} · ${who} · ${cta}`;
@@ -1652,7 +1681,7 @@ function handle(e) {
       showHook({
         eye: L('ПРЕДСКАЗАНИЕ НОЧИ', 'NIGHT PREDICTION'),
         big: `${e.pct}%`,
-        text: L(`зала угадали: ${e.victim}`, `of you called it: ${e.victim}`),
+        text: L(`зала угадали: ${e.victim}`, 'of you called it: {v}', { v: e.victim }),
         sub: e.users && e.users.length ? e.users.map(u => '@' + u).join('  ') : '',
       });
       SND.cue('gift');
@@ -1666,7 +1695,7 @@ function handle(e) {
       box.querySelector('p').textContent = e.text;
       box.classList.add('on');
       SND.cue('event');
-      speak(e.text, 'рассказчик', 'мужской');
+      speak(e.text, 'рассказчик', 'мужской', null, e.audio);
       setTimeout(() => { box.classList.remove('on'); setTimeout(() => box.classList.remove('clue'), 600); }, 8000);
       break;
     }
@@ -1696,7 +1725,7 @@ function handle(e) {
       $('#speaker').textContent = e.name;
       $('#line').textContent = e.text;
       $('#speech').classList.add('on');
-      speak(e.text, e.name, e.voice);
+      speak(e.text, e.name, e.voice, null, e.audio);
       break;
     }
     case 'interrogate_end':
@@ -1792,7 +1821,7 @@ function handle(e) {
       n.textContent = e.text;
       n.classList.add('on');
       $('#speech').classList.remove('on');
-      speak(e.text, 'рассказчик', 'мужской', () => n.classList.remove('on'));
+      speak(e.text, 'рассказчик', 'мужской', () => n.classList.remove('on'), e.audio);
       setTimeout(() => n.classList.remove('on'), 11000);
       break;
     }
@@ -1845,7 +1874,7 @@ function handle(e) {
       box.querySelector('h2').textContent = e.title;
       box.querySelector('p').textContent = e.text;
       box.classList.add('on');
-      speak(e.text, 'ведущий', 'мужской');
+      speak(e.text, 'ведущий', 'мужской', null, e.audio);
       setTimeout(() => box.classList.remove('on'), 7000);
       break;
     }
@@ -1876,7 +1905,7 @@ function handle(e) {
           stopTalking(e.name);
           shotVideo(e.name, 'idle');
           if (target) setTimeout(() => reactionShot(target), 250);
-        });
+        }, e.audio);
       }
       break;
 
@@ -1931,7 +1960,7 @@ function handle(e) {
       $('#line').textContent = e.text;
       $('#speech').classList.add('on');
       startTalking(e.name);
-      speak(e.text, e.name, e.voice, () => stopTalking(e.name));
+      speak(e.text, e.name, e.voice, () => stopTalking(e.name), e.audio);
       break;
 
     case 'vote_restart':
@@ -2013,7 +2042,7 @@ function handle(e) {
         const n = $('#narr');
         n.textContent = e.text;
         n.classList.add('on');
-        speak(e.text, 'рассказчик', 'мужской', () => n.classList.remove('on'));
+        speak(e.text, 'рассказчик', 'мужской', () => n.classList.remove('on'), e.audio);
         setTimeout(() => n.classList.remove('on'), 11000);
       }
       setTimeout(() => p.classList.remove('on'), 8000);
@@ -2042,7 +2071,7 @@ function handle(e) {
       box.classList.add('on');
       const fig = cards[e.name] && cards[e.name].querySelector('.figure');
       if (fig) { setFace(fig, e.name, '-angry'); setTimeout(() => setFace(fig, e.name, ''), 6000); }
-      speak(e.text, 'ведущий', 'мужской');
+      speak(e.text, 'ведущий', 'мужской', null, e.audio);
       setTimeout(() => box.classList.remove('on'), 7000);
       break;
     }
@@ -2079,7 +2108,7 @@ function handle(e) {
       let left = e.seconds || 30;
       const sub = $('#hook .h-sub');
       clearInterval(interTimer);
-      const draw = () => { sub.textContent = L(`СЛЕДУЮЩАЯ СЕРИЯ ЧЕРЕЗ 0:${String(Math.max(0, left)).padStart(2, '0')}`, `NEXT EPISODE IN 0:${String(Math.max(0, left)).padStart(2, '0')}`); };
+      const draw = () => { sub.textContent = L(`СЛЕДУЮЩАЯ СЕРИЯ ЧЕРЕЗ 0:${String(Math.max(0, left)).padStart(2, '0')}`, 'NEXT EPISODE IN 0:{s}', { s: String(Math.max(0, left)).padStart(2, '0') }); };
       if (!$('#hook').classList.contains('on')) showHook({ kind: 'teaser', eye: L('ОСТАВАЙТЕСЬ', 'STAY TUNED'), text: L('Новая партия, новый состав. Мафия уже среди них.', 'New episode, new cast. The mafia is already among them.'), ms: 0 });
       draw();
       interTimer = setInterval(() => { left--; draw(); if (left <= 0) clearInterval(interTimer); }, 1000);

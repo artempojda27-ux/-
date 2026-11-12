@@ -1,0 +1,14 @@
+{
+  "name": "tiktok-mafia",
+  "private": true,
+  "description": "Город засыпает / The City Sleeps — ИИ-мафия для TikTok LIVE",
+  "scripts": {
+    "start": "node server.js",
+    "bridge": "node tiktok-bridge.js",
+    "test-party": "PROVIDER=mock node server.js"
+  },
+  "dependencies": {
+    "msedge-tts": "2.1.1",
+    "tiktok-live-connector": "1.2.3"
+  }
+}

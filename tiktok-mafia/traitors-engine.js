@@ -472,7 +472,7 @@ async function drainActions(state) {
 
     switch (a.kind) {
       case 'shield':
-        await cutscene([cinema.clip('act-shield')], `@${a.user}`, tr(`щит для ${target.name}: полиция стережёт дом`, `shield for ${target.name}: police watch the house`));
+        await cutscene([cinema.clip('act-shield')], `@${a.user}`, tr(`щит для ${target.name}: полиция стережёт дом`, 'shield for {name}: police watch the house', { name: target.name }));
         state.shielded = target.name;
         state.log.push(`[${target.name} под защитой на эту ночь]`);
         announce(a);
@@ -486,7 +486,7 @@ async function drainActions(state) {
         break;
 
       case 'inspect': {
-        await cutscene([cinema.clip('act-inspect')], `@${a.user}`, tr(`проверка: досье на ${target.name}`, `background check on ${target.name}`));
+        await cutscene([cinema.clip('act-inspect')], `@${a.user}`, tr(`проверка: досье на ${target.name}`, 'background check on {name}', { name: target.name }));
         const role = target.role;
         state.log.push(`[ПРОВЕРКА: ${target.name} — ${role === 'traitor' ? 'ПРЕДАТЕЛЬ' : 'ВЕРНЫЙ'}]`);
         announce(a);
@@ -496,7 +496,7 @@ async function drainActions(state) {
       }
 
       case 'evidence': {
-        await cutscene([cinema.clip('act-evidence')], `@${a.user}`, tr(`подкинул улику против ${target.name}`, `planted evidence on ${target.name}`));
+        await cutscene([cinema.clip('act-evidence')], `@${a.user}`, tr(`подкинул улику против ${target.name}`, 'planted evidence on {name}', { name: target.name }));
         // улику придумывает модель — так она ложится в текущий разговор,
         // а не выглядит вставкой из другого эфира
         let text = tr(`Кто-то видел, как ${target.name} ночью ${female(target) ? 'выходила' : 'выходил'} из комнаты.`,
@@ -760,15 +760,17 @@ function nightFootage(state, night) {
     const others = withWhom(p);
     segs.push({ c, cut: 2800,
       cap: others.length
-        ? tr(`${p.name} — у места «${byId(P[p.name]).name}». Рядом: ${others.join(', ')}`, `${p.name} at ${byId(P[p.name]).name}. Also there: ${others.join(', ')}`)
-        : tr(`${p.name} — у места «${byId(P[p.name]).name}». ${g(p, 'Один', 'Одна')}`, `${p.name} at ${byId(P[p.name]).name}. Alone`),
+        ? tr(`${p.name} — у места «${byId(P[p.name]).name}». Рядом: ${others.join(', ')}`, '{name} at {place}. Also there: {others}',
+          { name: p.name, place: byId(P[p.name]).name, others: others.join(', ') })
+        : tr(`${p.name} — у места «${byId(P[p.name]).name}». ${g(p, 'Один', 'Одна')}`, '{name} at {place}. Alone',
+          { name: p.name, place: byId(P[p.name]).name }),
       sub: `${stamp(state.round, step++)} · ${tr('камера', 'camera')} ${10 + ((step * 7) % 80)}` });
   }
   if (victim) {
     const w = cinema.walk(victim.slug);
     const place = byId(night.whereId).name;
     if (w) segs.push({ c: w, cut: 0,
-      cap: tr(`${victim.name} идёт к месту «${place}»`, `${victim.name} heads to ${place}`),
+      cap: tr(`${victim.name} идёт к месту «${place}»`, '{name} heads to {place}', { name: victim.name, place }),
       sub: `${stamp(state.round, step++)} · ${place}` });
     const a = cinema.approach();
     if (a) segs.push({ c: a, cut: 4000, cap: tr('Кто-то идёт следом', 'Someone is following'), sub: `${stamp(state.round, step++)} · ${place}` });
@@ -791,15 +793,17 @@ function truthFootage(state) {
     const night = `${tr('НОЧЬ', 'NIGHT')} ${roman(n.round)}`;
     const kw = k && cinema.walk(k.slug);
     if (kw) segs.push({ c: kw, cut: 3800,
-      cap: tr(`${k.name} — мафия. Выходит в ночь от места «${byId(n.placement[k.name]).name}»`, `${k.name} is the mafia. Slips out from ${byId(n.placement[k.name]).name}`),
+      cap: tr(`${k.name} — мафия. Выходит в ночь от места «${byId(n.placement[k.name]).name}»`, '{name} is the mafia. Slips out from {place}',
+        { name: k.name, place: byId(n.placement[k.name]).name }),
       sub: `${night} · ${stamp(n.round, 1)}` });
     const vw = v && cinema.walk(v.slug);
     if (vw) segs.push({ c: vw, cut: 3400,
-      cap: tr(`${v.name} не знает, что за ${g(v, 'ним', 'ней')} идут`, `${v.name} has no idea someone is following`),
+      cap: tr(`${v.name} не знает, что за ${g(v, 'ним', 'ней')} идут`, '{name} has no idea someone is following', { name: v.name }),
       sub: `${night} · ${stamp(n.round, 2)} · ${n.where}` });
     const m = cinema.murderFor(n.whereId);
     if (m) segs.push({ c: m, cut: 0,
-      cap: tr(`${n.where}: ${n.killers.join(' и ')} — вот чья это тень`, `${n.where}: that shadow was ${n.killers.join(' and ')}`),
+      cap: tr(`${n.where}: ${n.killers.join(' и ')} — вот чья это тень`, '{place}: that shadow was {killers}',
+        { place: n.where, killers: n.killers.join(tr(' и ', ' and ')) }),
       sub: `${night} · ${stamp(n.round, 3)}` });
   }
   return segs;

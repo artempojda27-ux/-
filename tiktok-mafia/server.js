@@ -33,7 +33,29 @@ let lastParty = null; // чтобы сцена, открытая посреди 
 
 let lastStats = null;
 
+/**
+ * Озвучка встраивается в поток событий: реплика уходит в сцену вместе
+ * с готовым mp3. Очередь сохраняет порядок событий — пока синтезируется
+ * фраза, следующее событие ждёт за ней.
+ */
+const tts = require('./tts');
+const SPEAKER = {
+  line: (e) => e.slug, lastword: (e) => e.slug, interrogate: (e) => e.slug,
+  narrate: () => 'narrator', clue: () => 'narrator', event: () => 'host', evidence: () => 'host',
+};
+let sendChain = Promise.resolve();
 function push(ev) {
+  if (!tts.ON || !SPEAKER[ev.type] || !ev.text) {
+    sendChain = sendChain.then(() => pushNow(ev));
+    return;
+  }
+  const ready = tts.speak(ev.text, SPEAKER[ev.type](ev)).catch(() => null);
+  sendChain = sendChain.then(async () => {
+    const audio = await ready;
+    pushNow(audio ? { ...ev, audio } : ev);
+  });
+}
+function pushNow(ev) {
   if (ev.type === 'stats') lastStats = ev;
   if (ev.type === 'over') {
     flushCalibration({
@@ -300,6 +322,7 @@ const server = http.createServer((req, res) => {
     '.svg': 'image/svg+xml',
     '.mp4': 'video/mp4',
     '.webm': 'video/webm',
+    '.mp3': 'audio/mpeg',
   };
   const ext = path.extname(file).toLowerCase();
   const type = MIME[ext] || 'application/octet-stream';
@@ -322,6 +345,7 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
+  console.log(tts.ON ? 'озвучка: нейроголоса Edge (msedge-tts)' : 'озвучка: голоса браузера (npm install — чтобы включить нейроголоса)');
   console.log(`сцена:   http://localhost:${PORT}/scene.html`);
   console.log(`вход:    POST http://localhost:${PORT}/input`);
   console.log(`\nждём сцену 3 секунды, потом начинаем партию...\n`);

@@ -68,9 +68,9 @@ function twist(state, night, ctx) {
       options.push({ w: 5, clip: 'act-inspect', title: tr('БЛОКНОТ ШЕРИФА', "THE SHERIFF'S NOTEBOOK"),
         text: isMafia
           ? tr(`В кармане у ${night.victim.name} нашли блокнот шерифа. Последняя запись: «${name} — мафия».`,
-            `In ${night.victim.name}'s pocket they found the sheriff's notebook. Last entry: "${name} is mafia."`)
+            'In {victim}\'s pocket they found the sheriff\'s notebook. Last entry: "{name} is mafia."', { victim: night.victim.name, name })
           : tr(`В кармане у ${night.victim.name} нашли блокнот шерифа. Последняя запись: «${name} — чист».`,
-            `In ${night.victim.name}'s pocket they found the sheriff's notebook. Last entry: "${name} is clean."`),
+            'In {victim}\'s pocket they found the sheriff\'s notebook. Last entry: "{name} is clean."', { victim: night.victim.name, name }),
         reveal: { name, mafia: isMafia } });
     }
   }
@@ -83,7 +83,8 @@ function twist(state, night, ctx) {
     const place = byId(state.placement[m.name]).name;
     options.push({ w: 2, clip: 'night-payphone', title: tr('ПЕРЕХВАТ ЗВОНКА', 'INTERCEPTED CALL'),
       text: tr(`В ${clock} с таксофона у места «${place}» кто-то звонил и сказал: «Готово». Голос похож на ${pair[0]} или ${pair[1]}.`,
-        `At ${clock} someone called from a payphone near ${place} and said: "It's done." The voice sounds like ${pair[0]} or ${pair[1]}.`) });
+        'At {clock} someone called from a payphone near {place} and said: "It\'s done." The voice sounds like {a} or {b}.',
+        { clock, place, a: pair[0], b: pair[1] }) });
   }
 
   // 3. свидетель: был там же, где убийство, и видел, откуда ушёл убийца
@@ -94,7 +95,8 @@ function twist(state, night, ctx) {
       const from = byId(state.placement[m.name]).name;
       options.push({ w: 3, clip: 'morning-detective', title: tr('СВИДЕТЕЛЬ', 'A WITNESS'),
         text: tr(`${w} признаётся: ночью был у места «${night.where}» и видел, как кто-то пришёл туда со стороны «${from}».`,
-          `${w} admits being near ${night.where} last night and seeing someone arrive from the direction of ${from}.`) });
+          '{name} admits being near {place} last night and seeing someone arrive from the direction of {from}.',
+          { name: w, place: night.where, from }) });
     }
   }
 
@@ -117,18 +119,19 @@ function truth(state, ctx) {
     const killersThere = n.killers.filter((k) => n.placement[k] === n.whereId);
     const killerPlace = byId(n.placement[n.killers[0]]).name;
     cards.push({
-      title: tr(`НОЧЬ ${roman(n.round)} · ${n.where}`, `NIGHT ${roman(n.round)} · ${n.where}`),
+      title: tr(`НОЧЬ ${roman(n.round)} · ${n.where}`, 'NIGHT {n} · {place}', { n: roman(n.round), place: n.where }),
       text: killersThere.length
         ? tr(`${n.victim} был${n.female ? 'а' : ''} у места «${n.where}». Там же была мафия: ${killersThere.join(' и ')}.`,
-          `${n.victim} was at ${n.where}. The mafia was right there: ${killersThere.join(' and ')}.`)
-        : tr(`${n.victim} остал${n.female ? 'ась' : 'ся'} у места «${n.where}» одн${n.female ? 'а' : ''}. Мафия пришла от места «${killerPlace}».`,
-          `${n.victim} was alone at ${n.where}. The mafia came over from ${killerPlace}.`),
+          '{victim} was at {place}. The mafia was right there: {killers}.',
+          { victim: n.victim, place: n.where, killers: killersThere.join(tr(' и ', ' and ')) })
+        : tr(`${n.victim} остал${n.female ? 'ась' : 'ся'} у места «${n.where}» ${n.female ? 'одна' : 'один'}. Мафия пришла от места «${killerPlace}».`,
+          '{victim} was alone at {place}. The mafia came over from {from}.', { victim: n.victim, place: n.where, from: killerPlace }),
     });
   }
   cards.push({
     title: tr('МАФИЯ', 'THE MAFIA'),
-    text: tr(`Это были ${mafia.join(' и ')}.${sheriff ? ` Шерифом был${g(sheriff, '', 'а')} ${sheriff.name}.` : ''}`,
-      `It was ${mafia.join(' and ')}.${sheriff ? ` The sheriff was ${sheriff.name}.` : ''}`),
+    text: tr(`Это были ${mafia.join(' и ')}.`, 'It was {names}.', { names: mafia.join(tr(' и ', ' and ')) })
+      + (sheriff ? tr(` Шерифом был${g(sheriff, '', 'а')} ${sheriff.name}.`, ' The sheriff was {name}.', { name: sheriff.name }) : ''),
   });
   return cards;
 }

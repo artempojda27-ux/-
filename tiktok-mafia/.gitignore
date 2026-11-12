@@ -7,3 +7,5 @@ history-*.json
 assets/gta/clips/*.webm
 assets/gta/talk/*.webm
 detectives.json
+tts-cache/
+history.json

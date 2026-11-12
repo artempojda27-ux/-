@@ -92,6 +92,10 @@
 
 ## Запуск
 
+Один раз после скачивания (нужен Node.js 18+):
+
+    npm install        # голоса персонажей (msedge-tts) и мост к TikTok
+
 Отладка без эфира — три терминала:
 
     ANTHROPIC_API_KEY=sk-... node server.js
@@ -127,7 +131,6 @@
 Живой эфир:
 
     ANTHROPIC_API_KEY=sk-... node server.js
-    npm i tiktok-live-connector
     TIKTOK_USER=твой_ник node tiktok-bridge.js
     OBS: Browser Source → http://localhost:3000/scene.html, 1080x1920
 
@@ -137,8 +140,7 @@
 
     STREAM_LANG=en ANTHROPIC_API_KEY=sk-... node server.js
     STREAM_LANG=en TIKTOK_USER=твой_англ_ник node tiktok-bridge.js
-    OBS: Browser Source → http://localhost:3000/scene.html?lang=en&voice=off
-    голос: http://localhost:3000/scene.html?lang=en&voice=only в Edge или Chrome (см. «OBS»)
+    OBS: Browser Source → http://localhost:3000/scene.html?lang=en
 
 Что меняется в английском эфире:
 
@@ -149,8 +151,7 @@
 - **реплики** модель пишет на разговорном американском английском,
   рассказчик — свой английский текст в той же интонации, часы 12-часовые
 - **места** — the Midnight bar, the pier, the Imperial hotel и т.д.
-- **озвучка** — голоса en-US, потом en-GB из системы. В OBS на Windows это
-  голоса Microsoft (David, Zira, Mark); других браузерная озвучка не знает
+- **озвучка** — американские нейроголоса, у каждого героя свой (см. «Озвучка»)
 - **отдельный сериал**: память пишется в `history-en.json`, и «Previously
   in the City» пересказывает английские серии, а не русские
 - `replay-en.html` — английская запись прогона, открывается без сервера
@@ -189,6 +190,7 @@
     VOTE_RESTART_SECONDS  окно после последнего слова (30)
     LASTWORD_MS     сколько держать речь на экране (9000)
     PORT            3000
+    TTS             off — выключить нейроголоса сервера (голос браузера)
 
 ## Другие языки
 
@@ -197,26 +199,41 @@
 английские, чтобы их было легко набрать в чате.
 
     STREAM_LANG=es ANTHROPIC_API_KEY=sk-... node server.js
-    OBS: http://localhost:3000/scene.html?lang=es&voice=off
+    OBS: http://localhost:3000/scene.html?lang=es
 
 Новый язык: скопировать `lang/es.js` → `lang/xx.js`, перевести, добавить
 блок `xx` в `T` в `scene.html` и код голоса в `SPEECH_LANG` там же.
 Без ИИ (`PROVIDER=mock`) реплики персонажей остаются английскими: это
 заглушка для проверки, в эфире их пишет модель на языке эфира.
 
+## Озвучка
+
+Голоса синтезирует сервер (`tts.js`): нейроголоса Microsoft Edge через пакет
+`msedge-tts`. Бесплатно, без ключей, на всех пяти языках, у каждого из 14
+героев свой голос и тембр, у рассказчика — свой. Готовая фраза ложится в
+`tts-cache/` и уходит в сцену вместе с репликой, сцена играет её как обычный
+звук — поэтому голос слышен прямо в OBS, без отдельной вкладки.
+
+- при запуске сервер пишет `озвучка: нейроголоса Edge` — значит, работает;
+  `голоса браузера` — пакет не стоит, выполни `npm install`
+- нужен интернет: голоса синтезирует сервис Microsoft. Если он не ответил
+  за 6 секунд, реплика идёт голосом браузера, эфир не останавливается
+- это неофициальный доступ к голосам «Читать вслух» из Edge: Microsoft может
+  его поменять или закрыть. Тогда — `TTS=off` и вариант с вкладкой ниже
+- голоса героев правятся в `tts.js` (таблица `V`: голос, скорость, высота)
+
 ## OBS
 
 - холст 1080×1920, не 16:9
-- **Картинка:** Browser Source, размер тот же, адрес
-  `http://localhost:3000/scene.html?lang=en&voice=off`, галочка
-  **Control audio via OBS** (звуки города, удары, сердцебиение)
-- **Голос:** во встроенном браузере OBS голосов нет. Поэтому говорит отдельная
-  вкладка: открой `http://localhost:3000/scene.html?lang=en&voice=only` в
-  **Microsoft Edge** (лучшие бесплатные голоса «Natural») или Chrome, нажми
-  кнопку на странице. В OBS добавь **Application Audio Capture** (Windows)
-  или **macOS Audio Capture** → этот браузер. Вкладку не сворачивать
-- обе страницы получают одни и те же события сервера одновременно, так что
-  субтитры в кадре и голос идут вместе
+- **Картинка и звук:** Browser Source, размер тот же, адрес
+  `http://localhost:3000/scene.html?lang=en`, галочка
+  **Control audio via OBS** (голоса, звуки города, удары, сердцебиение)
+- **Запасной голос** (если нейроголоса не работают, `TTS=off`): в OBS адрес
+  `scene.html?lang=en&voice=off`, а говорит отдельная вкладка
+  `http://localhost:3000/scene.html?lang=en&voice=only` в **Microsoft Edge**
+  или Chrome — нажми кнопку на странице, в OBS добавь **Application Audio
+  Capture** (Windows) или **macOS Audio Capture** → этот браузер. Вкладку не
+  сворачивать
 - битрейт 4000–6000, 30 fps
 - нижние 28% экрана пустые: там комментарии и кнопки подарков
 

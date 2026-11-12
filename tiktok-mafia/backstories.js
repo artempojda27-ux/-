@@ -7,7 +7,7 @@
  * партию), а повод следить за человеком с первой минуты.
  */
 
-const { LANG } = require('./i18n');
+const { LANG, PACK } = require('./i18n');
 
 const STORIES = {
   margo: {
@@ -68,11 +68,12 @@ const STORIES = {
   },
 };
 
-/** Предыстория героя на языке эфира (латинские эфиры — английская основа) */
+/** Предыстория героя на языке эфира: русский, английский или из пакета lang/<код>.js */
 function storyFor(slug) {
   const s = STORIES[slug];
   if (!s) return '';
-  return LANG === 'ru' ? s.ru : s.en;
+  if (LANG === 'ru') return s.ru;
+  return PACK?.stories?.[slug] || s.en;
 }
 
 module.exports = { storyFor, STORIES };

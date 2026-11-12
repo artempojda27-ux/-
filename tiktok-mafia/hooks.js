@@ -21,7 +21,7 @@ const { tr } = require('./i18n');
 
 const FILE = path.join(__dirname, 'detectives.json');
 /** Случайный вариант фразы на языке эфира: русский или английская основа */
-const pickTr = (ru, en) => { const i = Math.floor(Math.random() * ru.length); return tr(ru[i], en[i]); };
+const pickTr = (ru, en, vars) => { const i = Math.floor(Math.random() * ru.length); return tr(ru[i], en[i], vars); };
 
 // ─── чат ───
 const chat = [];            // { user, text, named, at }
@@ -126,10 +126,10 @@ function clue(placeName, hour) {
     `Камера у места «${placeName}» записала тень в ${hour}. Кто из них был там ночью?`,
     `В ${hour} у места «${placeName}» лаяли собаки. Значит, кто-то там был.`,
   ], [
-    `A cab driver saw someone hurrying away from ${placeName} around ${hour}. No face.`,
-    `A camera near ${placeName} caught a shadow at ${hour}. Which of them was there last night?`,
-    `Dogs were barking near ${placeName} at ${hour}. Someone was there.`,
-  ]);
+    'A cab driver saw someone hurrying away from {place} around {hour}. No face.',
+    'A camera near {place} caught a shadow at {hour}. Which of them was there last night?',
+    'Dogs were barking near {place} at {hour}. Someone was there.',
+  ], { place: placeName, hour });
 }
 
 /** Тизер следующей серии: финал не отпускает, а обещает продолжение */
@@ -138,11 +138,11 @@ function teaser(state, winner) {
   const mafiaLeft = state.players.find((p) => p.alive && p.role === 'traitor');
   if (winner !== 'faithful' && mafiaLeft) {
     return tr(`В следующей серии: ${mafiaLeft.name} всё ещё в городе. И теперь знает, кто голосовал против.`,
-      `Next episode: ${mafiaLeft.name} is still in the city. And now knows who voted against them.`);
+      'Next episode: {name} is still in the city. And now knows who voted against them.', { name: mafiaLeft.name });
   }
   if (innocentOut) {
     return tr(`В следующей серии: ${innocentOut.name} вернётся. И помнит, кто голосовал против.`,
-      `Next episode: ${innocentOut.name} comes back. And remembers who voted them out.`);
+      'Next episode: {name} comes back. And remembers who voted them out.', { name: innocentOut.name });
   }
   return tr('В следующей серии: город спит спокойно. Пока.', 'Next episode: the city sleeps easy. For now.');
 }

@@ -136,6 +136,19 @@ function cityLife() {
   ].map(([name, cap]) => { const c = clip(name); return c && { ...c, cap }; }).filter(Boolean);
 }
 
+/** Подложка под закадровый голос: планы из пула, нарезкой на ms миллисекунд.
+    Голос рассказчика не должен звучать над статичной доской. */
+const RECAP = ['night-steps', 'night-car', 'morning-news', 'morning-crowd', 'final-backseat', 'night-payphone'];
+const DAY = ['day-street', 'life-square', 'life-bar', 'life-pier', 'life-park'];
+function broll(kind, ms) {
+  const n = Math.max(1, Math.ceil(ms / 3400));
+  const names = fresh(kind === 'day' ? DAY : RECAP, Math.min(n, 4));
+  const clips = names.map(clip).filter(Boolean);
+  if (!clips.length) return null;
+  const cut = Math.ceil(ms / clips.length);
+  return { clips, cuts: clips.map(() => cut), ms: cut * clips.length };
+}
+
 /** Финал партии */
 function finaleReel(winner, survivors) {
   if (winner === 'faithful') return [clip('final-pier')];
@@ -147,4 +160,4 @@ function finaleReel(winner, survivors) {
 /** Сколько ждать движку, пока вставка идёт в эфире */
 const reelMs = (clips) => clips.reduce((s, c) => s + c.ms, 0) + 700;
 
-module.exports = { cityLife, approach, murderFor, introReel, clip, walk, openingReel, nightReel, quietReel, morningReel, banishReel, finaleReel, reelMs, ON };
+module.exports = { broll, cityLife, approach, murderFor, introReel, clip, walk, openingReel, nightReel, quietReel, morningReel, banishReel, finaleReel, reelMs, ON };

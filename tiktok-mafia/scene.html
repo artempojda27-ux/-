@@ -275,17 +275,17 @@ body.montage #toast{opacity:0}
 #cine.on{opacity:1;visibility:visible;transition:opacity .6s}
 #cine video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;
   rotate:y var(--rot,0deg);
-  transform:scale(var(--z0,1)) translate(var(--tx,0),var(--ty,0));transition:transform 5.5s linear}
+  transform:scale(var(--z0,1)) translate(var(--tx,0),var(--ty,0));transition:transform 5.5s linear,opacity .32s ease-out}
 #cine video.live{transform:scale(var(--z1,1.05)) translate(var(--tx,0),var(--ty,0))}
 #cine video.live{opacity:1}
-#cine .cap{position:absolute;left:64px;right:64px;bottom:300px;opacity:0;
+#cine .cap{position:absolute;z-index:4;left:64px;right:64px;bottom:300px;opacity:0;
   transform:translateY(16px);transition:opacity .8s,transform .8s}
 #cine .cap.on{opacity:1;transform:none}
 #cine .cap .c1{font:800 50px/1.2 var(--f-body);color:var(--bone);
   text-shadow:0 4px 26px rgba(0,0,0,.95)}
 #cine .cap .c2{font-family:var(--f-mono);font-weight:700;font-size:26px;color:var(--brass);
   letter-spacing:.22em;text-transform:uppercase;margin-top:8px;text-shadow:0 2px 14px #000}
-#cine::after{content:'';position:absolute;inset:0;pointer-events:none;
+#cine::after{content:'';position:absolute;z-index:3;inset:0;pointer-events:none;
   background:linear-gradient(to bottom,rgba(0,0,0,.35),transparent 22%,transparent 62%,rgba(0,0,0,.6))}
 body.cutscene #ladder,body.cutscene #toast,body.cutscene #speech{opacity:0}
 
@@ -938,13 +938,16 @@ const DC = (() => {
 /* ─────────────────────── режиссёр ───────────────────────
    Крупный план говорящего, склейка на реакцию, общий план. */
 const accusedAt = {};
-let shotFront = 'shotA', shotOn = null, shotSide = 1, reactTimer = null;
+let shotFront = 'shotA', shotOn = null, shotSide = 1, reactTimer = null, shotSwap = null;
+/* у видео есть кадр, и перемотка на случайное место уже прошла */
+function vidReady(v) { return v.readyState >= 3 && !v.seeking && (v.currentTime > 0 || v.dataset.noseek); }
 function currentBg() {
   const a = $('#room'), b = $('#room2');
   return (parseFloat(getComputedStyle(b).opacity) > 0.5 ? b : a).style.backgroundImage || '';
 }
 function closeUp(name, opts = {}) {
   clearTimeout(reactTimer);
+  if (shotSwap) shotSwap();          // прошлая склейка ещё ждёт видео — доводим её сразу
   const next = shotFront === 'shotA' ? 'shotB' : 'shotA';
   const el = document.getElementById(next), prev = document.getElementById(shotFront);
   el.className = 'shot' + (opts.react ? ' react' : '');
@@ -966,17 +969,36 @@ function closeUp(name, opts = {}) {
   // реакция — злое лицо, его даёт только статичный кадр; остальное — живое видео, если есть
   else if (opts.state !== '-angry' && probeVid(slug, kind)) fig.appendChild(videoEl(slug, kind));
   else fig.appendChild(faceEl(name, opts.state || ''));
-  // перезапуск наезда: убираем .on, даём кадру отрисоваться, включаем
-  el.classList.remove('on');
-  void el.offsetWidth;
-  el.classList.add('on');
-  prev.classList.remove('on');
   shotFront = next; shotOn = name;
-  document.body.classList.add('cine');
-  cameraWide();
+  // Склейка: новый план проявляется поверх старого, а старый держится в кадре,
+  // пока новый не проявится целиком — без провала в темноту посередине.
+  // Видео действия сначала должно получить кадр: до этого в кадре старый план.
+  const reveal = () => {
+    shotSwap = null;
+    if (shotFront !== next) return;
+    el.style.zIndex = 2; prev.style.zIndex = 1;
+    // перезапуск наезда: убираем .on, даём кадру отрисоваться, включаем
+    el.classList.remove('on');
+    void el.offsetWidth;
+    el.classList.add('on');
+    setTimeout(() => { if (shotFront !== prev.id) prev.classList.remove('on'); }, 320);
+    document.body.classList.add('cine');
+    cameraWide();
+  };
+  const act = el.querySelector('.sact');
+  if (!act || vidReady(act)) return reveal();
+  shotSwap = reveal;
+  const t0 = performance.now();
+  const poll = () => {
+    if (shotSwap !== reveal) return;
+    if (vidReady(act) || performance.now() - t0 > 700) return reveal();
+    requestAnimationFrame(poll);
+  };
+  poll();
 }
 function wideShot() {
   clearTimeout(reactTimer);
+  shotSwap = null;
   $('#shotA').classList.remove('on'); $('#shotB').classList.remove('on');
   shotOn = null;
   document.body.classList.remove('cine');
@@ -1600,77 +1622,183 @@ function vary(v, src, opts = {}) {
   return rate;
 }
 
+/* Склейка. Два видео: одно в кадре, второе заранее грузит следующий клип
+   (и уже перемотано на нужное место). Переход — короткий наплыв: новый план
+   проявляется поверх старого, а старый замирает, пока не скроется. Новый план
+   выходит в кадр только когда у него готов кадр — без чёрных вспышек.
+   Видео, которое уходит из кадра, не трогаем, пока наплыв не кончился.
+   Следующая катсцена, пришедшая подряд, продолжает ту же склейку, без
+   возврата к доске между ними. */
+const XFADE = 320;          // длина наплыва, мс
+const CINE = { front: null, closeT: null };
 let cineRun = 0;
+function cineVids() { return [...$('#cine').querySelectorAll('video')]; }
 function cutscene(list, caption, sub, hold, opts = {}) {
   const box = $('#cine');
-  const [A, B] = box.querySelectorAll('video');
-  const run = ++cineRun;
-  let i = 0, cur = A, nxt = B;
   if (!list || !list.length) return;
+  const run = ++cineRun;
+  clearTimeout(CINE.closeT); CINE.closeT = null;
   wideShot();
   stopTalking();
   document.body.classList.add('cutscene');
-  box.querySelector('.c1').textContent = caption || '';
-  box.querySelector('.c2').textContent = sub || '';
   const cap = box.querySelector('.cap');
-  cap.classList.remove('on');
-  // знакомство: у каждого клипа своя подпись (имя и кто он)
-  const perClip = (k) => {
-    if (!opts.captions) return;
-    box.querySelector('.c1').textContent = opts.captions[k] || '';
-    box.querySelector('.c2').textContent = (opts.subs && opts.subs[k]) || '';
-    cap.classList.add('on');
+  const c1 = box.querySelector('.c1'), c2 = box.querySelector('.c2');
+  // подпись меняется наплывом: старая гаснет, новая проявляется
+  let capT = null;
+  const setCap = (a, b, show = true) => {
+    clearTimeout(capT);
+    if (!cap.classList.contains('on')) { c1.textContent = a; c2.textContent = b; if (show) cap.classList.add('on'); return; }
+    cap.classList.remove('on');
+    capT = setTimeout(() => { if (run !== cineRun) return; c1.textContent = a; c2.textContent = b; if (show && (a || b)) cap.classList.add('on'); }, 380);
   };
-  if (!opts.captions && (caption || sub)) {
-    setTimeout(() => run === cineRun && cap.classList.add('on'), 900);
-    setTimeout(() => run === cineRun && cap.classList.remove('on'), 4800);
+  if (opts.captions) {
+    cap.classList.remove('on');
+  } else {
+    setCap(caption || '', sub || '', false);
+    cap.classList.remove('on');
+    if (caption || sub) {
+      setTimeout(() => run === cineRun && cap.classList.add('on'), 900);
+      setTimeout(() => run === cineRun && cap.classList.remove('on'), 4800);
+    }
   }
-  const done = () => {
-    if (run !== cineRun) return;
-    if (hold) return;                 // финал: последний кадр стоит до конца эфира
-    box.classList.remove('on');
-    document.body.classList.remove('cutscene');
-    setTimeout(() => { if (run === cineRun) { A.classList.remove('live'); B.classList.remove('live'); } }, 700);
-  };
-  // браузер без H.264 (сборки Chromium без кодеков) — берём WebM рядом, если он есть
+  // браузер без H.264 (сборки Chromium без кодеков) — берём WebM рядом
+  const [A] = cineVids();
   const mp4ok = !!A.canPlayType('video/mp4; codecs="avc1.640028"');
   list = list.map(src => mp4ok ? src : src.replace(/\.mp4$/, '.webm'));
-  const load = (v, src) => { v.onended = v.onerror = null; v.src = src; v.load(); };
-  const play = () => {
-    if (run !== cineRun) return;
-    if (i >= list.length) return done();
-    const v = cur;
-    if (!v.src.endsWith(list[i])) load(v, list[i]);
-    let moved = false;
-    v.onended = () => { if (moved) return; moved = true; i++; [cur, nxt] = [nxt, cur]; play(); };
-    v.onerror = v.onended;
-    // короткая нарезка: клип обрывается по таймеру, а не по концу файла
-    const cutMs = (opts.cuts && opts.cuts[i]) || opts.cut || 0;
-    v.loop = !!cutMs;   // нарезка длиннее клипа — клип крутится, пока не выйдет время
-    if (cutMs) setTimeout(() => { if (run === cineRun && !moved) v.onended(); }, cutMs);
-    perClip(i);
-    v.currentTime = cutMs ? 0.6 : 0;
-    vary(v, list[i], { keepRate: true });
-    const p = v.play();
-    if (p && p.catch) p.catch(() => v.onended());
-    v.classList.add('live');
-    nxt.classList.remove('live');
-    if (i + 1 < list.length) load(nxt, list[i + 1]);
+  const cutOf = (k) => (opts.cuts && opts.cuts[k]) || opts.cut || 0;
+
+  // зарядить клип k в видео v: загрузка и перемотка заранее
+  const prep = (v, k) => {
+    v.onended = v.onerror = null;
+    v.dataset.k = `${run}:${k}`;
+    v.loop = !!cutOf(k);
+    // короткий план начинается чуть позже начала файла: первые кадры у клипов статичные.
+    // Точка старта — во фрагменте адреса (#t=), браузер сам грузит с неё
+    const at = cutOf(k) ? 0.6 : 0;
+    const url = at ? `${list[k]}#t=${at}` : list[k];
+    if (v.getAttribute('src') !== url) { v.src = url; v.load(); }
+    else if (v.readyState >= 1 && Math.abs(v.currentTime - at) > 0.05) v.currentTime = at;
   };
-  load(cur, list[0]);
-  box.classList.add('on');
-  play();
+  // свободное видео (не в кадре); если оно ещё уходит наплывом — ждём
+  const spare = (fn) => {
+    const v = cineVids().find(x => x !== CINE.front);
+    const wait = Math.max(0, (v.freeAt || 0) - performance.now());
+    if (wait) setTimeout(() => run === cineRun && fn(v), wait); else fn(v);
+  };
+  // клип k в кадр, когда у него готов кадр
+  const go = (k, v) => {
+    if (run !== cineRun) return;
+    if (k >= list.length) return finish();
+    let gone = false;
+    const skip = () => {
+      if (gone || run !== cineRun) return;
+      gone = true; v.onerror = null;
+      if (k + 1 < list.length) { prep(v, k + 1); go(k + 1, v); } else finish();
+    };
+    v.onerror = skip;
+    const ready = () => v.readyState >= 3 && !v.seeking;
+    const swap = () => {
+      if (gone || run !== cineRun) return;
+      gone = true;
+      v.onerror = null;
+      show(k, v);
+    };
+    if (ready()) return swap();
+    const t0 = performance.now();
+    const poll = () => {
+      if (gone || run !== cineRun) return;
+      if (ready()) return swap();
+      // долго грузится: показываем, что есть; совсем нет кадра — план пропускаем
+      if (performance.now() - t0 > 4000) return v.readyState >= 2 ? swap() : skip();
+      requestAnimationFrame(poll);
+    };
+    poll();
+  };
+  const show = (k, v) => {
+    if (window.CINE_DEBUG) CINE_DEBUG({ k, src: list[k], vid: cineVids().indexOf(v), rs: v.readyState, ct: v.currentTime });
+    vary(v, list[k], { keepRate: true });
+    // новый план — над старым; подпись и затемнение (z 3–4) всегда сверху
+    for (const x of cineVids()) x.style.zIndex = x === v ? 2 : 1;
+    const p = v.play();
+    if (p && p.catch) p.catch(() => {});
+    v.classList.add('live');
+    const old = CINE.front;
+    CINE.front = v;
+    if (old && old !== v) {
+      // старый план замирает как есть (без отката наезда) и уходит под новым
+      old.style.transform = getComputedStyle(old).transform;
+      old.style.transition = 'none';
+      old.freeAt = performance.now() + XFADE + 80;
+      setTimeout(() => {
+        if (CINE.front === old) return;
+        old.classList.remove('live');
+        old.pause();
+        old.style.transform = ''; old.style.transition = '';
+      }, XFADE + 60);
+    }
+    box.classList.add('on');
+    // подпись плана меняется вместе с планом: старое имя не висит над новым лицом
+    if (opts.captions) {
+      clearTimeout(capT);
+      cap.style.transition = 'none';
+      cap.classList.remove('on');
+      c1.textContent = opts.captions[k] || '';
+      c2.textContent = (opts.subs && opts.subs[k]) || '';
+      void cap.offsetWidth;
+      cap.style.transition = '';
+      if (opts.captions[k]) cap.classList.add('on');
+    }
+    // конец плана: по таймеру нарезки или по концу файла
+    let moved = false;
+    const next = () => {
+      if (moved || run !== cineRun) return;
+      moved = true;
+      if (k + 1 >= list.length) return finish();
+      spare((n) => { if (n.dataset.k !== `${run}:${k + 1}`) prep(n, k + 1); go(k + 1, n); });
+    };
+    const cutMs = cutOf(k);
+    if (cutMs) setTimeout(next, cutMs);
+    else {
+      v.onended = next;
+      // запас на случай, если ended не придёт (обрыв загрузки)
+      const dur = isFinite(v.duration) ? v.duration : 5.2;
+      setTimeout(next, (dur - v.currentTime) * 1000 / (v.playbackRate || 1) + 1500);
+    }
+    // следующий план заряжаем заранее
+    if (k + 1 < list.length) spare((n) => run === cineRun && !moved && prep(n, k + 1));
+  };
+  const finish = () => {
+    if (run !== cineRun || hold) return;   // финал: последний кадр стоит до конца эфира
+    // следующая катсцена часто приходит следом — даём ей подхватить кадр
+    CINE.closeT = setTimeout(() => { if (run === cineRun) cineClose(); }, 1100);
+  };
+  spare((v) => { prep(v, 0); go(0, v); });
+}
+function cineClose() {
+  clearTimeout(CINE.closeT); CINE.closeT = null;
+  const box = $('#cine');
+  box.classList.remove('on');
+  box.querySelector('.cap').classList.remove('on');
+  document.body.classList.remove('cutscene');
+  const run = cineRun;
+  setTimeout(() => {
+    if (run !== cineRun) return;
+    cineVids().forEach(v => { v.pause(); v.classList.remove('live'); v.style.transform = ''; v.style.transition = ''; });
+    CINE.front = null;
+  }, 700);
 }
 function cutsceneOff() {
   cineRun++;
-  const box = $('#cine');
-  box.classList.remove('on');
-  document.body.classList.remove('cutscene');
-  box.querySelectorAll('video').forEach(v => { v.pause(); v.classList.remove('live'); });
+  cineClose();
 }
 
 /* ─────────────────────── события партии ─────────────────────── */
+/* Катсцена кончилась и ждёт, не придёт ли следом другая. Пришёл кадр партии
+   (реплика, глава, вскрытие…) — экран отдаётся ему сразу, без задержки. */
+const TAKEOVER = new Set(['line', 'lastword', 'interrogate', 'chapter', 'montage', 'nightplace', 'out', 'over',
+  'reveal', 'sheriff', 'truth', 'vote_open', 'vote_restart', 'party']);
 function handle(e) {
+  if (CINE.closeT && TAKEOVER.has(e.type)) cineClose();
   switch (e.type) {
     case 'status':
       Object.assign(hudState, { phase: e.phase, round: e.round, alive: e.alive, mafia: e.mafia, left: null });

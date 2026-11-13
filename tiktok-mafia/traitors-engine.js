@@ -964,12 +964,17 @@ async function runGame() {
 
   // «Ранее в Городе»: чем кончилась прошлая серия и что решил тогда зал
   const recap = narrate.previously(lastParty());
+  if (openMs) await sleep(Math.max(0, openMs - CONFIG.beat * 2.5));
   if (recap) {
-    broadcast({ type: 'chapter', title: tr('РАНЕЕ', 'PREVIOUSLY'), sub: tr(`серия ${partyNumber()}`, 'episode {n}', { n: partyNumber() }) });
+    // пересказ — поверх кадров прошлых ночей, нарезка по длине голоса
+    const b = cinema.broll('recap', speechMs(recap) + 600);
+    if (b) broadcast({ type: 'cutscene', clips: b.clips.map((c) => c.src), cuts: b.cuts,
+      caption: tr('РАНЕЕ', 'PREVIOUSLY'), sub: tr(`серия ${partyNumber()}`, 'episode {n}', { n: partyNumber() }) });
+    else broadcast({ type: 'chapter', title: tr('РАНЕЕ', 'PREVIOUSLY'), sub: tr(`серия ${partyNumber()}`, 'episode {n}', { n: partyNumber() }) });
     broadcast({ type: 'narrate', text: recap });
     say(C.dim(recap), `_${recap}_`);
+    if (b) await sleep(b.ms);
   }
-  if (openMs) await sleep(Math.max(0, openMs - CONFIG.beat * 2.5));
   await settle();
 
   // Город: обычная жизнь мест, где потом всё случится. Зритель понимает,
@@ -1151,9 +1156,15 @@ async function runGame() {
     }
     broadcast({ type: 'phase', phase: 'day', round: state.round });
     status(state, 'day');
-    // крючок: открытая петля — ответ обещан после голосования
-    broadcast({ type: 'narrate', text: hooks.openLoop(state.round) });
-    await sleep(CONFIG.beat * 1.4);
+    // крючок: открытая петля — ответ обещан после голосования.
+    // Звучит над дневным городом, а не над доской
+    {
+      const loop = hooks.openLoop(state.round);
+      const b = cinema.broll('day', Math.max(CONFIG.beat * 1.4, speechMs(loop) + 300));
+      if (b) broadcast({ type: 'cutscene', clips: b.clips.map((c) => c.src), cuts: b.cuts });
+      broadcast({ type: 'narrate', text: loop });
+      await sleep(b ? b.ms : CONFIG.beat * 1.4);
+    }
     say(C.yellow(`\n───── ДЕНЬ ${state.round}. Обсуждение ─────`), `\n### День ${state.round}`);
     const suspicions = await discussionPhase(state);
 

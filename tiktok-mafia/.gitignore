@@ -9,3 +9,4 @@ assets/gta/talk/*.webm
 detectives.json
 tts-cache/
 history.json
+teasers/*/
